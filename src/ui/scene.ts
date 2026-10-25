@@ -156,7 +156,7 @@ function drawTintedCloud(
   ctx.globalAlpha = 1
 }
 
-const CLOUDS = Array.from({ length: 4 }, (_, i) => {
+const CLOUDS = Array.from({ length: 3 }, (_, i) => {
   // два плана: дальние — выше, меньше и медленнее, ближние — крупные
   const far = i % 2 === 0
   return {
