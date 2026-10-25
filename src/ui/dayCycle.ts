@@ -21,8 +21,10 @@ export interface DayPalette {
   cloudColor: RGB
   firefly: number
   vignette: number
-  /** видимость солнца; луна видна ровно настолько, насколько солнца не видно */
+  /** видимость солнца */
   sun: number
+  /** видимость луны — собственное расписание: сумерки → ночь → рассвет */
+  moon: number
   sunPos: readonly [number, number]
   sunColor: RGB
   orbR: number
@@ -47,6 +49,7 @@ const NIGHT: Omit<Anchor, 'hour'> = {
   firefly: 1,
   vignette: 0.55,
   sun: 0,
+  moon: 1,
   sunPos: [0.74, 0.16],
   sunColor: [255, 236, 190],
   orbR: 30,
@@ -72,6 +75,7 @@ const ANCHORS: Anchor[] = [
     firefly: 0.3,
     vignette: 0.4,
     sun: 0.55,
+    moon: 0,
     sunPos: [0.15, 0.55],
     sunColor: [255, 180, 94],
     orbR: 34,
@@ -93,8 +97,9 @@ const ANCHORS: Anchor[] = [
     firefly: 0,
     vignette: 0.25,
     sun: 1,
+    moon: 0,
     sunPos: [0.7, 0.1],
-    sunColor: [255, 243, 200],
+    sunColor: [255, 226, 120],
     orbR: 32,
   },
   {
@@ -114,8 +119,9 @@ const ANCHORS: Anchor[] = [
     firefly: 0,
     vignette: 0.25,
     sun: 1,
+    moon: 0,
     sunPos: [0.74, 0.16],
-    sunColor: [255, 243, 200],
+    sunColor: [255, 226, 120],
     orbR: 32,
   },
   {
@@ -135,6 +141,7 @@ const ANCHORS: Anchor[] = [
     firefly: 0.5,
     vignette: 0.45,
     sun: 0.45,
+    moon: 0,
     sunPos: [0.85, 0.55],
     sunColor: [255, 180, 94],
     orbR: 36,
@@ -156,6 +163,7 @@ const ANCHORS: Anchor[] = [
     firefly: 0.9,
     vignette: 0.5,
     sun: 0,
+    moon: 1,
     sunPos: [0.85, 0.6],
     sunColor: [255, 180, 94],
     orbR: 30,
@@ -187,6 +195,7 @@ function mix(a: Anchor, b: Anchor, t: number): DayPalette {
     firefly: lerp(a.firefly, b.firefly, t),
     vignette: lerp(a.vignette, b.vignette, t),
     sun: lerp(a.sun, b.sun, t),
+    moon: lerp(a.moon, b.moon, t),
     sunPos: [lerp(a.sunPos[0], b.sunPos[0], t), lerp(a.sunPos[1], b.sunPos[1], t)],
     sunColor: lerpRGB(a.sunColor, b.sunColor, t),
     orbR: lerp(a.orbR, b.orbR, t),

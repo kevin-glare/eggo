@@ -47,6 +47,32 @@ describe('sampleDayCycle — непрерывный цикл суток', () => 
   })
 })
 
+describe('луна живёт по своему расписанию', () => {
+  it('днём луны нет', () => {
+    expect(sampleDayCycle(13).moon).toBe(0)
+    expect(sampleDayCycle(10).moon).toBeLessThan(0.1)
+  })
+
+  it('ночью луна полная', () => {
+    expect(sampleDayCycle(2).moon).toBeGreaterThan(0.95)
+  })
+
+  it('луна не следует за солнцем: на рассвете солнце уже есть, луны уже нет', () => {
+    const dawn = sampleDayCycle(6.5)
+    expect(dawn.sun).toBeGreaterThan(0.4)
+    expect(dawn.moon).toBe(0)
+  })
+
+  it('луна поднимается к сумеркам и заходит к рассвету', () => {
+    const dusk = sampleDayCycle(20.5)
+    expect(dusk.moon).toBeGreaterThan(0.4)
+    expect(dusk.moon).toBeLessThan(1)
+    const predawn = sampleDayCycle(5.5)
+    expect(predawn.moon).toBeGreaterThan(0.4)
+    expect(predawn.moon).toBeLessThan(1)
+  })
+})
+
 describe('phaseName — подпись части суток', () => {
   it('определяет часть суток по часу', () => {
     expect(phaseName(2)).toBe('ночь')

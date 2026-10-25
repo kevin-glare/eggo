@@ -81,9 +81,9 @@ export function drawScene(
   ctx.fillStyle = warmGrad
   ctx.fillRect(0, h * 0.5, w, h * 0.5)
 
-  // солнце и луна кроссфейдом: луна видна настолько, насколько нет солнца
+  // солнце и луна живут по собственным расписаниям из dayCycle
   const sunA = sky.sun
-  const moonA = 1 - sunA
+  const moonA = sky.moon
   if (sunA > 0.01) {
     const sx = sky.sunPos[0] * w
     const sy = sky.sunPos[1] * h
