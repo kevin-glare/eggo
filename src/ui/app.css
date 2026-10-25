@@ -1,129 +1,201 @@
+/* Дизайн-токены: тёплая ночь, питомец — источник света */
+:root {
+  --bg-deep: #221736;
+  --bg-sky: #31235a;
+  --card: rgba(58, 42, 90, 0.42);
+  --card-strong: rgba(58, 42, 90, 0.66);
+  --stroke: rgba(167, 149, 201, 0.22);
+  --ink: #f5edff;
+  --muted: #a795c9;
+  --accent: #ffb35c;
+  --accent-ink: #3a2410;
+  --danger: #ff6b7a;
+  --gold: #ffd76a;
+  --font-display: 'Comfortaa', 'Nunito', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background: linear-gradient(180deg, #2c2046 0%, var(--bg-deep) 45%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body);
 }
 
 .app {
   min-height: 100vh;
-  background: #141a26;
-  color: #e8ecf4;
-  font-family: 'SF Mono', Menlo, Consolas, monospace;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 16px 32px;
+  padding: 18px 16px calc(24px + env(safe-area-inset-bottom));
   max-width: 480px;
   margin: 0 auto;
 }
 
+/* Шапка */
 .header {
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 12px;
 }
 
 .stage-title {
-  font-size: 18px;
+  font-family: var(--font-display);
   font-weight: 700;
+  font-size: 22px;
   margin: 0;
+  letter-spacing: 0.01em;
 }
 
 .age-line {
   font-size: 13px;
-  opacity: 0.75;
+  color: var(--muted);
   margin: 4px 0 0;
+}
+
+.age-line .num {
+  font-family: var(--mono);
+  color: var(--ink);
 }
 
 .dev-badge {
   display: inline-block;
   margin-left: 6px;
   font-size: 11px;
-  background: #2b3550;
-  border: 1px solid #3d4a6d;
-  padding: 1px 6px;
-  border-radius: 8px;
-  color: #ffd23f;
+  font-family: var(--mono);
+  background: rgba(255, 179, 92, 0.12);
+  border: 1px solid rgba(255, 179, 92, 0.35);
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--accent);
+  vertical-align: 1px;
 }
 
-.pet-wrap {
+/* Сцена — «окно» в ночную поляну */
+.scene-card {
   width: 100%;
-  max-width: 280px;
+  max-width: 390px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  box-shadow:
+    0 24px 48px -24px rgba(10, 4, 24, 0.8),
+    inset 0 1px 0 rgba(245, 237, 255, 0.06);
 }
 
+/* Настроение */
 .mood {
-  text-align: center;
-  font-size: 15px;
-  margin: 2px 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 16px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  font-size: 14px;
+  font-weight: 600;
 }
 
+/* Показатели */
 .stats {
   width: 100%;
-  max-width: 340px;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  margin-bottom: 14px;
 }
 
 .stat {
   display: grid;
-  grid-template-columns: 104px 1fr 32px;
+  grid-template-columns: 96px 1fr 30px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
 }
 
 .stat-label {
   white-space: nowrap;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 .stat-track {
-  height: 10px;
-  background: #1a2133;
-  border: 1px solid #2e3a55;
-  border-radius: 5px;
+  height: 12px;
+  background: rgba(20, 12, 38, 0.6);
+  border: 1px solid rgba(167, 149, 201, 0.16);
+  border-radius: 999px;
   overflow: hidden;
 }
 
 .stat-fill {
   height: 100%;
-  border-radius: 5px;
-  transition: width 0.4s;
+  border-radius: 999px;
+  width: 0%;
+}
+
+.stat.low .stat-fill {
+  background: var(--danger) !important;
+  box-shadow: 0 0 10px rgba(255, 107, 122, 0.55);
 }
 
 .stat-value {
   text-align: right;
-  opacity: 0.8;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
 }
 
+/* Действия */
 .actions {
   width: 100%;
-  max-width: 340px;
+  max-width: 360px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 10px;
 }
 
 .actions button {
-  background: #1f2940;
-  color: #e8ecf4;
-  border: 1px solid #3d4a6d;
-  border-radius: 12px;
-  padding: 10px 4px;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  padding: 12px 4px 10px;
   font: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.actions button .icon {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.actions button:not(:disabled):hover {
+  border-color: rgba(255, 179, 92, 0.45);
 }
 
 .actions button:not(:disabled):active {
-  transform: scale(0.96);
-  background: #2b3550;
+  transform: scale(0.95);
+  background: var(--card-strong);
 }
 
 .actions button:disabled {
@@ -131,46 +203,60 @@ body {
   cursor: default;
 }
 
+/* Тост */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  bottom: calc(28px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  background: #2b3550;
-  border: 1px solid #3d4a6d;
-  padding: 8px 16px;
-  border-radius: 12px;
+  background: var(--card-strong);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px 18px;
+  border-radius: 999px;
   font-size: 14px;
-  animation: toast-in 0.2s;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 12px 32px -12px rgba(10, 4, 24, 0.8);
 }
 
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 8px);
-  }
-}
-
+/* Dev-инструменты */
 .devtools {
-  margin-top: 18px;
+  margin-top: 20px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
 }
 
 .devtools-label {
   font-size: 10px;
-  color: #8a94ad;
+  color: var(--muted);
+  font-family: var(--mono);
 }
 
 .devtools button {
   background: transparent;
-  border: 1px dashed #3d4a6d;
-  color: #8a94ad;
-  border-radius: 8px;
-  padding: 4px 10px;
+  border: 1px dashed var(--stroke);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 12px;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
+}
+
+/* Доступность */
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -8,21 +8,30 @@ interface ActionsBarProps {
 }
 
 /** В яйце действия недоступны; во сне — доступны, но движок откажет с тостом. */
-export default function ActionsBar({ isEgg, sleeping, onFeed, onPlay, onWash, onToggleSleep }: ActionsBarProps) {
-  const disabled = isEgg
+export default function ActionsBar({
+  isEgg,
+  sleeping,
+  onFeed,
+  onPlay,
+  onWash,
+  onToggleSleep,
+}: ActionsBarProps) {
   return (
     <nav className="actions" aria-label="Действия">
-      <button type="button" disabled={disabled} onClick={onFeed}>
-        🍔<span>Покормить</span>
+      <button type="button" disabled={isEgg} onClick={onFeed}>
+        <span className="icon">🍔</span>
+        <span>Покормить</span>
       </button>
-      <button type="button" disabled={disabled} onClick={onPlay}>
-        🎮<span>Играть</span>
+      <button type="button" disabled={isEgg} onClick={onPlay}>
+        <span className="icon">🎮</span>
+        <span>Играть</span>
       </button>
-      <button type="button" disabled={disabled} onClick={onWash}>
-        🛁<span>Помыть</span>
+      <button type="button" disabled={isEgg} onClick={onWash}>
+        <span className="icon">🛁</span>
+        <span>Помыть</span>
       </button>
-      <button type="button" disabled={disabled} onClick={onToggleSleep}>
-        {sleeping ? '⏰' : '😴'}
+      <button type="button" disabled={isEgg} onClick={onToggleSleep}>
+        <span className="icon">{sleeping ? '⏰' : '😴'}</span>
         <span>{sleeping ? 'Разбудить' : 'Спать'}</span>
       </button>
     </nav>

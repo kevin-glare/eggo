@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
@@ -37,20 +39,33 @@ export default function App() {
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
 
+  // вход: блоки softly всплывают каскадом
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    gsap.from('.app > *', {
+      y: 16,
+      opacity: 0,
+      duration: 0.55,
+      stagger: 0.08,
+      ease: 'power2.out',
+      clearProps: 'all',
+    })
+  }, [])
+
   return (
     <main className="app">
       <header className="header">
         <h1 className="stage-title">{STAGE_TITLE[pet.stage]}</h1>
         <p className="age-line">
-          Возраст: {formatAge(pet.ageMs)}
+          Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
           {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
         </p>
       </header>
 
-      <div className="pet-wrap">
+      <div className="scene-card">
         <PetCanvas stage={pet.stage} mood={mood} eggProgress={eggProgress} />
       </div>
-      <p className="mood">{MOOD_TEXT[mood]}</p>
+      <div className="mood">{MOOD_TEXT[mood]}</div>
 
       <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
       <ActionsBar
