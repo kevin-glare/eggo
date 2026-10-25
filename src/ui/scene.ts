@@ -106,14 +106,25 @@ export function drawScene(
     halo.addColorStop(1, 'rgba(247, 237, 216, 0)')
     ctx.fillStyle = halo
     ctx.fillRect(mx - 95, my - 95, 190, 190)
-    ctx.fillStyle = `rgba(247, 237, 216, ${0.85 * moonA})`
+    // серп: полный диск…
+    ctx.fillStyle = `rgba(247, 237, 216, ${0.9 * moonA})`
     ctx.beginPath()
-    ctx.arc(mx, my, 30, 0, Math.PI * 2)
+    ctx.arc(mx, my, 26, 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = `rgba(200, 186, 168, ${0.25 * moonA})`
+    // …кратеры на светлой части…
+    ctx.fillStyle = `rgba(200, 186, 168, ${0.3 * moonA})`
     ctx.beginPath()
-    ctx.arc(mx - 9, my - 6, 6, 0, Math.PI * 2)
-    ctx.arc(mx + 8, my + 9, 4, 0, Math.PI * 2)
+    ctx.arc(mx - 8, my + 4, 4, 0, Math.PI * 2)
+    ctx.arc(mx - 4, my + 12, 2.5, 0, Math.PI * 2)
+    ctx.fill()
+    // …и «укус» тенью цветом текущего неба — чтобы не путалась с солнцем
+    const skyMatch = ctx.createLinearGradient(0, 0, 0, h)
+    skyMatch.addColorStop(0, rgba(sky.skyTop, 1))
+    skyMatch.addColorStop(0.55, rgba(sky.skyMid, 1))
+    skyMatch.addColorStop(1, rgba(sky.skyBot, 1))
+    ctx.fillStyle = skyMatch
+    ctx.beginPath()
+    ctx.arc(mx + 10, my - 5, 22, 0, Math.PI * 2)
     ctx.fill()
   }
 
