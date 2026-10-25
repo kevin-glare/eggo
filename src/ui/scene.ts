@@ -42,13 +42,118 @@ const FIREFLIES = Array.from({ length: 9 }, () => ({
   sp: 0.2 + rand() * 0.3,
 }))
 
-const CLOUDS = Array.from({ length: 4 }, (_, i) => ({
-  x0: rand(),
-  y: 0.1 + rand() * 0.24,
-  scale: 0.7 + rand() * 0.6,
-  speed: 0.004 + rand() * 0.006,
-  seed: i,
-}))
+const CLOUD_SPRITE_COUNT = 4
+
+/**
+ * Кучевое облако собирается из «пуфов» — мягких радиальных пятен:
+ * крупные вдоль основания, поменьше горкой сверху (каулифлауэр).
+ * Потом вся форма притеняется вертикальным градиентом: яркая макушка,
+ * сероватое плоское основание. Спрайт белый — цвет ему даёт тонировка
+ * палитрой времени суток прямо при отрисовке.
+ */
+function buildCloudSprite(seed: number): HTMLCanvasElement {
+  const W = 240
+  const H = 120
+  const c = document.createElement('canvas')
+  c.width = W
+  c.height = H
+  const g = c.getContext('2d')
+  if (!g) return c
+  const rnd = mulberry32(seed)
+
+  const puffs: { x: number; y: number; r: number }[] = []
+  const baseY = H * 0.74
+  const count = 4 + Math.floor(rnd() * 3)
+  for (let i = 0; i < count; i++) {
+    const r = H * (0.2 + rnd() * 0.14)
+    const x = W * 0.16 + (W * 0.68 * i) / (count - 1) + (rnd() - 0.5) * W * 0.08
+    puffs.push({ x, y: baseY - r * 0.55 - rnd() * H * 0.05, r })
+  }
+  // бугры на макушке опираются на средние пуфы
+  const bumps = 2 + Math.floor(rnd() * 3)
+  for (let i = 0; i < bumps; i++) {
+    const anchor = puffs[1 + Math.floor(rnd() * (count - 2))]!
+    const r = anchor.r * (0.5 + rnd() * 0.35)
+    puffs.push({ x: anchor.x + (rnd() - 0.5) * anchor.r * 1.7, y: anchor.y - anchor.r * 0.8 - r * 0.2, r })
+  }
+
+  for (const p of puffs) {
+    const grad = g.createRadialGradient(p.x, p.y - p.r * 0.15, p.r * 0.1, p.x, p.y, p.r)
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)')
+    grad.addColorStop(0.65, 'rgba(255, 255, 255, 0.55)')
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)')
+    g.fillStyle = grad
+    g.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2)
+  }
+
+  // объём: макушка подсвечена, основание притенено (только по форме облака)
+  g.globalCompositeOperation = 'source-atop'
+  const shade = g.createLinearGradient(0, H * 0.25, 0, H)
+  shade.addColorStop(0, 'rgba(210, 218, 232, 0)')
+  shade.addColorStop(0.6, 'rgba(198, 207, 224, 0.4)')
+  shade.addColorStop(1, 'rgba(164, 175, 197, 0.65)')
+  g.fillStyle = shade
+  g.fillRect(0, 0, W, H)
+  const light = g.createLinearGradient(0, 0, 0, H * 0.55)
+  light.addColorStop(0, 'rgba(255, 255, 255, 0.45)')
+  light.addColorStop(1, 'rgba(255, 255, 255, 0)')
+  g.fillStyle = light
+  g.fillRect(0, 0, W, H * 0.55)
+  g.globalCompositeOperation = 'source-over'
+  return c
+}
+
+const cloudSprites: HTMLCanvasElement[] = Array.from({ length: CLOUD_SPRITE_COUNT }, (_, i) =>
+  buildCloudSprite(9001 + i * 137),
+)
+
+/** Общий буфер тонировки: multiply-цвет, затем форма вырезается обратно по альфе. */
+let cloudTintCanvas: HTMLCanvasElement | null = null
+
+function drawTintedCloud(
+  ctx: CanvasRenderingContext2D,
+  sprite: HTMLCanvasElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  alpha: number,
+  color: RGB,
+): void {
+  if (!cloudTintCanvas) cloudTintCanvas = document.createElement('canvas')
+  const tint = cloudTintCanvas
+  if (tint.width !== sprite.width || tint.height !== sprite.height) {
+    tint.width = sprite.width
+    tint.height = sprite.height
+  }
+  const g = tint.getContext('2d')
+  if (!g) return
+  g.globalCompositeOperation = 'source-over'
+  g.clearRect(0, 0, tint.width, tint.height)
+  g.drawImage(sprite, 0, 0)
+  g.globalCompositeOperation = 'multiply'
+  g.fillStyle = `rgb(${color[0] | 0}, ${color[1] | 0}, ${color[2] | 0})`
+  g.fillRect(0, 0, tint.width, tint.height)
+  g.globalCompositeOperation = 'destination-in'
+  g.drawImage(sprite, 0, 0)
+  g.globalCompositeOperation = 'source-over'
+  ctx.globalAlpha = alpha
+  ctx.drawImage(tint, x, y, w, h)
+  ctx.globalAlpha = 1
+}
+
+const CLOUDS = Array.from({ length: 6 }, (_, i) => {
+  // два плана: дальние — выше, меньше и медленнее, ближние — крупные
+  const far = i % 2 === 0
+  return {
+    x0: rand(),
+    y: far ? 0.08 + rand() * 0.1 : 0.18 + rand() * 0.18,
+    scale: far ? 0.55 + rand() * 0.25 : 0.95 + rand() * 0.45,
+    speed: far ? 0.003 + rand() * 0.003 : 0.006 + rand() * 0.005,
+    sprite: i % CLOUD_SPRITE_COUNT,
+    alpha: far ? 0.5 : 0.85,
+  }
+})
 
 /** Луна живёт на своей орбите независимо от солнца. */
 const MOON_POS: readonly [number, number] = [0.74, 0.16]
@@ -157,18 +262,14 @@ export function drawScene(
     ctx.globalAlpha = 1
   }
 
-  // облака дрейфуют по небу
+  // облака дрейфуют по небу — спрайты кучевые, тонированные временем суток
   if (sky.cloud > 0.02) {
     for (const c of CLOUDS) {
+      const sprite = cloudSprites[c.sprite]!
+      const cw = sprite.width * c.scale
+      const ch = sprite.height * c.scale
       const cx = (((c.x0 + (tMs / 1000) * c.speed) % 1.3) - 0.15) * w
-      const cy = c.y * h
-      const r = 26 * c.scale
-      ctx.fillStyle = rgba(sky.cloudColor, 0.75 * sky.cloud)
-      ctx.beginPath()
-      ctx.ellipse(cx, cy, r * 1.25, r * 0.5, 0, 0, Math.PI * 2)
-      ctx.ellipse(cx - r * 0.85, cy + r * 0.16, r * 0.75, r * 0.4, 0, 0, Math.PI * 2)
-      ctx.ellipse(cx + r * 0.9, cy + r * 0.18, r * 0.8, r * 0.42, 0, 0, Math.PI * 2)
-      ctx.fill()
+      drawTintedCloud(ctx, sprite, cx - cw / 2, c.y * h - ch / 2, cw, ch, 0.9 * c.alpha * sky.cloud, sky.cloudColor)
     }
   }
 
