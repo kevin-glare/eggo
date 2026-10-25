@@ -1,4 +1,4 @@
-# Тамагочи — Telegram Mini App
+# Eggo — Telegram Mini App
 
 Светящийся питомец, о котором заботишься в Telegram. Учебный проект:
 React + TypeScript + Vite, Canvas-сцена с GSAP-анимациями, чистое игровое

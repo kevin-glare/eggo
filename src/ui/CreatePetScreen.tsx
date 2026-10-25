@@ -15,7 +15,7 @@ export default function CreatePetScreen({ maxLength, onCreate }: CreatePetScreen
       <div className="create-egg" aria-hidden>
         🥚
       </div>
-      <h1 className="create-title">Тамагочи</h1>
+      <h1 className="create-title">Eggo</h1>
       <p className="create-sub">Дай имя своему питомцу — имя даётся только раз</p>
       <form
         className="create-form"
@@ -30,6 +30,7 @@ export default function CreatePetScreen({ maxLength, onCreate }: CreatePetScreen
           maxLength={maxLength}
           placeholder="Имя питомца"
           aria-label="Имя питомца"
+          required
           autoFocus
         />
         <button type="submit" disabled={!draft.trim()}>
