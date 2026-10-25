@@ -35,8 +35,8 @@ describe('tick — затухание статов', () => {
 
   it('в яйце статы заморожены', () => {
     const pet = makePet(DEFAULT_CONFIG)
-    // 5 минут < eggMs (10 минут) — весь тик остаётся внутри стадии яйца
-    const next = tick(pet, 5 * MINUTE, DEFAULT_CONFIG)
+    // 1 секунда < eggMs (5 секунд) — весь тик остаётся внутри стадии яйца
+    const next = tick(pet, 1_000, DEFAULT_CONFIG)
     expect(next.stats).toEqual(DEFAULT_CONFIG.initialStats)
   })
 
@@ -137,9 +137,9 @@ describe('averageStats', () => {
 describe('DEV_CONFIG', () => {
   it('ускоряет игровое время в 60 раз', () => {
     const egg = makePet(DEV_CONFIG, { lastTickAt: 0 })
-    const tenSeconds = 10_000
-    // 10 секунд реального времени × 60 = 10 минут игры — ровно eggMs
+    const fiveSeconds = 5_000
+    // 5 секунд реального времени × 60 = 5 минут игры — ровно eggMs в dev
     expect(egg.stage).toBe('egg')
-    expect(10 * tenSeconds * DEV_CONFIG.timeScale).toBeGreaterThanOrEqual(DEV_CONFIG.evolution.eggMs)
+    expect(fiveSeconds * DEV_CONFIG.timeScale).toBeGreaterThanOrEqual(DEV_CONFIG.evolution.eggMs)
   })
 })

@@ -4,6 +4,7 @@ import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
+import CreatePetScreen from './ui/CreatePetScreen'
 import PetCanvas from './ui/PetCanvas'
 import StatsBar from './ui/StatsBar'
 import { usePet } from './ui/usePet'
@@ -44,11 +45,12 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 ]
 
 export default function App() {
-  const { pet, notice, feedPet, playPet, washPet, toggleSleep, setName, advanceTime, reset } = usePet(config)
+  const { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
-  const [nameDraft, setNameDraft] = useState('')
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
+  // главный экран: питомца ещё не создали — сначала имя
+  const isCreating = pet.stage === 'egg' && pet.name === null
 
   // вход: блоки softly всплывают каскадом
   useEffect(() => {
@@ -65,50 +67,35 @@ export default function App() {
 
   return (
     <main className="app">
-      <header className="header">
-        <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
-        {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
-        <p className="age-line">
-          Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
-          {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
-        </p>
-        {pet.stage === 'egg' && pet.name === null && (
-          <form
-            className="naming"
-            onSubmit={(e) => {
-              e.preventDefault()
-              setName(nameDraft)
-              setNameDraft('')
-            }}
-          >
-            <input
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              maxLength={config.nameMaxLength}
-              placeholder="Как назовёшь питомца?"
-              aria-label="Имя питомца"
-            />
-            <button type="submit" disabled={!nameDraft.trim()}>
-              Назвать
-            </button>
-          </form>
-        )}
-      </header>
+      {isCreating ? (
+        <CreatePetScreen maxLength={config.nameMaxLength} onCreate={startGame} />
+      ) : (
+        <>
+          <header className="header">
+            <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
+            {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
+            <p className="age-line">
+              Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
+              {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
+            </p>
+          </header>
 
-      <div className="scene-card">
-        <PetCanvas stage={pet.stage} mood={mood} eggProgress={eggProgress} skyHourOverride={skyHour} />
-      </div>
-      <div className="mood">{MOOD_TEXT[mood]}</div>
+          <div className="scene-card">
+            <PetCanvas stage={pet.stage} mood={mood} eggProgress={eggProgress} skyHourOverride={skyHour} />
+          </div>
+          <div className="mood">{MOOD_TEXT[mood]}</div>
 
-      <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
-      <ActionsBar
-        isEgg={pet.stage === 'egg'}
-        sleeping={pet.sleeping}
-        onFeed={feedPet}
-        onPlay={playPet}
-        onWash={washPet}
-        onToggleSleep={toggleSleep}
-      />
+          <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
+          <ActionsBar
+            isEgg={pet.stage === 'egg'}
+            sleeping={pet.sleeping}
+            onFeed={feedPet}
+            onPlay={playPet}
+            onWash={washPet}
+            onToggleSleep={toggleSleep}
+          />
+        </>
+      )}
 
       {notice && <div className="toast">{notice}</div>}
 

@@ -22,7 +22,7 @@ export interface GameConfig {
   /** пороги настроения по среднему стату */
   happyThreshold: number
   contentThreshold: number
-  /** длительности стадий (игровое время) */
+  /** длительности стадий (игровое время); яйцо — 5 реальных секунд */
   evolution: { eggMs: number; babyMs: number }
   /** сила действий */
   actions: {
@@ -55,7 +55,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   healAvgThreshold: 60,
   happyThreshold: 75,
   contentThreshold: 45,
-  evolution: { eggMs: 10 * MINUTE, babyMs: 3 * DAY },
+  evolution: { eggMs: 5_000, babyMs: 3 * DAY },
   actions: {
     feed: { fullness: 30 },
     play: { happiness: 25, energy: 15 },
@@ -71,4 +71,6 @@ export const DEFAULT_CONFIG: GameConfig = {
 export const DEV_CONFIG: GameConfig = {
   ...DEFAULT_CONFIG,
   timeScale: 60,
+  // яйцо должно висеть 5 реальных секунд и здесь: 5 с × 60
+  evolution: { ...DEFAULT_CONFIG.evolution, eggMs: 5_000 * 60 },
 }

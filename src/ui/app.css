@@ -88,42 +88,83 @@ body {
     inset 0 1px 0 rgba(245, 237, 255, 0.06);
 }
 
-/* Именование — один раз, пока питомец яйцо */
-.naming {
+/* Главный экран — создание питомца: сначала имя, потом яйцо */
+.create-screen {
+  flex: 1;
+  width: 100%;
+  max-width: 360px;
   display: flex;
-  gap: 8px;
-  margin-top: 10px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.naming input {
+.create-egg {
+  font-size: 64px;
+  line-height: 1;
+  animation: egg-float 2.6s ease-in-out infinite;
+  filter: drop-shadow(0 14px 22px rgba(10, 4, 24, 0.6));
+}
+
+@keyframes egg-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.create-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  margin: 18px 0 0;
+}
+
+.create-sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 6px 0 20px;
+}
+
+.create-form {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.create-form input {
   flex: 1;
   min-width: 0;
-  padding: 9px 12px;
+  padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--stroke);
   background: rgba(20, 12, 38, 0.6);
   color: var(--ink);
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
 }
 
-.naming input::placeholder {
+.create-form input::placeholder {
   color: var(--muted);
 }
 
-.naming button {
+.create-form button {
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
   border-radius: 14px;
-  padding: 9px 14px;
+  padding: 12px 18px;
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
 
-.naming button:disabled {
+.create-form button:disabled {
   opacity: 0.35;
   cursor: default;
 }

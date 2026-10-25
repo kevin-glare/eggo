@@ -10,7 +10,7 @@ const REASON_TEXT: Record<ActionReason, string> = {
   'not-hatched': '🥚 Питомец ещё не вылупился',
   sleeping: '🤫 Питомец спит',
   'too-tired': '😵 Слишком устал — пусть поспит',
-  'not-egg': '🥚 Имя можно дать только яйцу',
+  'not-egg': '🥚 Имя можно дать только при создании',
   'already-named': '🏷️ Имя уже есть — другое не дать',
   'invalid-name': '✏️ От 1 до 16 символов',
 }
@@ -82,10 +82,10 @@ export function usePet(config: GameConfig) {
   // событие вылупления
   useEffect(() => {
     if (prevStageRef.current === 'egg' && pet.stage !== 'egg') {
-      setNotice('🎉 Питомец вылупился!')
+      setNotice(`🎉 ${pet.name ?? 'Питомец'} вылупился!`)
     }
     prevStageRef.current = pet.stage
-  }, [pet.stage])
+  }, [pet.stage, pet.name])
 
   // уведомления сами исчезают
   useEffect(() => {
@@ -113,9 +113,25 @@ export function usePet(config: GameConfig) {
   const feedPet = useCallback(() => apply(feed, '🍗 Ням-ням!'), [apply])
   const playPet = useCallback(() => apply(play, '😄 Было весело!'), [apply])
   const washPet = useCallback(() => apply(wash, '🛁 Чистота!'), [apply])
-  const setName = useCallback(
-    (rawName: string) => apply((p, c) => namePet(p, rawName, c), '🏷️ Теперь у питомца есть имя!'),
-    [apply],
+
+  /**
+   * Старт новой игры: имя вводится до появления яйца.
+   * Возвращает false, если имя не прошло проверку.
+   */
+  const startGame = useCallback(
+    (rawName: string) => {
+      const result = namePet(createPet(Date.now(), config), rawName, config)
+      if (!result.ok) {
+        setNotice(REASON_TEXT[result.reason ?? 'invalid-name'] ?? '')
+        hapticWarning()
+        return false
+      }
+      setPet(result.state)
+      hapticSuccess()
+      setNotice('🥚 Появилось яйцо!')
+      return true
+    },
+    [config],
   )
   const toggleSleep = useCallback(() => {
     const sleeping = petRef.current.sleeping
@@ -133,8 +149,8 @@ export function usePet(config: GameConfig) {
   const reset = useCallback(() => {
     setPet(createPet(Date.now(), config))
     lastCloudSaveRef.current = 0
-    setNotice('🥚 Новое яйцо!')
+    setNotice('🥚 Новая игра — дай имя!')
   }, [config])
 
-  return { pet, notice, feedPet, playPet, washPet, toggleSleep, setName, advanceTime, reset }
+  return { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset }
 }

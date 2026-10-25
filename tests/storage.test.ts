@@ -42,8 +42,8 @@ describe('catchUp — оффлайн-время', () => {
 
   it('яйцо вылупляется за время отсутствия (с учётом timeScale)', () => {
     const egg = makePet(DEV_CONFIG, { lastTickAt: 0 })
-    // 10 секунд реала × 60 = 10 минут игры = eggMs в DEV_CONFIG
-    const result = catchUp(egg, 10_000, DEV_CONFIG)
+    // 5 секунд реала × 60 = 5 минут игры = eggMs в DEV_CONFIG
+    const result = catchUp(egg, 5_000, DEV_CONFIG)
     expect(result.stage).toBe('baby')
   })
 
