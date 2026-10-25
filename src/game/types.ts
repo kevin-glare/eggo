@@ -1,3 +1,5 @@
+import type { PetAppearance } from './appearance'
+
 export type Stage = 'egg' | 'baby' | 'adult'
 
 export type Mood = 'happy' | 'content' | 'sad' | 'sick' | 'sleeping'
@@ -29,6 +31,8 @@ export interface PetState {
   sick: boolean
   /** сколько подряд (игрового времени) хотя бы один стат в критической зоне */
   neglectMs: number
+  /** внешность («гены»): бросается при создании, дальше не меняется */
+  appearance: PetAppearance
   /** реальный момент последнего тика (мс, epoch) — для досчёта оффлайна */
   lastTickAt: number
 }

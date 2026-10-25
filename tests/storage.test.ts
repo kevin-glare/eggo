@@ -1,30 +1,48 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, DEV_CONFIG } from '../src/game/config'
+import { rollAppearance } from '../src/game/appearance'
 import { tick } from '../src/game/engine'
 import { catchUp, deserialize, serialize } from '../src/game/storage'
-import { DAY, HOUR, hatchedPet, makePet } from './helpers'
+import { DAY, HOUR, TEST_APPEARANCE, hatchedPet, makePet } from './helpers'
 
 describe('serialize / deserialize', () => {
   it('roundtrip восстанавливает состояние без потерь', () => {
     const pet = hatchedPet(DEFAULT_CONFIG, { sick: true, neglectMs: 123_000 })
-    const restored = deserialize(serialize(pet))
+    const restored = deserialize(serialize(pet), TEST_APPEARANCE)
     expect(restored).toEqual(pet)
   })
 
   it('битая строка → null', () => {
-    expect(deserialize('не json')).toBeNull()
+    expect(deserialize('не json', TEST_APPEARANCE)).toBeNull()
   })
 
   it('несовместимая версия → null', () => {
-    expect(deserialize(JSON.stringify({ version: 99, pet: {} }))).toBeNull()
+    expect(deserialize(JSON.stringify({ version: 99, pet: {} }), TEST_APPEARANCE)).toBeNull()
   })
 
   it('старый сейв без имени → name: null', () => {
     const pet = hatchedPet(DEFAULT_CONFIG)
     const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
     delete data.pet.name
-    const restored = deserialize(JSON.stringify(data))
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.name).toBeNull()
+  })
+
+  it('старый сейв без внешности → запасная внешность', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.appearance
+    const fallback = rollAppearance(() => 0.7)
+    const restored = deserialize(JSON.stringify(data), fallback)
+    expect(restored?.appearance).toEqual(fallback)
+  })
+
+  it('битая внешность в сейве → запасная внешность', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    data.pet.appearance = { body: 'мусор', palette: 5 }
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.appearance).toEqual(TEST_APPEARANCE)
   })
 })
 

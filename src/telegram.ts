@@ -117,7 +117,8 @@ export const petStore = {
  */
 export function mergeCloudSave(cloudRaw: string | null, local: PetState, config: GameConfig): PetState {
   if (!cloudRaw) return local
-  const cloud = deserialize(cloudRaw)
+  // у облачного сейва без внешности (старая версия) оставляем локальную
+  const cloud = deserialize(cloudRaw, local.appearance)
   if (!cloud || cloud.lastTickAt <= local.lastTickAt) return local
   return catchUp(cloud, Date.now(), config)
 }

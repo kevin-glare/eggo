@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
+import type { PetAppearance } from '../game/appearance'
 import type { Mood, Stage } from '../game/types'
 import {
   createVisualState,
   drawPet,
   GROUND_Y,
+  PET_PALETTES,
   SCENE_H,
   SCENE_W,
   type PetVisualState,
@@ -16,6 +18,8 @@ import { sampleDayCycle } from './dayCycle'
 interface PetCanvasProps {
   stage: Stage
   mood: Mood
+  /** внешность («гены») питомца — что рисовать */
+  appearance: PetAppearance
   /** 0..1 — насколько яйцо близко к вылуплению */
   eggProgress: number
   /** dev: подменный час неба; null = локальное время пользователя */
@@ -50,10 +54,10 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export default function PetCanvas({ stage, mood, eggProgress, skyHourOverride, onTap }: PetCanvasProps) {
+export default function PetCanvas({ stage, mood, appearance, eggProgress, skyHourOverride, onTap }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ stage, mood, eggProgress, skyHourOverride })
-  propsRef.current = { stage, mood, eggProgress, skyHourOverride }
+  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride })
+  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride }
   const visRef = useRef<PetVisualState>(createVisualState())
   const sceneRef = useRef({ energy: 0.7, warm: 0.9 })
   const particlesRef = useRef<Particle[]>([])
@@ -92,7 +96,7 @@ export default function PetCanvas({ stage, mood, eggProgress, skyHourOverride, o
     const frame = (now: number) => {
       const dt = Math.min(64, now - last)
       last = now
-      const { stage: st, mood: md, eggProgress: prog, skyHourOverride: skyHour } = propsRef.current
+      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour } = propsRef.current
 
       // яйцо качается тем сильнее, чем ближе вылупление
       if (st === 'egg') {
@@ -110,7 +114,7 @@ export default function PetCanvas({ stage, mood, eggProgress, skyHourOverride, o
       drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now, sky)
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
-      drawPet(ctx, st, md, v, now, prog)
+      drawPet(ctx, st, md, look, v, now, prog)
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
@@ -135,6 +139,8 @@ export default function PetCanvas({ stage, mood, eggProgress, skyHourOverride, o
     if (prevStageRef.current === 'egg' && stage !== 'egg') {
       const v = visRef.current
       const particles = particlesRef.current
+      // конфетти из скорлупы — в цветах палитры питомца
+      const palette = PET_PALETTES[appearance.palette]
       for (let i = 0; i < 16; i++) {
         const ang = (Math.PI * 2 * i) / 16 + Math.random() * 0.4
         particles.push({
@@ -147,7 +153,7 @@ export default function PetCanvas({ stage, mood, eggProgress, skyHourOverride, o
           life: 0,
           maxLife: 0.9 + Math.random() * 0.5,
           size: 3 + Math.random() * 3,
-          color: i % 2 === 0 ? '#ffd76a' : '#ff9d8a',
+          color: i % 2 === 0 ? palette.bodyMid : palette.blush,
           shape: 'shard',
         })
       }

@@ -1,4 +1,5 @@
 import type { GameConfig } from './config'
+import { isAppearance, type PetAppearance } from './appearance'
 import { tick } from './engine'
 import type { PetState } from './types'
 
@@ -13,8 +14,11 @@ export function serialize(state: PetState): string {
   return JSON.stringify({ version: SAVE_VERSION, pet: state } satisfies SaveData)
 }
 
-/** Битые и несовместимые сейвы отбрасываются — игра начнётся заново. */
-export function deserialize(raw: string): PetState | null {
+/**
+ * Битые и несовместимые сейвы отбрасываются — игра начнётся заново.
+ * fallbackAppearance подставляется сейвам старых версий (до внешности).
+ */
+export function deserialize(raw: string, fallbackAppearance: PetAppearance): PetState | null {
   try {
     const data = JSON.parse(raw) as Partial<SaveData>
     if (data?.version !== SAVE_VERSION) return null
@@ -22,7 +26,12 @@ export function deserialize(raw: string): PetState | null {
     if (!pet || typeof pet !== 'object') return null
     if (typeof pet.ageMs !== 'number' || typeof pet.stage !== 'string' || typeof pet.stats !== 'object') return null
     // сейвы до появления имён — просто ещё не названный питомец
-    return { ...pet, name: typeof pet.name === 'string' ? pet.name : null }
+    // сейвы до появления внешности (и с битыми генами) получают запасную
+    return {
+      ...pet,
+      name: typeof pet.name === 'string' ? pet.name : null,
+      appearance: isAppearance(pet.appearance) ? pet.appearance : fallbackAppearance,
+    }
   } catch {
     return null
   }

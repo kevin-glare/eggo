@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { rollAppearance } from '../game/appearance'
 import { feed, namePet, play, startSleep, wake, wash, type ActionReason, type ActionResult } from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
@@ -18,9 +19,11 @@ const REASON_TEXT: Record<ActionReason, string> = {
 const CLOUD_SAVE_INTERVAL_MS = 10_000
 
 function initialPet(config: GameConfig): PetState {
+  // случайность живёт здесь, в UI-слое: game остаётся чистой
+  const fresh = rollAppearance(Math.random)
   const raw = petStore.loadLocal()
-  const restored = raw !== null ? deserialize(raw) : null
-  return restored ?? createPet(Date.now(), config)
+  const restored = raw !== null ? deserialize(raw, fresh) : null
+  return restored ?? createPet(Date.now(), config, fresh)
 }
 
 /**
@@ -146,7 +149,8 @@ export function usePet(config: GameConfig) {
   )
 
   const reset = useCallback(() => {
-    setPet(createPet(Date.now(), config))
+    // новая игра — новая случайная внешность
+    setPet(createPet(Date.now(), config, rollAppearance(Math.random)))
     lastCloudSaveRef.current = 0
     setNotice('🥚 Новая игра — дай имя!')
   }, [config])

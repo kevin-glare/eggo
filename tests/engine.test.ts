@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, DEV_CONFIG } from '../src/game/config'
+import { rollAppearance } from '../src/game/appearance'
 import { averageStats, createPet, getMood, tick } from '../src/game/engine'
 import type { PetState } from '../src/game/types'
 import { DAY, HOUR, MINUTE, hatchedPet, makePet } from './helpers'
 
 describe('createPet', () => {
-  it('создаёт яйцо с начальными статами', () => {
-    const pet = createPet(1_000, DEFAULT_CONFIG)
+  it('создаёт яйцо с начальными статами и данной внешностью', () => {
+    const look = rollAppearance(() => 0.9999)
+    const pet = createPet(1_000, DEFAULT_CONFIG, look)
     expect(pet.stage).toBe('egg')
     expect(pet.stats).toEqual(DEFAULT_CONFIG.initialStats)
     expect(pet.ageMs).toBe(0)
@@ -15,6 +17,7 @@ describe('createPet', () => {
     expect(pet.sleeping).toBe(false)
     expect(pet.sick).toBe(false)
     expect(pet.name).toBeNull()
+    expect(pet.appearance).toBe(look)
   })
 })
 
