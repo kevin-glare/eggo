@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from '../src/game/config'
-import { feed, play, startSleep, wake, wash } from '../src/game/actions'
+import { feed, namePet, play, startSleep, wake, wash } from '../src/game/actions'
 import { hatchedPet, makePet } from './helpers'
 
 describe('feed', () => {
@@ -74,6 +74,46 @@ describe('sleep / wake', () => {
   it('wake будит', () => {
     const result = wake(hatchedPet(DEFAULT_CONFIG, { sleeping: true }))
     expect(result.state.sleeping).toBe(false)
+  })
+})
+
+describe('namePet', () => {
+  it('даёт имя яйцу и обрезает пробелы', () => {
+    const result = namePet(makePet(DEFAULT_CONFIG), '  Шустрик  ', DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state.name).toBe('Шустрик')
+  })
+
+  it('отклоняет пустое имя', () => {
+    const result = namePet(makePet(DEFAULT_CONFIG), '   ', DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('invalid-name')
+    expect(result.state.name).toBeNull()
+  })
+
+  it('отклоняет слишком длинное имя', () => {
+    const long = 'а'.repeat(DEFAULT_CONFIG.nameMaxLength + 1)
+    const result = namePet(makePet(DEFAULT_CONFIG), long, DEFAULT_CONFIG)
+    expect(result.reason).toBe('invalid-name')
+  })
+
+  it('имя даётся только один раз', () => {
+    const result = namePet(makePet(DEFAULT_CONFIG, { name: 'Шустрик' }), 'Другое', DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('already-named')
+    expect(result.state.name).toBe('Шустрик')
+  })
+
+  it('после вылупления назвать нельзя', () => {
+    const result = namePet(hatchedPet(DEFAULT_CONFIG), 'Шустрик', DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('not-egg')
+  })
+
+  it('не мутирует исходное состояние', () => {
+    const pet = makePet(DEFAULT_CONFIG)
+    namePet(pet, 'Шустрик', DEFAULT_CONFIG)
+    expect(pet.name).toBeNull()
   })
 })
 

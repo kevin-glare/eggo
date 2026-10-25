@@ -44,8 +44,9 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 ]
 
 export default function App() {
-  const { pet, notice, feedPet, playPet, washPet, toggleSleep, advanceTime, reset } = usePet(config)
+  const { pet, notice, feedPet, playPet, washPet, toggleSleep, setName, advanceTime, reset } = usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
+  const [nameDraft, setNameDraft] = useState('')
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
 
@@ -65,11 +66,33 @@ export default function App() {
   return (
     <main className="app">
       <header className="header">
-        <h1 className="stage-title">{STAGE_TITLE[pet.stage]}</h1>
+        <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
+        {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
         <p className="age-line">
           Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
           {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
         </p>
+        {pet.stage === 'egg' && pet.name === null && (
+          <form
+            className="naming"
+            onSubmit={(e) => {
+              e.preventDefault()
+              setName(nameDraft)
+              setNameDraft('')
+            }}
+          >
+            <input
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              maxLength={config.nameMaxLength}
+              placeholder="Как назовёшь питомца?"
+              aria-label="Имя питомца"
+            />
+            <button type="submit" disabled={!nameDraft.trim()}>
+              Назвать
+            </button>
+          </form>
+        )}
       </header>
 
       <div className="scene-card">

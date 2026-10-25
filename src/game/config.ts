@@ -36,6 +36,8 @@ export interface GameConfig {
   maxOfflineMs: number
   /** шаг досчёта оффлайна: заодно корректно обрабатывает смену стадии */
   catchUpChunkMs: number
+  /** предел длины имени питомца (после обрезки пробелов) */
+  nameMaxLength: number
 }
 
 export const MINUTE = 60_000
@@ -62,6 +64,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   timeScale: 1,
   maxOfflineMs: 7 * DAY,
   catchUpChunkMs: HOUR,
+  nameMaxLength: 16,
 }
 
 /** Дев-режим: время ×60 — эволюцию видно за минуты. */

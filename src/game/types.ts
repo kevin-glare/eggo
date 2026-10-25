@@ -23,6 +23,8 @@ export interface PetState {
   ageMs: number
   stage: Stage
   stats: Stats
+  /** имя, данное хозяином в стадии яйца; null — пока не назван */
+  name: string | null
   sleeping: boolean
   sick: boolean
   /** сколько подряд (игрового времени) хотя бы один стат в критической зоне */

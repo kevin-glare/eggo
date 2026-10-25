@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { feed, play, startSleep, wake, wash, type ActionReason, type ActionResult } from '../game/actions'
+import { feed, namePet, play, startSleep, wake, wash, type ActionReason, type ActionResult } from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { catchUp, deserialize, serialize } from '../game/storage'
@@ -10,6 +10,9 @@ const REASON_TEXT: Record<ActionReason, string> = {
   'not-hatched': '🥚 Питомец ещё не вылупился',
   sleeping: '🤫 Питомец спит',
   'too-tired': '😵 Слишком устал — пусть поспит',
+  'not-egg': '🥚 Имя можно дать только яйцу',
+  'already-named': '🏷️ Имя уже есть — другое не дать',
+  'invalid-name': '✏️ От 1 до 16 символов',
 }
 
 /** Как часто пишем сейв в облако Telegram (локально — при каждом изменении). */
@@ -110,6 +113,10 @@ export function usePet(config: GameConfig) {
   const feedPet = useCallback(() => apply(feed, '🍗 Ням-ням!'), [apply])
   const playPet = useCallback(() => apply(play, '😄 Было весело!'), [apply])
   const washPet = useCallback(() => apply(wash, '🛁 Чистота!'), [apply])
+  const setName = useCallback(
+    (rawName: string) => apply((p, c) => namePet(p, rawName, c), '🏷️ Теперь у питомца есть имя!'),
+    [apply],
+  )
   const toggleSleep = useCallback(() => {
     const sleeping = petRef.current.sleeping
     return sleeping ? apply(wake, '☀️ Проснулся!') : apply(startSleep, '😴 Спокойной ночи!')
@@ -129,5 +136,5 @@ export function usePet(config: GameConfig) {
     setNotice('🥚 Новое яйцо!')
   }, [config])
 
-  return { pet, notice, feedPet, playPet, washPet, toggleSleep, advanceTime, reset }
+  return { pet, notice, feedPet, playPet, washPet, toggleSleep, setName, advanceTime, reset }
 }

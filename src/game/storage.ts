@@ -21,7 +21,8 @@ export function deserialize(raw: string): PetState | null {
     const pet = data.pet
     if (!pet || typeof pet !== 'object') return null
     if (typeof pet.ageMs !== 'number' || typeof pet.stage !== 'string' || typeof pet.stats !== 'object') return null
-    return pet
+    // сейвы до появления имён — просто ещё не названный питомец
+    return { ...pet, name: typeof pet.name === 'string' ? pet.name : null }
   } catch {
     return null
   }

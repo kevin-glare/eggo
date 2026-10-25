@@ -10,6 +10,7 @@ export function createPet(now: number, config: GameConfig): PetState {
     ageMs: 0,
     stage: 'egg',
     stats: { ...config.initialStats },
+    name: null,
     sleeping: false,
     sick: false,
     neglectMs: 0,

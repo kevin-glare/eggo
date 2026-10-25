@@ -18,6 +18,14 @@ describe('serialize / deserialize', () => {
   it('несовместимая версия → null', () => {
     expect(deserialize(JSON.stringify({ version: 99, pet: {} }))).toBeNull()
   })
+
+  it('старый сейв без имени → name: null', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.name
+    const restored = deserialize(JSON.stringify(data))
+    expect(restored?.name).toBeNull()
+  })
 })
 
 describe('catchUp — оффлайн-время', () => {

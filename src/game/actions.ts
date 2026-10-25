@@ -1,7 +1,13 @@
 import type { GameConfig } from './config'
 import type { PetState } from './types'
 
-export type ActionReason = 'not-hatched' | 'sleeping' | 'too-tired'
+export type ActionReason =
+  | 'not-hatched'
+  | 'sleeping'
+  | 'too-tired'
+  | 'not-egg'
+  | 'already-named'
+  | 'invalid-name'
 
 export interface ActionResult {
   state: PetState
@@ -73,4 +79,13 @@ export function startSleep(state: PetState): ActionResult {
 
 export function wake(state: PetState): ActionResult {
   return ok({ ...state, sleeping: false })
+}
+
+/** Имя даётся один раз и только пока питомец — яйцо. */
+export function namePet(state: PetState, rawName: string, config: GameConfig): ActionResult {
+  if (state.stage !== 'egg') return fail(state, 'not-egg')
+  if (state.name !== null) return fail(state, 'already-named')
+  const name = rawName.trim()
+  if (name.length === 0 || name.length > config.nameMaxLength) return fail(state, 'invalid-name')
+  return ok({ ...state, name })
 }
