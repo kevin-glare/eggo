@@ -10,6 +10,7 @@ import {
   type PetVisualState,
 } from './petArt'
 import { drawScene } from './scene'
+import { hapticTap } from '../telegram'
 
 interface PetCanvasProps {
   stage: Stage
@@ -178,6 +179,7 @@ export default function PetCanvas({ stage, mood, eggProgress, onTap }: PetCanvas
         .to(v, { jumpY: -42, duration: 0.2, ease: 'power2.out' })
         .to(v, { jumpY: 0, duration: 0.65, ease: 'elastic.out(1.1, 0.4)' })
     }
+    hapticTap()
     onTap?.()
   }
 

@@ -4,8 +4,7 @@ import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { catchUp, deserialize, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
-
-const STORAGE_KEY = 'tamagotchi.save.v1'
+import { hapticSuccess, hapticWarning, initTelegram, mergeCloudSave, petStore } from '../telegram'
 
 const REASON_TEXT: Record<ActionReason, string> = {
   'not-hatched': '🥚 Питомец ещё не вылупился',
@@ -13,15 +12,18 @@ const REASON_TEXT: Record<ActionReason, string> = {
   'too-tired': '😵 Слишком устал — пусть поспит',
 }
 
+/** Как часто пишем сейв в облако Telegram (локально — при каждом изменении). */
+const CLOUD_SAVE_INTERVAL_MS = 10_000
+
 function initialPet(config: GameConfig): PetState {
-  const raw = localStorage.getItem(STORAGE_KEY)
+  const raw = petStore.loadLocal()
   const restored = raw !== null ? deserialize(raw) : null
   return restored ?? createPet(Date.now(), config)
 }
 
 /**
- * Жизненный цикл питомца в React: загрузка сейва, тик раз в секунду,
- * действия с обратной связью, сохранение при каждом изменении.
+ * Жизненный цикл питомца в React: сейв (локально + облако Telegram),
+ * тик раз в секунду, действия с обратной связью и хаптикой.
  */
 export function usePet(config: GameConfig) {
   const [pet, setPet] = useState<PetState>(() => initialPet(config))
@@ -29,6 +31,20 @@ export function usePet(config: GameConfig) {
   const petRef = useRef(pet)
   petRef.current = pet
   const prevStageRef = useRef(pet.stage)
+  const lastCloudSaveRef = useRef(0)
+
+  // старт: Telegram-инициализация + подтягивание облачного сейва, если он новее
+  useEffect(() => {
+    initTelegram()
+    let cancelled = false
+    void petStore.cloudLoad().then((cloudRaw) => {
+      if (cancelled) return
+      setPet((p) => mergeCloudSave(cloudRaw, p, config))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [config])
 
   // при запуске досчитываем всё время, пока приложение было закрыто
   useEffect(() => {
@@ -40,9 +56,25 @@ export function usePet(config: GameConfig) {
     return () => window.clearInterval(id)
   }, [config])
 
+  // сохранение: локально сразу, в облако — не чаще раза в CLOUD_SAVE_INTERVAL_MS
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, serialize(pet))
+    const raw = serialize(pet)
+    petStore.saveLocal(raw)
+    const now = Date.now()
+    if (now - lastCloudSaveRef.current >= CLOUD_SAVE_INTERVAL_MS) {
+      lastCloudSaveRef.current = now
+      void petStore.cloudSave(raw)
+    }
   }, [pet])
+
+  // при уходе со страницы — залить актуальный сейв в облако
+  useEffect(() => {
+    const flush = () => {
+      void petStore.cloudSave(serialize(petRef.current))
+    }
+    window.addEventListener('pagehide', flush)
+    return () => window.removeEventListener('pagehide', flush)
+  }, [])
 
   // событие вылупления
   useEffect(() => {
@@ -63,7 +95,13 @@ export function usePet(config: GameConfig) {
     (action: (p: PetState, c: GameConfig) => ActionResult, successText: string) => {
       const result = action(petRef.current, config)
       setPet(result.state)
-      setNotice(result.ok ? successText : (REASON_TEXT[result.reason ?? 'not-hatched'] ?? ''))
+      if (result.ok) {
+        setNotice(successText)
+        hapticSuccess()
+      } else {
+        setNotice(REASON_TEXT[result.reason ?? 'not-hatched'] ?? '')
+        hapticWarning()
+      }
       return result
     },
     [config],
@@ -78,14 +116,16 @@ export function usePet(config: GameConfig) {
   }, [apply])
 
   /** Dev-инструмент: прокрутить игровое время вперёд. */
-  const advanceTime = useCallback((gameMs: number) => {
-    setPet((p) => tick(p, gameMs, config))
-  }, [config])
+  const advanceTime = useCallback(
+    (gameMs: number) => {
+      setPet((p) => tick(p, gameMs, config))
+    },
+    [config],
+  )
 
   const reset = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
-    prevStageRef.current = 'egg'
     setPet(createPet(Date.now(), config))
+    lastCloudSaveRef.current = 0
     setNotice('🥚 Новое яйцо!')
   }, [config])
 
