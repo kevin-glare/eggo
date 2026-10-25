@@ -37,6 +37,10 @@ export const PET_PALETTES: Record<PaletteKind, PetPalette> = {
   sky: { bodyLight: '#dff1ff', bodyMid: '#a3d7fa', bodyShade: '#5fa8e0', outline: '#35688f', blush: '#ff9d8a' },
   lavender: { bodyLight: '#eee6ff', bodyMid: '#c9b3f2', bodyShade: '#9a7fd4', outline: '#62509a', blush: '#ff9d8a' },
   peach: { bodyLight: '#ffead6', bodyMid: '#ffcda3', bodyShade: '#f0a46a', outline: '#9c5f2e', blush: '#ff8fae' },
+  choco: { bodyLight: '#f5dcc3', bodyMid: '#d8a26e', bodyShade: '#a5703f', outline: '#6b4226', blush: '#ff8f7a' },
+  night: { bodyLight: '#c7cede', bodyMid: '#97a1c4', bodyShade: '#646e96', outline: '#3a4166', blush: '#ff9d8a' },
+  berry: { bodyLight: '#ffd9ec', bodyMid: '#f79cd0', bodyShade: '#c962a4', outline: '#8a3d6e', blush: '#ff6f9c' },
+  kiwi: { bodyLight: '#eef9d0', bodyMid: '#cdee83', bodyShade: '#93c246', outline: '#5c7f2a', blush: '#ff9d8a' },
 }
 
 /** Цвета, общие для всех палитр: лицо, слюни, капли, росток. */
@@ -119,6 +123,17 @@ function mulberry32(seed: number): () => number {
   }
 }
 
+/** Зерно из «генов»: у одинаковых питомцев одинаковые пятнышки, кадр в кадр — без мерцания. */
+function appearanceSeed(look: PetAppearance): number {
+  const genes = look.body + look.ears + look.eyes + look.nose + look.arms + look.legs + look.palette
+  let h = 2166136261
+  for (let i = 0; i < genes.length; i++) {
+    h ^= genes.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
 // крапинки яйца: детерминированные, чтобы не мерцали между кадрами
 const EGG_SPECKLES: { dx: number; dy: number; r: number }[] = (() => {
   const rand = mulberry32(42)
@@ -193,7 +208,8 @@ function drawCreature(
 
   drawEars(ctx, d, rx, ry, cy, look.ears, p)
   drawArms(ctx, d, rx, ry, cy, look.arms, p)
-  drawLegs(ctx, d, faceScale, look.legs, p)
+  // «носочки» — тёмные стопы — красятся при отрисовке ног
+  drawLegs(ctx, d, faceScale, look.legs, p, look.spots === 'socks')
 
   // тело с вертикальным градиентом объёма
   const body = ctx.createLinearGradient(0, cy - ry, 0, cy + ry)
@@ -217,6 +233,8 @@ function drawCreature(
   ctx.beginPath()
   ctx.ellipse(-rx * 0.34, cy - ry * 0.55, rx * 0.3, ry * 0.16, -0.4, 0, Math.PI * 2)
   ctx.fill()
+
+  drawSpots(ctx, look, rx, ry, cy, p)
 
   // лицо
   const eyeDX = d.eyeDX * faceScale
@@ -355,8 +373,9 @@ function drawLegs(
   faceScale: number,
   kind: LegKind,
   p: PetPalette,
+  dark: boolean,
 ): void {
-  ctx.fillStyle = p.bodyShade
+  ctx.fillStyle = dark ? p.outline : p.bodyShade
   for (const side of [-1, 1]) {
     if (kind === 'round') {
       ctx.beginPath()
@@ -373,6 +392,52 @@ function drawLegs(
       ctx.fill()
     }
   }
+}
+
+/**
+ * Пятнышки на шкурке. Обрезаются по телу; раскладка крапинок
+ * детерминирована «генами» питомца — не мерцает между кадрами.
+ */
+function drawSpots(
+  ctx: CanvasRenderingContext2D,
+  look: PetAppearance,
+  rx: number,
+  ry: number,
+  cy: number,
+  p: PetPalette,
+): void {
+  if (look.spots === 'none' || look.spots === 'socks') return
+  ctx.save()
+  // не вылезаем за контур тела
+  ctx.beginPath()
+  ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.fillStyle = p.bodyShade
+  if (look.spots === 'patch') {
+    // крупное пятно на спине + поменьше на боку
+    ctx.globalAlpha = 0.5
+    ctx.beginPath()
+    ctx.ellipse(rx * 0.3, cy - ry * 0.5, rx * 0.55, ry * 0.42, 0.35, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.ellipse(-rx * 0.5, cy + ry * 0.1, rx * 0.3, ry * 0.25, -0.3, 0, Math.PI * 2)
+    ctx.fill()
+  } else {
+    // dots: крапинки по бокам и макушке, не задевая лицо
+    ctx.globalAlpha = 0.65
+    const rand = mulberry32(appearanceSeed(look))
+    const count = 4 + Math.floor(rand() * 3)
+    for (let i = 0; i < count; i++) {
+      const side = i % 2 === 0 ? -1 : 1
+      const dx = side * (0.5 + rand() * 0.35) * rx
+      const dy = cy - ry * (0.5 + rand() * 0.35)
+      const r = 3 + rand() * 3.5
+      ctx.beginPath()
+      ctx.arc(dx, dy, r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  ctx.restore()
 }
 
 function drawNose(ctx: CanvasRenderingContext2D, y: number, kind: NoseKind): void {

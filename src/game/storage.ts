@@ -1,5 +1,5 @@
 import type { GameConfig } from './config'
-import { isAppearance, type PetAppearance } from './appearance'
+import { normalizeAppearance, type PetAppearance } from './appearance'
 import { tick } from './engine'
 import type { PetState } from './types'
 
@@ -30,7 +30,7 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
     return {
       ...pet,
       name: typeof pet.name === 'string' ? pet.name : null,
-      appearance: isAppearance(pet.appearance) ? pet.appearance : fallbackAppearance,
+      appearance: normalizeAppearance(pet.appearance) ?? fallbackAppearance,
     }
   } catch {
     return null

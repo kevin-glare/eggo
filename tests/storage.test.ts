@@ -44,6 +44,15 @@ describe('serialize / deserialize', () => {
     const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.appearance).toEqual(TEST_APPEARANCE)
   })
+
+  it('внешность без пятнышек (прошлая версия) → пятнышек нет, вид сохранён', () => {
+    const look = { ...TEST_APPEARANCE, spots: 'dots' as const }
+    const pet = { ...hatchedPet(DEFAULT_CONFIG), appearance: look }
+    const data = JSON.parse(serialize(pet)) as { pet: { appearance: Record<string, unknown> } }
+    delete data.pet.appearance.spots
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.appearance).toEqual({ ...look, spots: 'none' })
+  })
 })
 
 describe('catchUp — оффлайн-время', () => {

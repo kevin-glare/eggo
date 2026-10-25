@@ -7,7 +7,8 @@ import {
   LEG_KINDS,
   NOSE_KINDS,
   PALETTE_KINDS,
-  isAppearance,
+  SPOT_KINDS,
+  normalizeAppearance,
   rollAppearance,
   type PetAppearance,
 } from '../src/game/appearance'
@@ -22,6 +23,7 @@ describe('rollAppearance', () => {
     expect(ARM_KINDS).toContain(look.arms)
     expect(LEG_KINDS).toContain(look.legs)
     expect(PALETTE_KINDS).toContain(look.palette)
+    expect(SPOT_KINDS).toContain(look.spots)
   })
 
   it('одинаковая случайность → одинаковая внешность', () => {
@@ -39,6 +41,7 @@ describe('rollAppearance', () => {
       arms: 'none',
       legs: 'round',
       palette: 'sunny',
+      spots: 'none',
     })
     expect(rollAppearance(() => 0.9999)).toEqual({
       body: 'tall',
@@ -47,7 +50,8 @@ describe('rollAppearance', () => {
       nose: 'none',
       arms: 'long',
       legs: 'tiny',
-      palette: 'peach',
+      palette: 'kiwi',
+      spots: 'socks',
     })
   })
 
@@ -55,6 +59,7 @@ describe('rollAppearance', () => {
     const look = rollAppearance(() => 1)
     expect(PALETTE_KINDS).toContain(look.palette)
     expect(LEG_KINDS).toContain(look.legs)
+    expect(SPOT_KINDS).toContain(look.spots)
   })
 
   it('при долгом броске выпадают все варианты каждого гена', () => {
@@ -72,8 +77,9 @@ describe('rollAppearance', () => {
       arms: new Set(),
       legs: new Set(),
       palette: new Set(),
+      spots: new Set(),
     }
-    for (let i = 0; i < 700; i++) {
+    for (let i = 0; i < 900; i++) {
       const look = rollAppearance(lcg)
       seen.body.add(look.body)
       seen.ears.add(look.ears)
@@ -82,6 +88,7 @@ describe('rollAppearance', () => {
       seen.arms.add(look.arms)
       seen.legs.add(look.legs)
       seen.palette.add(look.palette)
+      seen.spots.add(look.spots)
     }
     expect(seen.body.size).toBe(BODY_SHAPES.length)
     expect(seen.ears.size).toBe(EAR_KINDS.length)
@@ -90,21 +97,30 @@ describe('rollAppearance', () => {
     expect(seen.arms.size).toBe(ARM_KINDS.length)
     expect(seen.legs.size).toBe(LEG_KINDS.length)
     expect(seen.palette.size).toBe(PALETTE_KINDS.length)
+    expect(seen.spots.size).toBe(SPOT_KINDS.length)
   })
 })
 
-describe('isAppearance', () => {
-  it('принимает валидную внешность', () => {
-    expect(isAppearance(rollAppearance(() => 0.5))).toBe(true)
+describe('normalizeAppearance', () => {
+  it('валидная внешность проходит насквозь', () => {
+    const look = rollAppearance(() => 0.5)
+    expect(normalizeAppearance(look)).toEqual(look)
+  })
+
+  it('старый сейв без пятнышек → spots: none, остальное сохранено', () => {
+    const look = rollAppearance(() => 0.5)
+    const { spots, ...legacy } = look
+    expect(spots).toBeDefined()
+    expect(normalizeAppearance(legacy)).toEqual({ ...look, spots: 'none' })
   })
 
   it('отвергает мусор: не объект, отсутствие гена, чужое значение', () => {
-    expect(isAppearance(null)).toBe(false)
-    expect(isAppearance('sunny')).toBe(false)
+    expect(normalizeAppearance(null)).toBeNull()
+    expect(normalizeAppearance('sunny')).toBeNull()
     const look = rollAppearance(() => 0.3)
-    expect(isAppearance({ ...look, body: 'мусор' })).toBe(false)
+    expect(normalizeAppearance({ ...look, body: 'мусор' })).toBeNull()
     const { ears, ...withoutEars } = look
     expect(ears).toBeDefined()
-    expect(isAppearance(withoutEars)).toBe(false)
+    expect(normalizeAppearance(withoutEars)).toBeNull()
   })
 })
