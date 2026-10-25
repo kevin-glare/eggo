@@ -14,6 +14,7 @@ describe('createPet', () => {
     expect(pet.lastTickAt).toBe(1_000)
     expect(pet.sleeping).toBe(false)
     expect(pet.sick).toBe(false)
+    expect(pet.name).toBeNull()
   })
 })
 
@@ -38,6 +39,11 @@ describe('tick — затухание статов', () => {
     // 1 секунда < eggMs (5 секунд) — весь тик остаётся внутри стадии яйца
     const next = tick(pet, 1_000, DEFAULT_CONFIG)
     expect(next.stats).toEqual(DEFAULT_CONFIG.initialStats)
+  })
+
+  it('без имени жизнь не начинается: тик ничего не меняет', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: null })
+    expect(tick(pet, HOUR, DEFAULT_CONFIG)).toEqual(pet)
   })
 
   it('во сне энергия восстанавливается, прочие статы падают медленнее', () => {

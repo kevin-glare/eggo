@@ -36,6 +36,8 @@ function stageForAge(ageMs: number, config: GameConfig): Stage {
 /** Продвинуть игровое время на dtMs. Чистая: возвращает новое состояние. */
 export function tick(state: PetState, dtMs: number, config: GameConfig): PetState {
   if (dtMs <= 0) return state
+  // жизнь не начинается, пока питомец не получил имени: яйцо просто ждёт
+  if (state.name === null) return state
 
   const ageMs = state.ageMs + dtMs
   const stage = stageForAge(ageMs, config)

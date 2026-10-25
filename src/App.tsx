@@ -49,8 +49,8 @@ export default function App() {
   const [skyHour, setSkyHour] = useState<number | null>(null)
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
-  // главный экран: питомца ещё не создали — сначала имя
-  const isCreating = pet.stage === 'egg' && pet.name === null
+  // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
+  const isCreating = pet.name === null
 
   // вход: блоки softly всплывают каскадом
   useEffect(() => {

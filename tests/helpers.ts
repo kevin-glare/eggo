@@ -13,7 +13,8 @@ export function makePet(
   stats: Partial<Stats> = {},
 ): PetState {
   const base = createPet(0, config)
-  return { ...base, ...overrides, stats: { ...base.stats, ...stats } }
+  // питомцы в тестах по умолчанию названные: без имени жизнь не начинается
+  return { ...base, name: 'Тест', ...overrides, stats: { ...base.stats, ...stats } }
 }
 
 /** Питомец, уже вылупившийся из яйца (стадия baby). */

@@ -78,14 +78,14 @@ describe('sleep / wake', () => {
 })
 
 describe('namePet', () => {
-  it('даёт имя яйцу и обрезает пробелы', () => {
-    const result = namePet(makePet(DEFAULT_CONFIG), '  Шустрик  ', DEFAULT_CONFIG)
+  it('даёт имя и обрезает пробелы', () => {
+    const result = namePet(makePet(DEFAULT_CONFIG, { name: null }), '  Шустрик  ', DEFAULT_CONFIG)
     expect(result.ok).toBe(true)
     expect(result.state.name).toBe('Шустрик')
   })
 
   it('отклоняет пустое имя', () => {
-    const result = namePet(makePet(DEFAULT_CONFIG), '   ', DEFAULT_CONFIG)
+    const result = namePet(makePet(DEFAULT_CONFIG, { name: null }), '   ', DEFAULT_CONFIG)
     expect(result.ok).toBe(false)
     expect(result.reason).toBe('invalid-name')
     expect(result.state.name).toBeNull()
@@ -93,25 +93,25 @@ describe('namePet', () => {
 
   it('отклоняет слишком длинное имя', () => {
     const long = 'а'.repeat(DEFAULT_CONFIG.nameMaxLength + 1)
-    const result = namePet(makePet(DEFAULT_CONFIG), long, DEFAULT_CONFIG)
+    const result = namePet(makePet(DEFAULT_CONFIG, { name: null }), long, DEFAULT_CONFIG)
     expect(result.reason).toBe('invalid-name')
   })
 
   it('имя даётся только один раз', () => {
-    const result = namePet(makePet(DEFAULT_CONFIG, { name: 'Шустрик' }), 'Другое', DEFAULT_CONFIG)
+    const result = namePet(makePet(DEFAULT_CONFIG), 'Другое', DEFAULT_CONFIG)
     expect(result.ok).toBe(false)
     expect(result.reason).toBe('already-named')
+    expect(result.state.name).toBe('Тест')
+  })
+
+  it('выручает старый сейв: имя можно дать и вылупившемуся безымянному', () => {
+    const result = namePet(hatchedPet(DEFAULT_CONFIG, { name: null }), 'Шустрик', DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
     expect(result.state.name).toBe('Шустрик')
   })
 
-  it('после вылупления назвать нельзя', () => {
-    const result = namePet(hatchedPet(DEFAULT_CONFIG), 'Шустрик', DEFAULT_CONFIG)
-    expect(result.ok).toBe(false)
-    expect(result.reason).toBe('not-egg')
-  })
-
   it('не мутирует исходное состояние', () => {
-    const pet = makePet(DEFAULT_CONFIG)
+    const pet = makePet(DEFAULT_CONFIG, { name: null })
     namePet(pet, 'Шустрик', DEFAULT_CONFIG)
     expect(pet.name).toBeNull()
   })

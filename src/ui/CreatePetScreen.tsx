@@ -2,21 +2,21 @@ import { useState } from 'react'
 
 interface CreatePetScreenProps {
   maxLength: number
-  /** возвращает true, если имя принято и питомец создан */
+  /** возвращает true, если имя принято и питомец ожил */
   onCreate: (name: string) => boolean
 }
 
-/** Главный экран: сначала вводим имя — потом появится яйцо. */
+/** Главный экран Eggo: питомец не начнёт жить, пока не получит имя. */
 export default function CreatePetScreen({ maxLength, onCreate }: CreatePetScreenProps) {
   const [draft, setDraft] = useState('')
 
   return (
     <section className="create-screen">
-      <div className="create-egg" aria-hidden>
-        🥚
-      </div>
-      <h1 className="create-title">Eggo</h1>
-      <p className="create-sub">Дай имя своему питомцу — имя даётся только раз</p>
+      <div className="create-egg" aria-hidden />
+      <h1 className="create-title">
+        Egg<span className="create-title-o">o</span>
+      </h1>
+      <p className="create-sub">Питомец вылупится, когда получит имя</p>
       <form
         className="create-form"
         onSubmit={(e) => {
@@ -25,6 +25,7 @@ export default function CreatePetScreen({ maxLength, onCreate }: CreatePetScreen
         }}
       >
         <input
+          type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           maxLength={maxLength}
@@ -34,7 +35,7 @@ export default function CreatePetScreen({ maxLength, onCreate }: CreatePetScreen
           autoFocus
         />
         <button type="submit" disabled={!draft.trim()}>
-          Создать
+          Дать имя
         </button>
       </form>
     </section>

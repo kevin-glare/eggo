@@ -10,7 +10,6 @@ const REASON_TEXT: Record<ActionReason, string> = {
   'not-hatched': '🥚 Питомец ещё не вылупился',
   sleeping: '🤫 Питомец спит',
   'too-tired': '😵 Слишком устал — пусть поспит',
-  'not-egg': '🥚 Имя можно дать только при создании',
   'already-named': '🏷️ Имя уже есть — другое не дать',
   'invalid-name': '✏️ От 1 до 16 символов',
 }
@@ -115,12 +114,12 @@ export function usePet(config: GameConfig) {
   const washPet = useCallback(() => apply(wash, '🛁 Чистота!'), [apply])
 
   /**
-   * Старт новой игры: имя вводится до появления яйца.
-   * Возвращает false, если имя не прошло проверку.
+   * Дать имя питомцу: без имени игра не начинается.
+   * Работает и для свежего яйца, и для старого безымянного сейва.
    */
   const startGame = useCallback(
     (rawName: string) => {
-      const result = namePet(createPet(Date.now(), config), rawName, config)
+      const result = namePet(petRef.current, rawName, config)
       if (!result.ok) {
         setNotice(REASON_TEXT[result.reason ?? 'invalid-name'] ?? '')
         hapticWarning()
@@ -128,7 +127,7 @@ export function usePet(config: GameConfig) {
       }
       setPet(result.state)
       hapticSuccess()
-      setNotice('🥚 Появилось яйцо!')
+      setNotice(result.state.stage === 'egg' ? '🥚 Появилось яйцо!' : `🎉 ${result.state.name} — отличное имя!`)
       return true
     },
     [config],
