@@ -53,6 +53,37 @@ const CLOUDS = Array.from({ length: 4 }, (_, i) => ({
 /** Луна живёт на своей орбите независимо от солнца. */
 const MOON_POS: readonly [number, number] = [0.74, 0.16]
 
+/**
+ * Кэш серпа луны: диск с кратерами, «укус» вырезан прозрачностью
+ * (destination-out), поэтому сквозь него видно настоящее небо
+ * с гало и звёздами — без закрашенного круга.
+ */
+let moonSprite: HTMLCanvasElement | null = null
+function getMoonSprite(): HTMLCanvasElement {
+  if (moonSprite) return moonSprite
+  const c = document.createElement('canvas')
+  c.width = 120
+  c.height = 120
+  const m = c.getContext('2d')
+  if (m) {
+    m.fillStyle = 'rgb(247, 237, 216)'
+    m.beginPath()
+    m.arc(60, 60, 52, 0, Math.PI * 2)
+    m.fill()
+    m.fillStyle = 'rgba(200, 186, 168, 0.35)'
+    m.beginPath()
+    m.arc(44, 68, 8, 0, Math.PI * 2)
+    m.arc(52, 84, 5, 0, Math.PI * 2)
+    m.fill()
+    m.globalCompositeOperation = 'destination-out'
+    m.beginPath()
+    m.arc(80, 50, 44, 0, Math.PI * 2)
+    m.fill()
+  }
+  moonSprite = c
+  return c
+}
+
 function rgba(c: RGB, alpha: number): string {
   return `rgba(${c[0] | 0}, ${c[1] | 0}, ${c[2] | 0}, ${Math.max(0, Math.min(1, alpha))})`
 }
@@ -81,6 +112,18 @@ export function drawScene(
   ctx.fillStyle = warmGrad
   ctx.fillRect(0, h * 0.5, w, h * 0.5)
 
+  // звёзды — за светилами, чтобы не рисовались поверх луны и солнца
+  const starBase = sky.star * (0.4 + 0.6 * mood.energy)
+  if (starBase > 0.02) {
+    for (const s of STARS) {
+      const a = starBase * (0.5 + 0.5 * Math.sin((tMs / 1000) * s.sp + s.ph))
+      ctx.fillStyle = `rgba(245, 237, 255, ${a})`
+      ctx.beginPath()
+      ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
   // солнце и луна живут по собственным расписаниям из dayCycle
   const sunA = sky.sun
   const moonA = sky.moon
@@ -106,38 +149,12 @@ export function drawScene(
     halo.addColorStop(1, 'rgba(247, 237, 216, 0)')
     ctx.fillStyle = halo
     ctx.fillRect(mx - 95, my - 95, 190, 190)
-    // серп: полный диск…
-    ctx.fillStyle = `rgba(247, 237, 216, ${0.9 * moonA})`
-    ctx.beginPath()
-    ctx.arc(mx, my, 26, 0, Math.PI * 2)
-    ctx.fill()
-    // …кратеры на светлой части…
-    ctx.fillStyle = `rgba(200, 186, 168, ${0.3 * moonA})`
-    ctx.beginPath()
-    ctx.arc(mx - 8, my + 4, 4, 0, Math.PI * 2)
-    ctx.arc(mx - 4, my + 12, 2.5, 0, Math.PI * 2)
-    ctx.fill()
-    // …и «укус» тенью цветом текущего неба — чтобы не путалась с солнцем
-    const skyMatch = ctx.createLinearGradient(0, 0, 0, h)
-    skyMatch.addColorStop(0, rgba(sky.skyTop, 1))
-    skyMatch.addColorStop(0.55, rgba(sky.skyMid, 1))
-    skyMatch.addColorStop(1, rgba(sky.skyBot, 1))
-    ctx.fillStyle = skyMatch
-    ctx.beginPath()
-    ctx.arc(mx + 10, my - 5, 22, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // звёзды: видимость по времени суток, живость — по настроению
-  const starBase = sky.star * (0.4 + 0.6 * mood.energy)
-  if (starBase > 0.02) {
-    for (const s of STARS) {
-      const a = starBase * (0.5 + 0.5 * Math.sin((tMs / 1000) * s.sp + s.ph))
-      ctx.fillStyle = `rgba(245, 237, 255, ${a})`
-      ctx.beginPath()
-      ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2)
-      ctx.fill()
-    }
+    // серп-спрайт с прозрачным «укусом»: сквозь него видно настоящее
+    // небо с гало и звёздами, а не закрашенный круг
+    const sprite = getMoonSprite()
+    ctx.globalAlpha = 0.9 * moonA
+    ctx.drawImage(sprite, mx - 30, my - 30, 60, 60)
+    ctx.globalAlpha = 1
   }
 
   // облака дрейфуют по небу
