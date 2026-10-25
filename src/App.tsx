@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { getMood } from './game/engine'
@@ -34,8 +34,18 @@ function formatAge(ageMs: number): string {
   return `${Math.floor(hours / 24)} дн ${hours % 24} ч`
 }
 
+/** Dev-переключатель неба: авто = локальное время пользователя. */
+const SKY_MODES: { label: string; hour: number | null }[] = [
+  { label: 'авто', hour: null },
+  { label: '🌅 утро', hour: 6.5 },
+  { label: '☀️ день', hour: 13 },
+  { label: '🌆 вечер', hour: 19 },
+  { label: '🌙 ночь', hour: 23.5 },
+]
+
 export default function App() {
   const { pet, notice, feedPet, playPet, washPet, toggleSleep, advanceTime, reset } = usePet(config)
+  const [skyHour, setSkyHour] = useState<number | null>(null)
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
 
@@ -63,7 +73,7 @@ export default function App() {
       </header>
 
       <div className="scene-card">
-        <PetCanvas stage={pet.stage} mood={mood} eggProgress={eggProgress} />
+        <PetCanvas stage={pet.stage} mood={mood} eggProgress={eggProgress} skyHourOverride={skyHour} />
       </div>
       <div className="mood">{MOOD_TEXT[mood]}</div>
 
@@ -87,6 +97,16 @@ export default function App() {
           </button>
           <button type="button" onClick={() => advanceTime(24 * 60 * 60_000)}>
             +1 день
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const i = SKY_MODES.findIndex((m) => m.hour === skyHour)
+              const next = SKY_MODES[(i + 1) % SKY_MODES.length]!
+              setSkyHour(next.hour)
+            }}
+          >
+            Небо: {SKY_MODES.find((m) => m.hour === skyHour)?.label ?? 'авто'}
           </button>
           <button
             type="button"

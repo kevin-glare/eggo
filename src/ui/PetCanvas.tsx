@@ -11,12 +11,15 @@ import {
 } from './petArt'
 import { drawScene } from './scene'
 import { hapticTap } from '../telegram'
+import { sampleDayCycle } from './dayCycle'
 
 interface PetCanvasProps {
   stage: Stage
   mood: Mood
   /** 0..1 — насколько яйцо близко к вылуплению */
   eggProgress: number
+  /** dev: подменный час неба; null = локальное время пользователя */
+  skyHourOverride?: number | null
   onTap?: () => void
 }
 
@@ -47,10 +50,10 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export default function PetCanvas({ stage, mood, eggProgress, onTap }: PetCanvasProps) {
+export default function PetCanvas({ stage, mood, eggProgress, skyHourOverride, onTap }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ stage, mood, eggProgress })
-  propsRef.current = { stage, mood, eggProgress }
+  const propsRef = useRef({ stage, mood, eggProgress, skyHourOverride })
+  propsRef.current = { stage, mood, eggProgress, skyHourOverride }
   const visRef = useRef<PetVisualState>(createVisualState())
   const sceneRef = useRef({ energy: 0.7, warm: 0.9 })
   const particlesRef = useRef<Particle[]>([])
@@ -89,7 +92,7 @@ export default function PetCanvas({ stage, mood, eggProgress, onTap }: PetCanvas
     const frame = (now: number) => {
       const dt = Math.min(64, now - last)
       last = now
-      const { stage: st, mood: md, eggProgress: prog } = propsRef.current
+      const { stage: st, mood: md, eggProgress: prog, skyHourOverride: skyHour } = propsRef.current
 
       // яйцо качается тем сильнее, чем ближе вылупление
       if (st === 'egg') {
@@ -98,8 +101,13 @@ export default function PetCanvas({ stage, mood, eggProgress, onTap }: PetCanvas
         v.tilt = 0
       }
 
+      // небо: подменный час (dev) или локальное время пользователя
+      const d = new Date()
+      const hour = skyHour ?? d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600
+      const sky = sampleDayCycle(hour)
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now)
+      drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now, sky)
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
       drawPet(ctx, st, md, v, now, prog)
