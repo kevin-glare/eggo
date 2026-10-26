@@ -161,6 +161,15 @@ const GRASS = Array.from({ length: 16 }, (_, i) => ({
   light: i % 3 === 0,
 }))
 
+/** Блики на воде: чёрточки разной ширины, мерцают каждая в своём ритме. */
+const SEA_GLINTS = Array.from({ length: 9 }, () => ({
+  x: 0.06 + rand() * 0.88,
+  dy: 0.12 + rand() * 0.55,
+  w: 6 + rand() * 14,
+  ph: rand() * Math.PI * 2,
+  sp: 0.6 + rand() * 0.8,
+}))
+
 /** Луна живёт на своей орбите независимо от солнца. */
 const MOON_POS: readonly [number, number] = [0.74, 0.16]
 
@@ -283,31 +292,49 @@ export function drawScene(
     }
   }
 
-  // дальние и ближние холмы
-  ctx.fillStyle = rgba(sky.hillBack, 1)
+  // море: полоса от горизонта до начала луга; у горизонта светлее —
+  // отражает небо, ниже темнее и глубже
+  const seaTop = h * 0.6
+  const seaBot = h * 0.75
+  const seaGrad = ctx.createLinearGradient(0, seaTop, 0, seaBot)
+  seaGrad.addColorStop(0, rgba(lightenRGB(sky.hillBack, 0.3), 1))
+  seaGrad.addColorStop(1, rgba(sky.hillBack, 1))
+  ctx.fillStyle = seaGrad
+  ctx.fillRect(0, seaTop, w, seaBot - seaTop)
+  ctx.strokeStyle = rgba(sky.rim, Math.min(0.5, sky.rimAlpha + 0.15))
+  ctx.lineWidth = 1.5
   ctx.beginPath()
-  ctx.moveTo(0, h * 0.62)
-  ctx.bezierCurveTo(w * 0.3, h * 0.52, w * 0.7, h * 0.58, w, h * 0.55)
-  ctx.lineTo(w, h)
-  ctx.lineTo(0, h)
-  ctx.closePath()
-  ctx.fill()
+  ctx.moveTo(0, seaTop)
+  ctx.lineTo(w, seaTop)
+  ctx.stroke()
+  // солнечные блики на воде — мерцающие чёрточки у горизонта
+  const glintA = (0.15 + 0.35 * mood.energy) * (0.4 + 0.6 * sky.sun)
+  for (const s of SEA_GLINTS) {
+    const a = glintA * (0.4 + 0.6 * Math.sin((tMs / 900) * s.sp + s.ph))
+    ctx.strokeStyle = rgba(lightenRGB(sky.hillBack, 0.55), a)
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.moveTo(s.x * w - s.w / 2, seaTop + s.dy * (seaBot - seaTop))
+    ctx.lineTo(s.x * w + s.w / 2, seaTop + s.dy * (seaBot - seaTop))
+    ctx.stroke()
+  }
 
+  // луг — питомец стоит на нём
   ctx.fillStyle = rgba(sky.hillFront, 1)
   ctx.beginPath()
-  ctx.moveTo(0, h * 0.78)
-  ctx.bezierCurveTo(w * 0.25, h * 0.7, w * 0.6, h * 0.82, w, h * 0.74)
+  ctx.moveTo(0, h * 0.75)
+  ctx.bezierCurveTo(w * 0.25, h * 0.73, w * 0.6, h * 0.77, w, h * 0.74)
   ctx.lineTo(w, h)
   ctx.lineTo(0, h)
   ctx.closePath()
   ctx.fill()
 
-  // светящаяся кромка ближнего холма
+  // светящаяся кромка луга
   ctx.strokeStyle = rgba(sky.rim, sky.rimAlpha * (0.5 + 0.5 * mood.energy))
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(0, h * 0.78)
-  ctx.bezierCurveTo(w * 0.25, h * 0.7, w * 0.6, h * 0.82, w, h * 0.74)
+  ctx.moveTo(0, h * 0.75)
+  ctx.bezierCurveTo(w * 0.25, h * 0.73, w * 0.6, h * 0.77, w, h * 0.74)
   ctx.stroke()
 
   // полянка под лапами питомца: светлое пятно и качающиеся травинки;
