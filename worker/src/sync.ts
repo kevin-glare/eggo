@@ -16,12 +16,12 @@ export interface SyncDecision {
   fromClient: boolean
 }
 
-/** запасная внешность нужна deserialize для очень старых сейвов */
-const fallbackAppearance = rollAppearance(() => 0)
+/** запасная внешность для очень старых сейвов — общая для воркера */
+export const FALLBACK_APPEARANCE = rollAppearance(() => 0)
 
 function readSave(raw: string | null): { lastTickAt: number; stage: PetState['stage'] } | null {
   if (!raw) return null
-  const pet = deserialize(raw, fallbackAppearance)
+  const pet = deserialize(raw, FALLBACK_APPEARANCE)
   if (!pet) return null
   return { lastTickAt: pet.lastTickAt, stage: pet.stage }
 }

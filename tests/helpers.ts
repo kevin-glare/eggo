@@ -25,3 +25,26 @@ export function makePet(
 export function hatchedPet(config: GameConfig, overrides: Partial<PetState> = {}, stats: Partial<Stats> = {}): PetState {
   return makePet(config, { stage: 'baby', ageMs: config.evolution.eggMs, ...overrides }, stats)
 }
+
+const enc = new TextEncoder()
+
+function toHex(buf: ArrayBuffer): string {
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/** Подписать initData так же, как это делает Telegram — для тестов воркера. */
+export async function signInitData(params: Record<string, string>, botToken: string): Promise<string> {
+  const dataCheckString = Object.entries(params)
+    .filter(([key]) => key !== 'hash')
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n')
+  const hmac = async (key: string | ArrayBuffer, message: string): Promise<ArrayBuffer> => {
+    const raw = typeof key === 'string' ? enc.encode(key) : key
+    const cryptoKey = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    return crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message))
+  }
+  const secret = await hmac('WebAppData', botToken)
+  const hash = toHex(await hmac(secret, dataCheckString))
+  return new URLSearchParams({ ...params, hash }).toString()
+}

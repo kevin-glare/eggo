@@ -299,9 +299,7 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-}
-
-.actions button {
+}.actions button {
   background: var(--card);
   color: var(--ink);
   border: 1px solid var(--stroke);
@@ -334,6 +332,30 @@ body {
 
 .actions button:disabled {
   opacity: 0.35;
+  cursor: default;
+}
+
+/* Подписка на пуши бота */
+.notify-toggle {
+  margin-top: 4px;
+  padding: 8px 16px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.notify-toggle:not(:disabled):hover {
+  border-color: rgba(255, 179, 92, 0.45);
+}
+
+.notify-toggle:disabled {
+  opacity: 0.55;
   cursor: default;
 }
 

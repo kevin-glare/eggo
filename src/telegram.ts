@@ -143,3 +143,36 @@ export const petStore = {
   legacyCloudLoad: legacyCloudLoadRaw,
   serverSync: serverSyncRaw,
 } as const
+
+/** Состояние пушей: 'on' | 'off'; null — не в Telegram или сеть подвела. */
+export async function fetchNotifyState(): Promise<'on' | 'off' | null> {
+  const initData = tg()?.initData
+  if (!initData) return null
+  try {
+    const response = await fetch(`${API_URL}/notify?initData=${encodeURIComponent(initData)}`)
+    if (!response.ok) return null
+    const data = JSON.parse(await response.text()) as { enabled?: unknown }
+    return data.enabled === true ? 'on' : 'off'
+  } catch {
+    return null
+  }
+}
+
+/** Включить/выключить пуши. 'blocked' — юзер не стартовал бота или заблокировал его. */
+export async function setNotifyEnabled(enabled: boolean): Promise<'ok' | 'blocked' | 'error'> {
+  const initData = tg()?.initData
+  if (!initData) return 'error'
+  try {
+    const response = await fetch(`${API_URL}/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData, enabled }),
+    })
+    if (!response.ok) return 'error'
+    const data = JSON.parse(await response.text()) as { ok?: unknown; error?: unknown }
+    if (data.ok === true) return 'ok'
+    return data.error === 'blocked' ? 'blocked' : 'error'
+  } catch {
+    return 'error'
+  }
+}

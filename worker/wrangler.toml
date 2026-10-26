@@ -15,4 +15,8 @@ database_id = "TODO-ВПИШИТЕ-ID-ПОСЛЕ-wrangler-d1-create"
 # ALLOWED_ORIGIN = "https://kevinglare.github.io"
 ALLOWED_ORIGIN = "*"
 
+# Крон пушей: раз в полчаса проверяем подписчиков
+[triggers]
+crons = ["*/30 * * * *"]
+
 # BOT_TOKEN задаётся секретом, не здесь: npx wrangler secret put BOT_TOKEN

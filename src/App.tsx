@@ -7,6 +7,7 @@ import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import PetCanvas from './ui/PetCanvas'
 import StatsBar from './ui/StatsBar'
+import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
 import './ui/app.css'
 
@@ -48,6 +49,7 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 
 export default function App() {
   const { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
+  const notifications = useNotifications()
   const [skyHour, setSkyHour] = useState<number | null>(null)
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
@@ -96,10 +98,18 @@ export default function App() {
             onWash={washPet}
             onToggleSleep={toggleSleep}
           />
+
+          {notifications.supported && (
+            <button type="button" className="notify-toggle" onClick={notifications.toggle} disabled={notifications.busy}>
+              {notifications.enabled ? '🔔 Уведомления: вкл' : '🔕 Уведомления: выкл'}
+            </button>
+          )}
         </>
       )}
 
-      {notice && <div className="toast">{notice}</div>}
+      {(notice ?? notifications.notice) && (
+        <div className="toast">{notice ?? notifications.notice}</div>
+      )}
 
       {import.meta.env.DEV && (
         <div className="devtools">
