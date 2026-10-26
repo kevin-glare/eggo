@@ -22,8 +22,8 @@ export interface GameConfig {
   /** пороги настроения по среднему стату */
   happyThreshold: number
   contentThreshold: number
-  /** длительности стадий (игровое время); яйцо — 5 реальных секунд */
-  evolution: { eggMs: number; babyMs: number }
+  /** длительности стадий (игровое время); яйцо — 5 реальных секунд, взрослый — навсегда */
+  evolution: { eggMs: number; babyMs: number; childMs: number; teenMs: number }
   /** сила действий */
   actions: {
     feed: { fullness: number }
@@ -55,7 +55,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   healAvgThreshold: 60,
   happyThreshold: 75,
   contentThreshold: 45,
-  evolution: { eggMs: 5_000, babyMs: 3 * DAY },
+  evolution: { eggMs: 5_000, babyMs: 36 * HOUR, childMs: 72 * HOUR, teenMs: 96 * HOUR },
   actions: {
     feed: { fullness: 30 },
     play: { happiness: 25, energy: 15 },

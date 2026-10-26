@@ -1,6 +1,6 @@
 import type { PetAppearance } from './appearance'
 
-export type Stage = 'egg' | 'baby' | 'adult'
+export type Stage = 'egg' | 'baby' | 'child' | 'teen' | 'adult'
 
 export type Mood = 'happy' | 'content' | 'sad' | 'sick' | 'sleeping'
 

@@ -30,8 +30,11 @@ export function averageStats(state: PetState): number {
 }
 
 function stageForAge(ageMs: number, config: GameConfig): Stage {
-  if (ageMs < config.evolution.eggMs) return 'egg'
-  if (ageMs < config.evolution.eggMs + config.evolution.babyMs) return 'baby'
+  const { eggMs, babyMs, childMs, teenMs } = config.evolution
+  if (ageMs < eggMs) return 'egg'
+  if (ageMs < eggMs + babyMs) return 'baby'
+  if (ageMs < eggMs + babyMs + childMs) return 'child'
+  if (ageMs < eggMs + babyMs + childMs + teenMs) return 'teen'
   return 'adult'
 }
 

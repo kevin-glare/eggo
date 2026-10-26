@@ -16,6 +16,8 @@ const config: GameConfig = import.meta.env.DEV ? DEV_CONFIG : DEFAULT_CONFIG
 const STAGE_TITLE: Record<Stage, string> = {
   egg: '🥚 Яйцо',
   baby: '🐣 Малыш',
+  child: '🐤 Ребёнок',
+  teen: '🐓 Подросток',
   adult: '🐥 Взрослый',
 }
 

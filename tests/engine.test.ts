@@ -71,10 +71,31 @@ describe('tick — эволюция', () => {
     expect(next.stage).toBe('baby')
   })
 
-  it('малыш становится взрослым после eggMs + babyMs', () => {
+  it('малыш становится ребёнком после eggMs + babyMs', () => {
     const pet = makePet(DEFAULT_CONFIG)
     const next = tick(pet, DEFAULT_CONFIG.evolution.eggMs + DEFAULT_CONFIG.evolution.babyMs, DEFAULT_CONFIG)
+    expect(next.stage).toBe('child')
+  })
+
+  it('ребёнок становится подростком после eggMs + babyMs + childMs', () => {
+    const pet = makePet(DEFAULT_CONFIG)
+    const { eggMs, babyMs, childMs } = DEFAULT_CONFIG.evolution
+    const next = tick(pet, eggMs + babyMs + childMs, DEFAULT_CONFIG)
+    expect(next.stage).toBe('teen')
+  })
+
+  it('подросток становится взрослым после всех стадий детства', () => {
+    const pet = makePet(DEFAULT_CONFIG)
+    const { eggMs, babyMs, childMs, teenMs } = DEFAULT_CONFIG.evolution
+    const next = tick(pet, eggMs + babyMs + childMs + teenMs, DEFAULT_CONFIG)
     expect(next.stage).toBe('adult')
+  })
+
+  it('за минуту до порога стадия ещё прежняя', () => {
+    const pet = makePet(DEFAULT_CONFIG)
+    const { eggMs, babyMs } = DEFAULT_CONFIG.evolution
+    const next = tick(pet, eggMs + babyMs - MINUTE, DEFAULT_CONFIG)
+    expect(next.stage).toBe('baby')
   })
 
   it('возраст накапливается', () => {
