@@ -1,0 +1,18 @@
+name = "eggo-api"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+migrations_dir = "migrations"
+
+# После `npx wrangler d1 create eggo` впишите сюда выданный database_id
+# (локальный `npm run worker:dev` работает и с заглушкой)
+[[d1_databases]]
+binding = "DB"
+database_name = "eggo"
+database_id = "TODO-ВПИШИТЕ-ID-ПОСЛЕ-wrangler-d1-create"
+
+[vars]
+# После деплоя фронта сузьте до адреса мини-аппа, например
+# ALLOWED_ORIGIN = "https://kevinglare.github.io"
+ALLOWED_ORIGIN = "*"
+
+# BOT_TOKEN задаётся секретом, не здесь: npx wrangler secret put BOT_TOKEN

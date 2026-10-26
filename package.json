@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml",
+    "worker:migrate:local": "wrangler d1 migrations apply eggo --local --config worker/wrangler.toml",
+    "worker:migrate": "wrangler d1 migrations apply eggo --remote --config worker/wrangler.toml"
   },
   "dependencies": {
     "gsap": "^3.15.0",
@@ -21,6 +24,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.153.0"
   }
 }
