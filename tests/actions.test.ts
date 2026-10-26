@@ -29,6 +29,14 @@ describe('feed', () => {
     expect(result.ok).toBe(false)
     expect(result.reason).toBe('sleeping')
   })
+
+  it('отклоняется при полной сытости', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { fullness: 100 })
+    const result = feed(pet, DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('already-full')
+    expect(result.state).toEqual(pet)
+  })
 })
 
 describe('play', () => {
@@ -47,6 +55,22 @@ describe('play', () => {
     expect(result.reason).toBe('too-tired')
     expect(result.state).toEqual(pet)
   })
+
+  it('не тратит энергию, когда счастье уже полное', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 100, energy: 80 })
+    const result = play(pet, DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('already-happy')
+    expect(result.state).toEqual(pet)
+  })
+
+  it('частичная выгода допустима: почти полное счастье добивается до 100', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 90, energy: 80 })
+    const result = play(pet, DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state.stats.happiness).toBe(100)
+    expect(result.state.stats.energy).toBe(80 - DEFAULT_CONFIG.actions.play.energy)
+  })
 })
 
 describe('wash', () => {
@@ -55,6 +79,14 @@ describe('wash', () => {
     const result = wash(pet, DEFAULT_CONFIG)
     expect(result.ok).toBe(true)
     expect(result.state.stats.cleanliness).toBe(70)
+  })
+
+  it('отклоняется при полной чистоте', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { cleanliness: 100 })
+    const result = wash(pet, DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('already-clean')
+    expect(result.state).toEqual(pet)
   })
 })
 

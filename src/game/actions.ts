@@ -1,7 +1,15 @@
 import type { GameConfig } from './config'
 import type { PetState } from './types'
 
-export type ActionReason = 'not-hatched' | 'sleeping' | 'too-tired' | 'already-named' | 'invalid-name'
+export type ActionReason =
+  | 'not-hatched'
+  | 'sleeping'
+  | 'too-tired'
+  | 'already-full'
+  | 'already-happy'
+  | 'already-clean'
+  | 'already-named'
+  | 'invalid-name'
 
 export interface ActionResult {
   state: PetState
@@ -31,6 +39,7 @@ function guardAwake(state: PetState): ActionResult | null {
 export function feed(state: PetState, config: GameConfig): ActionResult {
   const blocked = guardAwake(state)
   if (blocked) return blocked
+  if (state.stats.fullness >= 100) return fail(state, 'already-full')
   return ok({
     ...state,
     stats: {
@@ -43,6 +52,7 @@ export function feed(state: PetState, config: GameConfig): ActionResult {
 export function play(state: PetState, config: GameConfig): ActionResult {
   const blocked = guardAwake(state)
   if (blocked) return blocked
+  if (state.stats.happiness >= 100) return fail(state, 'already-happy')
   if (state.stats.energy < config.actions.play.energy) return fail(state, 'too-tired')
   return ok({
     ...state,
@@ -57,6 +67,7 @@ export function play(state: PetState, config: GameConfig): ActionResult {
 export function wash(state: PetState, config: GameConfig): ActionResult {
   const blocked = guardAwake(state)
   if (blocked) return blocked
+  if (state.stats.cleanliness >= 100) return fail(state, 'already-clean')
   return ok({
     ...state,
     stats: {
