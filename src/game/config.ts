@@ -38,6 +38,15 @@ export interface GameConfig {
   catchUpChunkMs: number
   /** предел длины имени питомца (после обрезки пробелов) */
   nameMaxLength: number
+  /** пуши от бота: пороги и кулдауны (логика — game/notifications.ts) */
+  notifications: {
+    /** «в беде»: пауза между повторными пушами */
+    criticalCooldownMs: number
+    /** «скучаем»: после сколького отсутствия напомнить о себе */
+    missYouAfterMs: number
+    /** «скучаем»: пауза между повторами */
+    missYouCooldownMs: number
+  }
 }
 
 export const MINUTE = 60_000
@@ -65,6 +74,11 @@ export const DEFAULT_CONFIG: GameConfig = {
   maxOfflineMs: 7 * DAY,
   catchUpChunkMs: HOUR,
   nameMaxLength: 16,
+  notifications: {
+    criticalCooldownMs: 6 * HOUR,
+    missYouAfterMs: 24 * HOUR,
+    missYouCooldownMs: 24 * HOUR,
+  },
 }
 
 /** Дев-режим: время ×60 — эволюцию видно за минуты. */
