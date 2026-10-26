@@ -50,9 +50,9 @@ const CLOUD_SPRITE_COUNT = 4
  * буграми, притемнённое основание и подсвеченная макушка.
  * Спрайт белый — цвет даёт тонировка палитрой суток при отрисовке.
  */
-function buildCloudSprite(seed: number): HTMLCanvasElement {
-  const W = 260
-  const H = 130
+function buildCloudSprite(seed: number, far = false): HTMLCanvasElement {
+  const W = far ? 170 : 260
+  const H = far ? 85 : 130
   const c = document.createElement('canvas')
   c.width = W
   c.height = H
@@ -62,7 +62,8 @@ function buildCloudSprite(seed: number): HTMLCanvasElement {
 
   const baseY = H * 0.78
   // купола вдоль основания: в центре крупнее, к краям меньше
-  const count = 4 + Math.floor(rnd() * 2)
+  // дальним хватает трёх куполов — силуэт проще и чище на малом размере
+  const count = far ? 3 : 4 + Math.floor(rnd() * 2)
   const domes: { x: number; y: number; r: number }[] = []
   for (let i = 0; i < count; i++) {
     const t = count === 1 ? 0.5 : i / (count - 1)
@@ -73,7 +74,7 @@ function buildCloudSprite(seed: number): HTMLCanvasElement {
   }
   // бугры на макушке сидят на центральных куполах
   const bumps: { x: number; y: number; r: number }[] = []
-  const bumpCount = 2 + Math.floor(rnd() * 2)
+  const bumpCount = far ? 1 : 2 + Math.floor(rnd() * 2)
   for (let i = 0; i < bumpCount; i++) {
     const anchor = domes[1 + Math.floor(rnd() * Math.max(1, count - 2))]!
     const r = anchor.r * (0.45 + rnd() * 0.3)
@@ -91,20 +92,22 @@ function buildCloudSprite(seed: number): HTMLCanvasElement {
   g.ellipse(W / 2, baseY, W * 0.36, H * 0.13, 0, 0, Math.PI * 2)
   g.fill()
 
-  // объём — только внутри силуэта
+  // объём — только внутри силуэта; дальним хватает лёгкой подсветки и тени
   g.globalCompositeOperation = 'source-atop'
-  // тень в прогибах под буграми макушки
-  for (const b of bumps) {
-    const sh = g.createRadialGradient(b.x, b.y + b.r * 0.9, b.r * 0.15, b.x, b.y + b.r * 0.9, b.r * 1.15)
-    sh.addColorStop(0, 'rgba(148, 162, 190, 0.4)')
-    sh.addColorStop(1, 'rgba(148, 162, 190, 0)')
-    g.fillStyle = sh
-    g.fillRect(b.x - b.r * 1.2, b.y - b.r * 0.3, b.r * 2.4, b.r * 2.4)
+  if (!far) {
+    // тень в прогибах под буграми макушки
+    for (const b of bumps) {
+      const sh = g.createRadialGradient(b.x, b.y + b.r * 0.9, b.r * 0.15, b.x, b.y + b.r * 0.9, b.r * 1.15)
+      sh.addColorStop(0, 'rgba(148, 162, 190, 0.4)')
+      sh.addColorStop(1, 'rgba(148, 162, 190, 0)')
+      g.fillStyle = sh
+      g.fillRect(b.x - b.r * 1.2, b.y - b.r * 0.3, b.r * 2.4, b.r * 2.4)
+    }
   }
   // притемнённое основание всей тучи
   const shade = g.createLinearGradient(0, H * 0.4, 0, H)
   shade.addColorStop(0, 'rgba(148, 162, 190, 0)')
-  shade.addColorStop(1, 'rgba(148, 162, 190, 0.5)')
+  shade.addColorStop(1, `rgba(148, 162, 190, ${far ? 0.3 : 0.5})`)
   g.fillStyle = shade
   g.fillRect(0, 0, W, H)
   // подсвеченная макушка
@@ -117,9 +120,12 @@ function buildCloudSprite(seed: number): HTMLCanvasElement {
   return c
 }
 
-const cloudSprites: HTMLCanvasElement[] = Array.from({ length: CLOUD_SPRITE_COUNT }, (_, i) =>
-  buildCloudSprite(9001 + i * 137),
-)
+const FAR_SPRITE_INDEX = CLOUD_SPRITE_COUNT
+
+const cloudSprites: HTMLCanvasElement[] = [
+  ...Array.from({ length: CLOUD_SPRITE_COUNT }, (_, i) => buildCloudSprite(9001 + i * 137)),
+  buildCloudSprite(7777, true),
+]
 
 /** Общий буфер тонировки: multiply-цвет, затем форма вырезается обратно по альфе. */
 let cloudTintCanvas: HTMLCanvasElement | null = null
@@ -156,16 +162,16 @@ function drawTintedCloud(
   ctx.globalAlpha = 1
 }
 
-const CLOUDS = Array.from({ length: 3 }, (_, i) => {
-  // два плана: дальние — выше, меньше и медленнее, ближние — крупные
+const CLOUDS = Array.from({ length: 4 }, (_, i) => {
+  // два плана: дальние — выше и заметно меньше, ближние — крупные
   const far = i % 2 === 0
   return {
     x0: rand(),
-    y: far ? 0.08 + rand() * 0.1 : 0.18 + rand() * 0.18,
-    scale: far ? 0.5 + rand() * 0.25 : 0.8 + rand() * 0.35,
+    y: far ? 0.07 + rand() * 0.08 : 0.18 + rand() * 0.18,
+    scale: far ? 0.75 + rand() * 0.2 : 0.8 + rand() * 0.35,
     speed: far ? 0.003 + rand() * 0.003 : 0.006 + rand() * 0.005,
-    sprite: i % CLOUD_SPRITE_COUNT,
-    alpha: far ? 0.6 : 0.95,
+    sprite: far ? FAR_SPRITE_INDEX : i % CLOUD_SPRITE_COUNT,
+    alpha: far ? 0.8 : 0.95,
   }
 })
 
