@@ -34,7 +34,7 @@ describe('sampleDayCycle — непрерывный цикл суток', () => 
   it('все цвета в допустимых пределах в течение суток', () => {
     for (let h = 0; h <= 24; h += 0.5) {
       const p = sampleDayCycle(h)
-      const colors = [p.skyTop, p.skyMid, p.skyBot, p.hillBack, p.hillFront, p.sunColor, p.cloudColor, p.rim]
+      const colors = [p.skyTop, p.skyMid, p.skyBot, p.sea, p.meadow, p.sunColor, p.cloudColor, p.rim]
       for (const c of colors) {
         for (const channel of c) {
           expect(channel).toBeGreaterThanOrEqual(0)

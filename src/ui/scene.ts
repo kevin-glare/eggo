@@ -297,8 +297,8 @@ export function drawScene(
   const seaTop = h * 0.6
   const seaBot = h * 0.75
   const seaGrad = ctx.createLinearGradient(0, seaTop, 0, seaBot)
-  seaGrad.addColorStop(0, rgba(lightenRGB(sky.hillBack, 0.3), 1))
-  seaGrad.addColorStop(1, rgba(sky.hillBack, 1))
+  seaGrad.addColorStop(0, rgba(lightenRGB(sky.sea, 0.3), 1))
+  seaGrad.addColorStop(1, rgba(sky.sea, 1))
   ctx.fillStyle = seaGrad
   ctx.fillRect(0, seaTop, w, seaBot - seaTop)
   ctx.strokeStyle = rgba(sky.rim, Math.min(0.5, sky.rimAlpha + 0.15))
@@ -311,7 +311,7 @@ export function drawScene(
   const glintA = (0.15 + 0.35 * mood.energy) * (0.4 + 0.6 * sky.sun)
   for (const s of SEA_GLINTS) {
     const a = glintA * (0.4 + 0.6 * Math.sin((tMs / 900) * s.sp + s.ph))
-    ctx.strokeStyle = rgba(lightenRGB(sky.hillBack, 0.55), a)
+    ctx.strokeStyle = rgba(lightenRGB(sky.sea, 0.55), a)
     ctx.lineWidth = 1.5
     ctx.beginPath()
     ctx.moveTo(s.x * w - s.w / 2, seaTop + s.dy * (seaBot - seaTop))
@@ -320,7 +320,7 @@ export function drawScene(
   }
 
   // луг — питомец стоит на нём
-  ctx.fillStyle = rgba(sky.hillFront, 1)
+  ctx.fillStyle = rgba(sky.meadow, 1)
   ctx.beginPath()
   ctx.moveTo(0, h * 0.75)
   ctx.bezierCurveTo(w * 0.25, h * 0.73, w * 0.6, h * 0.77, w, h * 0.74)
@@ -341,7 +341,7 @@ export function drawScene(
   // питомец рисуется позже и стоит в центре, травинки торчат по бокам лап
   const gx = w / 2
   const gy = GROUND_Y + 8
-  ctx.fillStyle = rgba(lightenRGB(sky.hillFront, 0.16), 0.45)
+  ctx.fillStyle = rgba(lightenRGB(sky.meadow, 0.16), 0.45)
   ctx.beginPath()
   ctx.ellipse(gx, gy, 92, 13, 0, 0, Math.PI * 2)
   ctx.fill()
@@ -350,7 +350,7 @@ export function drawScene(
   for (const b of GRASS) {
     const bx = gx + b.dx * b.side
     const sway = Math.sin((tMs / 1000) * b.sp + b.ph) * 2.2
-    ctx.strokeStyle = rgba(lightenRGB(sky.hillFront, b.light ? 0.3 : 0.13), 0.9)
+    ctx.strokeStyle = rgba(lightenRGB(sky.meadow, b.light ? 0.3 : 0.13), 0.9)
     ctx.beginPath()
     ctx.moveTo(bx, gy + 2)
     ctx.quadraticCurveTo(bx + b.lean * 2.5, gy - b.h * 0.5, bx + b.lean * 5 + sway, gy - b.h)

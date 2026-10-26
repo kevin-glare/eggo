@@ -10,8 +10,8 @@ export interface DayPalette {
   skyTop: RGB
   skyMid: RGB
   skyBot: RGB
-  hillBack: RGB
-  hillFront: RGB
+  sea: RGB
+  meadow: RGB
   rim: RGB
   rimAlpha: number
   /** тёплая полоса у горизонта */
@@ -38,8 +38,8 @@ const NIGHT: Omit<Anchor, 'hour'> = {
   skyTop: [20, 16, 42],
   skyMid: [37, 27, 71],
   skyBot: [58, 42, 94],
-  hillBack: [29, 21, 64],
-  hillFront: [36, 26, 74],
+  sea: [32, 46, 86],
+  meadow: [32, 56, 46],
   rim: [255, 214, 120],
   rimAlpha: 0.12,
   warm: 0.06,
@@ -64,8 +64,8 @@ const ANCHORS: Anchor[] = [
     skyTop: [85, 96, 176],
     skyMid: [199, 127, 157],
     skyBot: [255, 207, 150],
-    hillBack: [70, 65, 126],
-    hillFront: [90, 84, 144],
+    sea: [70, 112, 152],
+    meadow: [74, 112, 72],
     rim: [255, 217, 160],
     rimAlpha: 0.35,
     warm: 0.35,
@@ -86,8 +86,8 @@ const ANCHORS: Anchor[] = [
     skyTop: [111, 143, 232],
     skyMid: [157, 184, 242],
     skyBot: [201, 217, 245],
-    hillBack: [86, 116, 158],
-    hillFront: [107, 136, 171],
+    sea: [58, 124, 198],
+    meadow: [88, 168, 92],
     rim: [255, 255, 255],
     rimAlpha: 0.4,
     warm: 0,
@@ -108,8 +108,8 @@ const ANCHORS: Anchor[] = [
     skyTop: [111, 143, 232],
     skyMid: [157, 184, 242],
     skyBot: [201, 217, 245],
-    hillBack: [86, 116, 158],
-    hillFront: [107, 136, 171],
+    sea: [58, 124, 198],
+    meadow: [88, 168, 92],
     rim: [255, 255, 255],
     rimAlpha: 0.4,
     warm: 0,
@@ -130,8 +130,8 @@ const ANCHORS: Anchor[] = [
     skyTop: [61, 47, 110],
     skyMid: [176, 86, 124],
     skyBot: [255, 157, 92],
-    hillBack: [47, 40, 88],
-    hillFront: [64, 58, 107],
+    sea: [72, 92, 148],
+    meadow: [70, 120, 68],
     rim: [255, 179, 106],
     rimAlpha: 0.3,
     warm: 0.5,
@@ -152,8 +152,8 @@ const ANCHORS: Anchor[] = [
     skyTop: [30, 22, 60],
     skyMid: [56, 40, 96],
     skyBot: [84, 58, 116],
-    hillBack: [29, 21, 64],
-    hillFront: [36, 26, 74],
+    sea: [32, 46, 86],
+    meadow: [32, 56, 46],
     rim: [255, 214, 120],
     rimAlpha: 0.15,
     warm: 0.15,
@@ -184,8 +184,8 @@ function mix(a: Anchor, b: Anchor, t: number): DayPalette {
     skyTop: lerpRGB(a.skyTop, b.skyTop, t),
     skyMid: lerpRGB(a.skyMid, b.skyMid, t),
     skyBot: lerpRGB(a.skyBot, b.skyBot, t),
-    hillBack: lerpRGB(a.hillBack, b.hillBack, t),
-    hillFront: lerpRGB(a.hillFront, b.hillFront, t),
+    sea: lerpRGB(a.sea, b.sea, t),
+    meadow: lerpRGB(a.meadow, b.meadow, t),
     rim: lerpRGB(a.rim, b.rim, t),
     rimAlpha: lerp(a.rimAlpha, b.rimAlpha, t),
     warm: lerp(a.warm, b.warm, t),
