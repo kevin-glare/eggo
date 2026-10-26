@@ -45,14 +45,15 @@ const FIREFLIES = Array.from({ length: 9 }, () => ({
 const CLOUD_SPRITE_COUNT = 4
 
 /**
- * Кучевое облако: плотный силуэт из сплошных кругов-«бугров» с общим
- * плоским основанием, а объём — внутри силуэта: тень в прогибах между
- * буграми, притемнённое основание и подсвеченная макушка.
- * Спрайт белый — цвет даёт тонировка палитрой суток при отрисовке.
+ * Облако — цепочка перекрывающихся куполов: в середине крупнее, к краям
+ * меньше, снизу общее плоское основание. Верх — «гребёнка» из дуг,
+ * классический узнаваемый силуэт без одиноких пиков. Объём — тень
+ * основания и подсветка макушки внутри силуэта. Спрайт белый,
+ * цвет даёт тонировка палитрой суток при отрисовке.
  */
 function buildCloudSprite(seed: number, far = false): HTMLCanvasElement {
-  const W = far ? 170 : 260
-  const H = far ? 85 : 130
+  const W = far ? 190 : 300
+  const H = far ? 70 : 100
   const c = document.createElement('canvas')
   c.width = W
   c.height = H
@@ -60,51 +61,24 @@ function buildCloudSprite(seed: number, far = false): HTMLCanvasElement {
   if (!g) return c
   const rnd = mulberry32(seed)
 
-  const baseY = H * 0.78
-  // купола вдоль основания: в центре крупнее, к краям меньше
-  // дальним хватает трёх куполов — силуэт проще и чище на малом размере
-  const count = far ? 3 : 4 + Math.floor(rnd() * 2)
-  const domes: { x: number; y: number; r: number }[] = []
+  const baseY = H * 0.8
+  const count = far ? 4 : 5 + Math.floor(rnd() * 2)
+  g.fillStyle = '#ffffff'
   for (let i = 0; i < count; i++) {
     const t = count === 1 ? 0.5 : i / (count - 1)
-    const edge = Math.abs(t - 0.5) * 2 // 0 в центре, 1 на краях
-    const r = H * (0.3 - 0.1 * edge + rnd() * 0.05)
-    const x = W * 0.16 + W * 0.68 * t + (rnd() - 0.5) * W * 0.05
-    domes.push({ x, y: baseY - r * 0.75, r })
-  }
-  // бугры на макушке сидят на центральных куполах
-  const bumps: { x: number; y: number; r: number }[] = []
-  const bumpCount = far ? 1 : 2 + Math.floor(rnd() * 2)
-  for (let i = 0; i < bumpCount; i++) {
-    const anchor = domes[1 + Math.floor(rnd() * Math.max(1, count - 2))]!
-    const r = anchor.r * (0.45 + rnd() * 0.3)
-    bumps.push({ x: anchor.x + (rnd() - 0.5) * anchor.r * 1.4, y: anchor.y - anchor.r * 0.75 - r * 0.25, r })
-  }
-
-  // цельный силуэт: купола + бугры + плоское основание
-  g.fillStyle = '#ffffff'
-  for (const d of [...domes, ...bumps]) {
+    const edge = Math.abs(t - 0.5) * 2
+    const r = H * (0.5 - 0.26 * edge * edge) * (0.92 + rnd() * 0.16)
+    const x = W * 0.15 + W * 0.7 * t + (rnd() - 0.5) * W * 0.03
     g.beginPath()
-    g.arc(d.x, d.y, d.r, 0, Math.PI * 2)
+    g.arc(x, baseY - r * 0.55 - rnd() * H * 0.03, r, 0, Math.PI * 2)
     g.fill()
   }
   g.beginPath()
-  g.ellipse(W / 2, baseY, W * 0.36, H * 0.13, 0, 0, Math.PI * 2)
+  g.ellipse(W / 2, baseY, W * 0.4, H * 0.12, 0, 0, Math.PI * 2)
   g.fill()
 
   // объём — только внутри силуэта; дальним хватает лёгкой подсветки и тени
   g.globalCompositeOperation = 'source-atop'
-  if (!far) {
-    // тень в прогибах под буграми макушки
-    for (const b of bumps) {
-      const sh = g.createRadialGradient(b.x, b.y + b.r * 0.9, b.r * 0.15, b.x, b.y + b.r * 0.9, b.r * 1.15)
-      sh.addColorStop(0, 'rgba(148, 162, 190, 0.4)')
-      sh.addColorStop(1, 'rgba(148, 162, 190, 0)')
-      g.fillStyle = sh
-      g.fillRect(b.x - b.r * 1.2, b.y - b.r * 0.3, b.r * 2.4, b.r * 2.4)
-    }
-  }
-  // притемнённое основание всей тучи
   const shade = g.createLinearGradient(0, H * 0.4, 0, H)
   shade.addColorStop(0, 'rgba(148, 162, 190, 0)')
   shade.addColorStop(1, `rgba(148, 162, 190, ${far ? 0.3 : 0.5})`)
@@ -168,7 +142,7 @@ const CLOUDS = Array.from({ length: 4 }, (_, i) => {
   return {
     x0: rand(),
     y: far ? 0.07 + rand() * 0.08 : 0.18 + rand() * 0.18,
-    scale: far ? 0.75 + rand() * 0.2 : 0.8 + rand() * 0.35,
+    scale: far ? 0.75 + rand() * 0.2 : 0.65 + rand() * 0.3,
     speed: far ? 0.003 + rand() * 0.003 : 0.006 + rand() * 0.005,
     sprite: far ? FAR_SPRITE_INDEX : i % CLOUD_SPRITE_COUNT,
     alpha: far ? 0.8 : 0.95,
