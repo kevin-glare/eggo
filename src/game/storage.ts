@@ -64,3 +64,15 @@ export function catchUp(state: PetState, nowMs: number, config: GameConfig): Pet
   }
   return { ...next, lastTickAt: nowMs }
 }
+
+/**
+ * Слияние локального и удалённого (сервер/облако) сейва: у кого lastTickAt
+ * новее (позже сохранялся), тот и главный. Досчёт времени делает catchUp.
+ * Битый и несовместимый удалённый сейв игнорируется.
+ */
+export function mergeRemoteSave(remoteRaw: string | null, local: PetState): PetState {
+  if (!remoteRaw) return local
+  const remote = deserialize(remoteRaw, local.appearance)
+  if (!remote || remote.lastTickAt <= local.lastTickAt) return local
+  return remote
+}

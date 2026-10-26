@@ -3,9 +3,9 @@ import { rollAppearance } from '../game/appearance'
 import { feed, namePet, play, startSleep, wake, wash, type ActionReason, type ActionResult } from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
-import { catchUp, deserialize, serialize } from '../game/storage'
+import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
-import { hapticSuccess, hapticWarning, initTelegram, mergeCloudSave, petStore } from '../telegram'
+import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
 
 const REASON_TEXT: Record<ActionReason, string> = {
   'not-hatched': '🥚 Питомец ещё не вылупился',
@@ -18,8 +18,8 @@ const REASON_TEXT: Record<ActionReason, string> = {
   'invalid-name': '✏️ От 1 до 16 символов',
 }
 
-/** Как часто пишем сейв в облако Telegram (локально — при каждом изменении). */
-const CLOUD_SAVE_INTERVAL_MS = 10_000
+/** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
+const SERVER_SYNC_INTERVAL_MS = 10_000
 
 function initialPet(config: GameConfig): PetState {
   // случайность живёт здесь, в UI-слое: game остаётся чистой
@@ -30,7 +30,7 @@ function initialPet(config: GameConfig): PetState {
 }
 
 /**
- * Жизненный цикл питомца в React: сейв (локально + облако Telegram),
+ * Жизненный цикл питомца в React: сейв (локально + сервер),
  * тик раз в секунду, действия с обратной связью и хаптикой.
  */
 export function usePet(config: GameConfig) {
@@ -39,16 +39,23 @@ export function usePet(config: GameConfig) {
   const petRef = useRef(pet)
   petRef.current = pet
   const prevStageRef = useRef(pet.stage)
-  const lastCloudSaveRef = useRef(0)
+  const lastSyncRef = useRef(0)
 
-  // старт: Telegram-инициализация + подтягивание облачного сейва, если он новее
+  // старт: Telegram-инициализация, разовая миграция старого облака Telegram
+  // и сервер-синк. Сравнение сейвов честное — по lastTickAt до досчёта времени
   useEffect(() => {
     initTelegram()
     let cancelled = false
-    void petStore.cloudLoad().then((cloudRaw) => {
-      if (cancelled) return
-      setPet((p) => mergeCloudSave(cloudRaw, p, config))
-    })
+    void (async () => {
+      const local = petRef.current
+      let best = local
+      const legacyRaw = await petStore.legacyCloudLoad()
+      if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best)
+      const response = await petStore.serverSync(serialize(best))
+      if (response !== null) best = mergeRemoteSave(response.save, best)
+      // победил чужой сейв — применяем его и досчитываем время отсутствия
+      if (!cancelled && best !== local) setPet(catchUp(best, Date.now(), config))
+    })()
     return () => {
       cancelled = true
     }
@@ -64,21 +71,21 @@ export function usePet(config: GameConfig) {
     return () => window.clearInterval(id)
   }, [config])
 
-  // сохранение: локально сразу, в облако — не чаще раза в CLOUD_SAVE_INTERVAL_MS
+  // сохранение: локально сразу, на сервер — не чаще раза в SERVER_SYNC_INTERVAL_MS
   useEffect(() => {
     const raw = serialize(pet)
     petStore.saveLocal(raw)
     const now = Date.now()
-    if (now - lastCloudSaveRef.current >= CLOUD_SAVE_INTERVAL_MS) {
-      lastCloudSaveRef.current = now
-      void petStore.cloudSave(raw)
+    if (now - lastSyncRef.current >= SERVER_SYNC_INTERVAL_MS) {
+      lastSyncRef.current = now
+      void petStore.serverSync(raw)
     }
   }, [pet])
 
-  // при уходе со страницы — залить актуальный сейв в облако
+  // при уходе со страницы — залить актуальный сейв на сервер
   useEffect(() => {
     const flush = () => {
-      void petStore.cloudSave(serialize(petRef.current))
+      void petStore.serverSync(serialize(petRef.current), true)
     }
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)
@@ -154,7 +161,7 @@ export function usePet(config: GameConfig) {
   const reset = useCallback(() => {
     // новая игра — новая случайная внешность
     setPet(createPet(Date.now(), config, rollAppearance(Math.random)))
-    lastCloudSaveRef.current = 0
+    lastSyncRef.current = 0
     setNotice('🥚 Новая игра — дай имя!')
   }, [config])
 

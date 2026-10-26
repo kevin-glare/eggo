@@ -1,10 +1,6 @@
-import type { GameConfig } from './game/config'
-import { catchUp, deserialize } from './game/storage'
-import type { PetState } from './game/types'
-
 /**
  * Интеграция с Telegram WebApp: хаптика, хром под цвет ночи,
- * облачный сейв (общий на все устройства юзера).
+ * синхронизация сейва с нашим API (Cloudflare Worker).
  * Вне Telegram всё превращается в безопасный no-op.
  */
 
@@ -14,15 +10,17 @@ interface TgWebApp {
   expand: () => void
   /** вне Telegram SDK отдаёт platform 'unknown' — по этому и отличаем */
   platform: string
+  /** подписанные данные пользователя — на них построен вход в API */
+  initData: string
   setHeaderColor?: (color: string) => void
   setBackgroundColor?: (color: string) => void
   HapticFeedback?: {
     impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
     notificationOccurred: (type: 'error' | 'success' | 'warning') => void
   }
+  /** старое облако Telegram: читаем один раз для миграции сейва на сервер */
   CloudStorage?: {
-    setItem: (key: string, value: string, cb?: (err: unknown, ok: boolean) => void) => void
-    getItem: (key: string, cb: (err: unknown, value: string | null) => void) => void
+    getItem: (key: string, cb?: (err: unknown, value: string | null) => void) => void
   }
 }
 
@@ -36,6 +34,13 @@ declare global {
 const APP_BG = '#221736'
 
 export const SAVE_KEY = 'tamagotchi.save.v1'
+
+/** Отметка в localStorage: старое облако Telegram уже переехало на сервер. */
+const MIGRATED_FLAG = 'tamagotchi.migrated.v1'
+
+/** Адрес API-воркера; для продакшена задаётся VITE_API_URL при сборке. */
+const envApiUrl: unknown = import.meta.env.VITE_API_URL
+const API_URL = typeof envApiUrl === 'string' && envApiUrl !== '' ? envApiUrl : 'http://localhost:8787'
 
 export function tg(): TgWebApp | null {
   const app = window.Telegram?.WebApp
@@ -81,8 +86,17 @@ function saveLocalRaw(raw: string): void {
   }
 }
 
-function cloudLoadRaw(): Promise<string | null> {
-  return new Promise((resolve) => {
+/**
+ * Разовая миграция: последний раз читаем сейв из облака Telegram
+ * (теперь главное облако — наш сервер). null — мигрировать нечего или уже.
+ */
+async function legacyCloudLoadRaw(): Promise<string | null> {
+  try {
+    if (localStorage.getItem(MIGRATED_FLAG) !== null) return null
+  } catch {
+    return null
+  }
+  const raw = await new Promise<string | null>((resolve) => {
     const cs = tg()?.CloudStorage
     if (!cs) {
       resolve(null)
@@ -90,35 +104,42 @@ function cloudLoadRaw(): Promise<string | null> {
     }
     cs.getItem(SAVE_KEY, (err, value) => resolve(err ? null : value))
   })
+  try {
+    localStorage.setItem(MIGRATED_FLAG, '1')
+  } catch {
+    // приватный режим: попробуем ещё в следующий запуск
+  }
+  return raw
 }
 
-function cloudSaveRaw(raw: string): Promise<void> {
-  return new Promise((resolve) => {
-    const cs = tg()?.CloudStorage
-    if (!cs) {
-      resolve()
-      return
-    }
-    cs.setItem(SAVE_KEY, raw, () => resolve())
-  })
+/**
+ * Синк с сервером: шлём свой сейв, получаем главный (у кого lastTickAt новее).
+ * null — сети нет или мы не в Telegram: живём на localStorage, повторим позже.
+ * keepalive — для финального сохранения при уходе со страницы.
+ */
+async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promise<{ save: string | null } | null> {
+  const initData = tg()?.initData
+  if (!initData) return null
+  try {
+    const response = await fetch(`${API_URL}/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData, save: clientRaw }),
+      keepalive,
+    })
+    if (!response.ok) return null
+    const data = JSON.parse(await response.text()) as { save?: unknown }
+    const saveRaw = typeof data.save === 'string' ? data.save : null
+    return { save: saveRaw }
+  } catch {
+    return null
+  }
 }
 
 /** Публичное API хранилища для usePet. */
 export const petStore = {
   loadLocal: loadLocalRaw,
   saveLocal: saveLocalRaw,
-  cloudLoad: cloudLoadRaw,
-  cloudSave: cloudSaveRaw,
+  legacyCloudLoad: legacyCloudLoadRaw,
+  serverSync: serverSyncRaw,
 } as const
-
-/**
- * Слияние при старте: у кого lastTickAt новее (позже сохранялся), тот и главный.
- * Облачный сейв сразу досчитывает время, пока приложение было закрыто.
- */
-export function mergeCloudSave(cloudRaw: string | null, local: PetState, config: GameConfig): PetState {
-  if (!cloudRaw) return local
-  // у облачного сейва без внешности (старая версия) оставляем локальную
-  const cloud = deserialize(cloudRaw, local.appearance)
-  if (!cloud || cloud.lastTickAt <= local.lastTickAt) return local
-  return catchUp(cloud, Date.now(), config)
-}

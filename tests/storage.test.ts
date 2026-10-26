@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, DEV_CONFIG } from '../src/game/config'
 import { rollAppearance } from '../src/game/appearance'
 import { tick } from '../src/game/engine'
-import { catchUp, deserialize, serialize } from '../src/game/storage'
+import { catchUp, deserialize, mergeRemoteSave, serialize } from '../src/game/storage'
 import { DAY, HOUR, TEST_APPEARANCE, hatchedPet, makePet } from './helpers'
 
 describe('serialize / deserialize', () => {
@@ -84,5 +84,37 @@ describe('catchUp — оффлайн-время', () => {
     const pet = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000 })
     const result = catchUp(pet, 1_000, DEFAULT_CONFIG)
     expect(result).toEqual(pet)
+  })
+})
+
+describe('mergeRemoteSave — кто новее, тот и главный', () => {
+  it('удалённый новее → побеждает он, время досчитает catchUp', () => {
+    const local = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000, name: 'Локал' })
+    const remote = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 2_000, name: 'Сервер' })
+    expect(mergeRemoteSave(serialize(remote), local)).toEqual(remote)
+  })
+
+  it('удалённый старее или тот же момент → локальный без изменений', () => {
+    const local = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 2_000, name: 'Локал' })
+    const older = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000, name: 'Сервер' })
+    expect(mergeRemoteSave(serialize(older), local)).toBe(local)
+    expect(mergeRemoteSave(serialize(local), local)).toBe(local)
+  })
+
+  it('null и битый удалённый сейв → локальный', () => {
+    const local = hatchedPet(DEFAULT_CONFIG)
+    expect(mergeRemoteSave(null, local)).toBe(local)
+    expect(mergeRemoteSave('мусор', local)).toBe(local)
+  })
+
+  it('удалённый сейв без внешности получает внешность локального', () => {
+    const local = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000 })
+    const data = JSON.parse(serialize(hatchedPet(DEFAULT_CONFIG, { lastTickAt: 9_000 }))) as {
+      pet: Record<string, unknown>
+    }
+    delete data.pet.appearance
+    const merged = mergeRemoteSave(JSON.stringify(data), local)
+    expect(merged.appearance).toEqual(local.appearance)
+    expect(merged.lastTickAt).toBe(9_000)
   })
 })
