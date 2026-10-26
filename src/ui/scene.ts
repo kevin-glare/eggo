@@ -1,4 +1,5 @@
 import type { DayPalette, RGB } from './dayCycle'
+import { GROUND_Y } from './petArt'
 
 /**
  * Сцена-«окно»: небо, светила, облака, холмы, светлячки.
@@ -149,6 +150,17 @@ const CLOUDS = Array.from({ length: 4 }, (_, i) => {
   }
 })
 
+/** Травинки полянки под лапами питомца: пучки по бокам, качаются от «ветра». */
+const GRASS = Array.from({ length: 16 }, (_, i) => ({
+  side: i % 2 === 0 ? -1 : 1,
+  dx: 26 + rand() * 70,
+  h: 9 + rand() * 13,
+  ph: rand() * Math.PI * 2,
+  sp: 0.7 + rand() * 0.6,
+  lean: (rand() - 0.5) * 0.8,
+  light: i % 3 === 0,
+}))
+
 /** Луна живёт на своей орбите независимо от солнца. */
 const MOON_POS: readonly [number, number] = [0.74, 0.16]
 
@@ -185,6 +197,10 @@ function getMoonSprite(): HTMLCanvasElement {
 
 function rgba(c: RGB, alpha: number): string {
   return `rgba(${c[0] | 0}, ${c[1] | 0}, ${c[2] | 0}, ${Math.max(0, Math.min(1, alpha))})`
+}
+
+function lightenRGB(c: RGB, k: number): RGB {
+  return [c[0] + (255 - c[0]) * k, c[1] + (255 - c[1]) * k, c[2] + (255 - c[2]) * k]
 }
 
 export function drawScene(
@@ -293,6 +309,26 @@ export function drawScene(
   ctx.moveTo(0, h * 0.78)
   ctx.bezierCurveTo(w * 0.25, h * 0.7, w * 0.6, h * 0.82, w, h * 0.74)
   ctx.stroke()
+
+  // полянка под лапами питомца: светлое пятно и качающиеся травинки;
+  // питомец рисуется позже и стоит в центре, травинки торчат по бокам лап
+  const gx = w / 2
+  const gy = GROUND_Y + 8
+  ctx.fillStyle = rgba(lightenRGB(sky.hillFront, 0.16), 0.45)
+  ctx.beginPath()
+  ctx.ellipse(gx, gy, 92, 13, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.lineCap = 'round'
+  ctx.lineWidth = 2.2
+  for (const b of GRASS) {
+    const bx = gx + b.dx * b.side
+    const sway = Math.sin((tMs / 1000) * b.sp + b.ph) * 2.2
+    ctx.strokeStyle = rgba(lightenRGB(sky.hillFront, b.light ? 0.3 : 0.13), 0.9)
+    ctx.beginPath()
+    ctx.moveTo(bx, gy + 2)
+    ctx.quadraticCurveTo(bx + b.lean * 2.5, gy - b.h * 0.5, bx + b.lean * 5 + sway, gy - b.h)
+    ctx.stroke()
+  }
 
   // светлячки — ночная живность; днём спят
   const fireflyBase = sky.firefly * (0.3 + 0.7 * mood.energy)
