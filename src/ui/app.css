@@ -132,7 +132,9 @@ body {
   flex: 1 1 auto;
   aspect-ratio: 390 / 380;
   min-height: 230px;
-  max-height: 470px;
+  /* потолок только против гигантомании планшетов; на телефонах сцена
+     растёт до конца экрана — внизу не должно оставаться пустоты */
+  max-height: 560px;
   position: relative;
   overflow: hidden;
   border-radius: 24px;
