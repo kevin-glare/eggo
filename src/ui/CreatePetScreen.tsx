@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { PetAppearance } from '../game/appearance'
+import type { Mood } from '../game/types'
 import PetCanvas from './PetCanvas'
 
 interface CreatePetScreenProps {
@@ -15,15 +16,20 @@ interface CreatePetScreenProps {
 /** Главный экран Eggo: живая поляна с яйцом ждёт имени. */
 export default function CreatePetScreen({ maxLength, appearance, skyHourOverride, onCreate }: CreatePetScreenProps) {
   const [draft, setDraft] = useState('')
+  // имя согревает яйцо: заметнее покачивается и теплее свет.
+  // выше 0.3 не поднимаем — трещины появляются с 0.35, а вылупление не сейчас
+  const typed = draft.trim().length
+  const eggProgress = Math.min(0.3, (typed / maxLength) * 0.3)
+  const mood: Mood = typed > 0 ? 'happy' : 'content'
 
   return (
     <section className="create-screen">
       <div className="create-scene">
         <PetCanvas
           stage="egg"
-          mood="content"
+          mood={mood}
           appearance={appearance}
-          eggProgress={0}
+          eggProgress={eggProgress}
           skyHourOverride={skyHourOverride}
         />
         <p className="create-brand">
