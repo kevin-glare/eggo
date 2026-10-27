@@ -66,13 +66,23 @@ export function catchUp(state: PetState, nowMs: number, config: GameConfig): Pet
 }
 
 /**
- * Слияние локального и удалённого (сервер/облако) сейва: у кого lastTickAt
- * новее (позже сохранялся), тот и главный. Досчёт времени делает catchUp.
+ * Слияние локального и удалённого (сервер/облако) сейва. Безымянный и
+ * отсутствующий локальный питомец всегда уступает удалённому: свежее яйцо
+ * с нового устройства не должно побеждать настоящего питомца по lastTickAt.
+ * У именованных главный тот, у кого lastTickAt новее (позже сохранялся).
  * Битый и несовместимый удалённый сейв игнорируется.
+ * fallbackAppearance подставляется удалённым сейвам старых версий, когда
+ * локальной внешности взять неоткуда.
  */
-export function mergeRemoteSave(remoteRaw: string | null, local: PetState): PetState {
+export function mergeRemoteSave(
+  remoteRaw: string | null,
+  local: PetState | null,
+  fallbackAppearance: PetAppearance,
+): PetState | null {
   if (!remoteRaw) return local
-  const remote = deserialize(remoteRaw, local.appearance)
-  if (!remote || remote.lastTickAt <= local.lastTickAt) return local
+  const remote = deserialize(remoteRaw, local?.appearance ?? fallbackAppearance)
+  if (!remote) return local
+  if (local === null || local.name === null) return remote
+  if (remote.lastTickAt <= local.lastTickAt) return local
   return remote
 }

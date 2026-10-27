@@ -87,24 +87,40 @@ describe('catchUp — оффлайн-время', () => {
   })
 })
 
-describe('mergeRemoteSave — кто новее, тот и главный', () => {
+describe('mergeRemoteSave — именованные: кто новее; безымянный и пустой локальный уступает серверу', () => {
   it('удалённый новее → побеждает он, время досчитает catchUp', () => {
     const local = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000, name: 'Локал' })
     const remote = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 2_000, name: 'Сервер' })
-    expect(mergeRemoteSave(serialize(remote), local)).toEqual(remote)
+    expect(mergeRemoteSave(serialize(remote), local, TEST_APPEARANCE)).toEqual(remote)
   })
 
   it('удалённый старее или тот же момент → локальный без изменений', () => {
     const local = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 2_000, name: 'Локал' })
     const older = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000, name: 'Сервер' })
-    expect(mergeRemoteSave(serialize(older), local)).toBe(local)
-    expect(mergeRemoteSave(serialize(local), local)).toBe(local)
+    expect(mergeRemoteSave(serialize(older), local, TEST_APPEARANCE)).toBe(local)
+    expect(mergeRemoteSave(serialize(local), local, TEST_APPEARANCE)).toBe(local)
   })
 
   it('null и битый удалённый сейв → локальный', () => {
     const local = hatchedPet(DEFAULT_CONFIG)
-    expect(mergeRemoteSave(null, local)).toBe(local)
-    expect(mergeRemoteSave('мусор', local)).toBe(local)
+    expect(mergeRemoteSave(null, local, TEST_APPEARANCE)).toBe(local)
+    expect(mergeRemoteSave('мусор', local, TEST_APPEARANCE)).toBe(local)
+  })
+
+  it('свежее безымянное яйцо проигрывает именованному питомцу с сервера — даже если оно «новее»', () => {
+    const freshEgg = makePet(DEFAULT_CONFIG, { lastTickAt: 9_000, name: null })
+    const serverPet = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 1_000, name: 'Настоящий' })
+    expect(mergeRemoteSave(serialize(serverPet), freshEgg, TEST_APPEARANCE)).toEqual(serverPet)
+  })
+
+  it('локального нет → валидный удалённый становится питомцем (новое устройство)', () => {
+    const remote = hatchedPet(DEFAULT_CONFIG, { name: 'Сервер' })
+    expect(mergeRemoteSave(serialize(remote), null, TEST_APPEARANCE)).toEqual(remote)
+  })
+
+  it('локального нет, удалённый пуст или битый → питомца нет', () => {
+    expect(mergeRemoteSave(null, null, TEST_APPEARANCE)).toBeNull()
+    expect(mergeRemoteSave('мусор', null, TEST_APPEARANCE)).toBeNull()
   })
 
   it('удалённый сейв без внешности получает внешность локального', () => {
@@ -113,8 +129,8 @@ describe('mergeRemoteSave — кто новее, тот и главный', () =
       pet: Record<string, unknown>
     }
     delete data.pet.appearance
-    const merged = mergeRemoteSave(JSON.stringify(data), local)
-    expect(merged.appearance).toEqual(local.appearance)
-    expect(merged.lastTickAt).toBe(9_000)
+    const merged = mergeRemoteSave(JSON.stringify(data), local, TEST_APPEARANCE)
+    expect(merged?.appearance).toEqual(local.appearance)
+    expect(merged?.lastTickAt).toBe(9_000)
   })
 })
