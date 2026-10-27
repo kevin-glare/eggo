@@ -138,23 +138,29 @@ body {
 
 .create-brand {
   position: absolute;
-  /* яйцо начинается на ~48–56% высоты сцены — висим прямо над ним */
-  top: 44%;
+  /* яйцо начинается на 51–58% высоты сцены — нижним краем стоим над скорлупой */
+  bottom: 49.5%;
   left: 0;
   right: 0;
   margin: 0;
   text-align: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 24px;
-  letter-spacing: 0.12em;
+  /* Comfortaa кончается на 700 — для жирного логотипа берём Nunito 1000 */
+  font-family: 'Nunito', var(--font-display);
+  font-weight: 1000;
+  font-size: 36px;
+  letter-spacing: 0.1em;
   pointer-events: none;
-  text-shadow: 0 2px 18px rgba(10, 4, 24, 0.65);
+  /* «немного радугой»: конфетный градиент в цветах статов игры */
+  background: linear-gradient(92deg, #ff8fae 0%, #ffd76a 30%, #8ee6b8 55%, #7ec8f0 78%, #c9a6ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 3px 12px rgba(10, 4, 24, 0.4);
 }
 
-/* «o» в Eggo — это и есть яйцо: тёплое и чуть светится */
+/* «o» в Eggo — это и есть яйцо: золотое, поверх радуги */
 .create-brand-o {
-  color: var(--gold);
+  -webkit-text-fill-color: var(--gold);
   text-shadow: 0 0 18px rgba(255, 215, 106, 0.55);
 }
 
