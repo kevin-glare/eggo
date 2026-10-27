@@ -21,12 +21,12 @@ const REASON_TEXT: Record<ActionReason, string> = {
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
 
-function initialPet(config: GameConfig): PetState {
-  // случайность живёт здесь, в UI-слое: game остаётся чистой
-  const fresh = rollAppearance(Math.random)
+function initialPet(): PetState | null {
+  // локальный сейв; если его нет — null: новое яйцо не создаём, пока
+  // стартовый синк не выяснит, есть ли питомец у пользователя на сервере
   const raw = petStore.loadLocal()
-  const restored = raw !== null ? deserialize(raw, fresh) : null
-  return restored ?? createPet(Date.now(), config, fresh)
+  if (raw === null) return null
+  return deserialize(raw, rollAppearance(Math.random))
 }
 
 /**
@@ -34,27 +34,32 @@ function initialPet(config: GameConfig): PetState {
  * тик раз в секунду, действия с обратной связью и хаптикой.
  */
 export function usePet(config: GameConfig) {
-  const [pet, setPet] = useState<PetState>(() => initialPet(config))
+  const [pet, setPet] = useState<PetState | null>(() => initialPet())
   const [notice, setNotice] = useState<string | null>(null)
   const petRef = useRef(pet)
   petRef.current = pet
-  const prevStageRef = useRef(pet.stage)
+  const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
   const lastSyncRef = useRef(0)
 
   // старт: Telegram-инициализация, разовая миграция старого облака Telegram
-  // и сервер-синк. Сравнение сейвов честное — по lastTickAt до досчёта времени
+  // и сервер-синк. Сравнение сейвов честное — по lastTickAt до досчёта времени.
+  // Своего питомца нет или он ещё без имени — серверу ничего не предлагаем:
+  // новый девайс сначала узнаёт, есть ли питомец в базе, а не плодит яйцо
   useEffect(() => {
     initTelegram()
     let cancelled = false
     void (async () => {
       const local = petRef.current
+      const fallbackAppearance = local?.appearance ?? rollAppearance(Math.random)
       let best = local
       const legacyRaw = await petStore.legacyCloudLoad()
-      if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, local.appearance) ?? best
-      const response = await petStore.serverSync(serialize(best))
-      if (response !== null) best = mergeRemoteSave(response.save, best, local.appearance) ?? best
-      // победил чужой сейв — применяем его и досчитываем время отсутствия
-      if (!cancelled && best !== local) setPet(catchUp(best, Date.now(), config))
+      if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance) ?? best
+      const payload = best?.name != null ? serialize(best) : null
+      const response = await petStore.serverSync(payload)
+      if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance) ?? best
+      // питомца нет нигде — новая игра; чужой сейв досчитываем по времени отсутствия
+      const resolved = best ?? createPet(Date.now(), config, rollAppearance(Math.random))
+      if (!cancelled && resolved !== local) setPet(catchUp(resolved, Date.now(), config))
     })()
     return () => {
       cancelled = true
@@ -63,18 +68,22 @@ export function usePet(config: GameConfig) {
 
   // при запуске досчитываем всё время, пока приложение было закрыто
   useEffect(() => {
-    setPet((p) => catchUp(p, Date.now(), config))
+    setPet((p) => (p === null ? p : catchUp(p, Date.now(), config)))
   }, [config])
 
   useEffect(() => {
-    const id = window.setInterval(() => setPet((p) => catchUp(p, Date.now(), config)), 1000)
+    const id = window.setInterval(() => setPet((p) => (p === null ? p : catchUp(p, Date.now(), config))), 1000)
     return () => window.clearInterval(id)
   }, [config])
 
-  // сохранение: локально сразу, на сервер — не чаще раза в SERVER_SYNC_INTERVAL_MS
+  // сохранение: локально сразу, на сервер — не чаще раза в SERVER_SYNC_INTERVAL_MS.
+  // Безымянное яйцо — ещё не питомец: на сервер не льём, иначе второй девайс
+  // с новым яйцом перезапишет настоящего питомца из базы
   useEffect(() => {
+    if (pet === null) return
     const raw = serialize(pet)
     petStore.saveLocal(raw)
+    if (pet.name === null) return
     const now = Date.now()
     if (now - lastSyncRef.current >= SERVER_SYNC_INTERVAL_MS) {
       lastSyncRef.current = now
@@ -85,7 +94,8 @@ export function usePet(config: GameConfig) {
   // при уходе со страницы — залить актуальный сейв на сервер
   useEffect(() => {
     const flush = () => {
-      void petStore.serverSync(serialize(petRef.current), true)
+      const current = petRef.current
+      if (current?.name != null) void petStore.serverSync(serialize(current), true)
     }
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)
@@ -93,11 +103,13 @@ export function usePet(config: GameConfig) {
 
   // событие вылупления
   useEffect(() => {
-    if (prevStageRef.current === 'egg' && pet.stage !== 'egg') {
-      setNotice(`🎉 ${pet.name ?? 'Питомец'} вылупился!`)
+    if (pet !== null) {
+      if (prevStageRef.current === 'egg' && pet.stage !== 'egg') {
+        setNotice(`🎉 ${pet.name ?? 'Питомец'} вылупился!`)
+      }
+      prevStageRef.current = pet.stage
     }
-    prevStageRef.current = pet.stage
-  }, [pet.stage, pet.name])
+  }, [pet?.stage, pet?.name])
 
   // уведомления сами исчезают
   useEffect(() => {
@@ -108,7 +120,9 @@ export function usePet(config: GameConfig) {
 
   const apply = useCallback(
     (action: (p: PetState, c: GameConfig) => ActionResult, successText: string) => {
-      const result = action(petRef.current, config)
+      const current = petRef.current
+      if (current === null) return null
+      const result = action(current, config)
       setPet(result.state)
       if (result.ok) {
         setNotice(successText)
@@ -132,7 +146,9 @@ export function usePet(config: GameConfig) {
    */
   const startGame = useCallback(
     (rawName: string) => {
-      const result = namePet(petRef.current, rawName, config)
+      const current = petRef.current
+      if (current === null) return false
+      const result = namePet(current, rawName, config)
       if (!result.ok) {
         setNotice(REASON_TEXT[result.reason ?? 'invalid-name'] ?? '')
         hapticWarning()
@@ -146,14 +162,16 @@ export function usePet(config: GameConfig) {
     [config],
   )
   const toggleSleep = useCallback(() => {
-    const sleeping = petRef.current.sleeping
+    const current = petRef.current
+    if (current === null) return null
+    const sleeping = current.sleeping
     return sleeping ? apply(wake, '☀️ Проснулся!') : apply(startSleep, '😴 Спокойной ночи!')
   }, [apply])
 
   /** Dev-инструмент: прокрутить игровое время вперёд. */
   const advanceTime = useCallback(
     (gameMs: number) => {
-      setPet((p) => tick(p, gameMs, config))
+      setPet((p) => (p === null ? p : tick(p, gameMs, config)))
     },
     [config],
   )

@@ -38,6 +38,20 @@ body {
   margin: 0 auto;
 }
 
+/* Загрузка: стартовый синк выясняет, есть ли питомец у пользователя */
+.loading {
+  margin: auto;
+  font-family: var(--font-display);
+  font-size: 17px;
+  animation: loading-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* Шапка: имя слева, статус-настроение справа */
 .header {
   width: 100%;

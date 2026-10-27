@@ -49,13 +49,12 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 export default function App() {
   const { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
-  const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
-  const mood = getMood(pet, config)
-  // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
-  const isCreating = pet.name === null
+  // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
+  const ready = pet !== null
 
-  // вход: блоки softly всплывают каскадом
+  // вход: блоки softly всплывают каскадом — когда питомец уже показан
   useEffect(() => {
+    if (!ready) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     gsap.from('.app > *', {
       y: 16,
@@ -65,7 +64,21 @@ export default function App() {
       ease: 'power2.out',
       clearProps: 'all',
     })
-  }, [])
+  }, [ready])
+
+  // питомца ещё нет: локаль пуста, ждём ответа сервера (вне Telegram — мгновенно)
+  if (pet === null) {
+    return (
+      <main className="app">
+        <div className="loading">Загружаем питомца…</div>
+      </main>
+    )
+  }
+
+  const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
+  const mood = getMood(pet, config)
+  // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
+  const isCreating = pet.name === null
 
   return (
     <main className="app">
