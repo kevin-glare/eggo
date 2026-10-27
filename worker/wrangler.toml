@@ -14,7 +14,7 @@ routes = [
 [[d1_databases]]
 binding = "DB"
 database_name = "eggo"
-database_id = "TODO-ВПИШИТЕ-ID-ПОСЛЕ-wrangler-d1-create"
+database_id = "978b6ded-f054-4e33-9803-593644108df6"
 
 [vars]
 # После деплоя фронта сузьте до адреса мини-аппа, например
