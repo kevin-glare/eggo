@@ -3,6 +3,12 @@ main = "src/index.ts"
 compatibility_date = "2025-06-01"
 migrations_dir = "migrations"
 
+# Поддомен API на нашем домене: Cloudflare привяжет его к воркеру
+# и выпустит сертификат автоматически при первом деплое
+routes = [
+  { pattern = "api.eggotg.ru", custom_domain = true }
+]
+
 # После `npx wrangler d1 create eggo` впишите сюда выданный database_id
 # (локальный `npm run worker:dev` работает и с заглушкой)
 [[d1_databases]]
