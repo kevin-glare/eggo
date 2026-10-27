@@ -88,107 +88,100 @@ body {
     inset 0 1px 0 rgba(245, 237, 255, 0.06);
 }
 
-/* Главный экран — рождение питомца: имя даёт яйцу жизнь */
+/* Главный экран — рождение питомца: живая сцена сверху, имя в зоне большого пальца */
 .create-screen {
   flex: 1;
-  width: 100%;
-  max-width: 380px;
+  /* align-items: center у .app гасит отрицательные маргины — растягиваемся сами */
+  align-self: stretch;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  /* сцена живёт от края до края — выезжаем из паддингов .app */
+  margin: -18px -16px calc(-24px - env(safe-area-inset-bottom));
+}
+
+.create-scene {
   position: relative;
+  flex: 1;
+  min-height: 300px;
+  overflow: hidden;
 }
 
-/* звёздная пыль над поляной */
-.create-screen::before {
-  content: '';
+/* сцена накрывает контейнер целиком; трава и яйцо держатся в кадре */
+.create-scene canvas {
   position: absolute;
-  left: -30px;
-  right: -30px;
-  top: -24px;
-  height: 62%;
-  pointer-events: none;
-  background-image:
-    radial-gradient(1.5px 1.5px at 18% 32%, rgba(245, 237, 255, 0.8), transparent 60%),
-    radial-gradient(1px 1px at 64% 18%, rgba(245, 237, 255, 0.55), transparent 60%),
-    radial-gradient(2px 2px at 82% 48%, rgba(255, 215, 106, 0.7), transparent 60%),
-    radial-gradient(1px 1px at 38% 62%, rgba(245, 237, 255, 0.4), transparent 60%),
-    radial-gradient(1.5px 1.5px at 92% 26%, rgba(245, 237, 255, 0.6), transparent 60%),
-    radial-gradient(1px 1px at 8% 58%, rgba(245, 237, 255, 0.5), transparent 60%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 75%;
 }
 
-/* яйцо — единственный источник тёплого света в ночи */
-.create-egg {
-  width: 132px;
-  height: 168px;
-  border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
-  background:
-    radial-gradient(85% 60% at 38% 28%, rgba(255, 255, 255, 0.85), transparent 55%),
-    radial-gradient(circle at 50% 44%, #ffe9b0, #ffd76a 48%, #efb45f 100%);
-  box-shadow:
-    0 22px 44px -14px rgba(10, 4, 24, 0.7),
-    0 0 32px rgba(255, 205, 96, 0.26);
-  animation: egg-float 3.2s ease-in-out infinite;
-  transition: box-shadow 0.5s, filter 0.5s;
-}
-
-/* каждая введённая буква имени теплит яйцо сильнее */
-.create-screen:has(.create-form input:not(:placeholder-shown)) .create-egg {
-  box-shadow:
-    0 22px 44px -14px rgba(10, 4, 24, 0.7),
-    0 0 64px rgba(255, 205, 96, 0.6);
-  filter: brightness(1.07);
-}
-
-@keyframes egg-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.create-title {
+.create-brand {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  text-align: center;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 34px;
-  letter-spacing: 0.1em;
-  margin: 22px 0 0;
-  color: var(--ink);
+  font-size: 24px;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  text-shadow: 0 2px 18px rgba(10, 4, 24, 0.65);
 }
 
 /* «o» в Eggo — это и есть яйцо: тёплое и чуть светится */
-.create-title-o {
+.create-brand-o {
   color: var(--gold);
   text-shadow: 0 0 18px rgba(255, 215, 106, 0.55);
+}
+
+/* нижний «лист» с формой — как родная шторка Telegram */
+.create-panel {
+  position: relative;
+  margin-top: -24px;
+  padding: 20px 20px calc(18px + env(safe-area-inset-bottom));
+  background: var(--card-strong);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--stroke);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -12px 32px -16px rgba(10, 4, 24, 0.7);
+  text-align: left;
+}
+
+.create-headline {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0 0 6px;
 }
 
 .create-sub {
   color: var(--muted);
   font-size: 14px;
-  margin: 8px 0 24px;
+  margin: 0 0 16px;
 }
 
 .create-form {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
 }
 
 .create-form input {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
+  width: 100%;
+  padding: 15px 16px;
+  border-radius: 16px;
   border: 1px solid var(--stroke);
   background: rgba(20, 12, 38, 0.6);
   color: var(--ink);
   font: inherit;
-  font-size: 15px;
+  /* 17px и больше — iOS не приближает поле при фокусе */
+  font-size: 17px;
 }
 
 .create-form input::placeholder {
@@ -202,24 +195,34 @@ body {
 }
 
 .create-form button {
+  width: 100%;
+  min-height: 54px;
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
-  border-radius: 14px;
-  padding: 12px 18px;
+  border-radius: 16px;
+  padding: 14px 18px;
   font: inherit;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .create-form button:not(:disabled):active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
 .create-form button:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+.create-pitch {
+  margin: 14px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
 }
 
 /* Настроение */

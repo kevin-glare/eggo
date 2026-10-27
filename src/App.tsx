@@ -72,7 +72,12 @@ export default function App() {
   return (
     <main className="app">
       {isCreating ? (
-        <CreatePetScreen maxLength={config.nameMaxLength} onCreate={startGame} />
+        <CreatePetScreen
+          maxLength={config.nameMaxLength}
+          appearance={pet.appearance}
+          skyHourOverride={skyHour}
+          onCreate={startGame}
+        />
       ) : (
         <>
           <header className="header">
