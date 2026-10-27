@@ -17,9 +17,9 @@ database_name = "eggo"
 database_id = "978b6ded-f054-4e33-9803-593644108df6"
 
 [vars]
-# После деплоя фронта сузьте до адреса мини-аппа, например
-# ALLOWED_ORIGIN = "https://kevinglare.github.io"
-ALLOWED_ORIGIN = "*"
+# Фронт живёт на нашем домене; для локальной разработки адрес
+# http://localhost:5173 задаётся в worker/.dev.vars
+ALLOWED_ORIGIN = "https://eggotg.ru"
 
 # Крон пушей: раз в полчаса проверяем подписчиков
 [triggers]
