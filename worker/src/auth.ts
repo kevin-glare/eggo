@@ -56,9 +56,9 @@ export async function validateInitData(initData: string, botToken: string, nowSe
   const user = parseUser(params.get('user'))
   if (!user) return null
 
-  // строка проверки: все поля кроме hash, отсортированные, key=value через \n
+  // строка проверки: все поля кроме hash (signature от Telegram тоже участвует)
   const dataCheckString = [...params.entries()]
-    .filter(([key]) => key !== 'hash' && key !== 'signature')
+    .filter(([key]) => key !== 'hash')
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([key, value]) => `${key}=${value}`)
     .join('\n')

@@ -18,6 +18,8 @@ async function hmac(keyMaterial: string | ArrayBuffer, message: string): Promise
 }
 
 async function sign(params: Record<string, string>): Promise<string> {
+  // по документации: строка проверки — все поля, кроме hash
+  // (в том числе signature, который Telegram реально присылает)
   const dataCheckString = Object.entries(params)
     .filter(([key]) => key !== 'hash')
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
@@ -38,6 +40,15 @@ describe('validateInitData', () => {
   it('корректно подписанные данные → пользователь', async () => {
     const user = await validateInitData(await sign(baseParams()), BOT_TOKEN, NOW_SEC)
     expect(user).toEqual({ id: 42, first_name: 'Кевин', username: 'kevin' })
+  })
+
+  it('поле signature из реального initData участвует в подписи', async () => {
+    const withSignature = await sign({
+      ...baseParams(),
+      signature: 'Ed25519-signature-from-telegram',
+    })
+    const user = await validateInitData(withSignature, BOT_TOKEN, NOW_SEC)
+    expect(user?.id).toBe(42)
   })
 
   it('подделанное поле ломает подпись', async () => {
