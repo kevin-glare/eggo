@@ -81,7 +81,10 @@ export default function App() {
       ) : (
         <>
           <header className="header">
-            <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
+            <div className="header-row">
+              <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
+              <span className="mood">{MOOD_TEXT[mood]}</span>
+            </div>
             {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
             <p className="age-line">
               Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
@@ -92,7 +95,6 @@ export default function App() {
           <div className="scene-card">
             <PetCanvas stage={pet.stage} mood={mood} appearance={pet.appearance} eggProgress={eggProgress} skyHourOverride={skyHour} />
           </div>
-          <div className="mood">{MOOD_TEXT[mood]}</div>
 
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar

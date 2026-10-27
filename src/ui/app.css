@@ -38,10 +38,19 @@ body {
   margin: 0 auto;
 }
 
-/* Шапка */
+/* Шапка: имя слева, статус-настроение справа */
 .header {
-  text-align: center;
+  width: 100%;
+  max-width: 390px;
+  text-align: left;
   margin-bottom: 12px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .stage-title {
@@ -50,6 +59,11 @@ body {
   font-size: 22px;
   margin: 0;
   letter-spacing: 0.01em;
+  /* длинное имя не толкает чип настроения — обрезается многоточием */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .age-line {
@@ -225,18 +239,19 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Настроение */
+/* Настроение — чип в шапке, справа от имени */
 .mood {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 12px 0 16px;
-  padding: 6px 14px;
+  padding: 4px 10px;
   border-radius: 999px;
   background: var(--card);
   border: 1px solid var(--stroke);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Показатели */
