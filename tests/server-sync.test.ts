@@ -24,6 +24,8 @@ describe('petStore.serverSync', () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       initData: tg.initData,
       save: 'клиентский',
+      // таймзона устройства: минуты к востоку от UTC (Москва = 180)
+      tzOffset: -new Date().getTimezoneOffset(),
     })
   })
 

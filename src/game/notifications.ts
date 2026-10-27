@@ -5,6 +5,8 @@ import type { PetState, Stage } from './types'
  * Чистая логика пушей от бота: какие уведомления пора отправить и с каким
  * текстом. Отправкой и отметками занимается воркер, здесь только решение.
  * Результат отсортирован по важности: воркер шлёт первое, остальное — позже.
+ * Ночью по местному времени игрока пуш не будит: беда уходит молча,
+ * радостное и «скучаем» придерживаются до утра (delivery = 'hold').
  */
 
 /** Что уже отправляли: ключ уведомления → время отправки (мс, epoch). */
@@ -13,6 +15,22 @@ export type SentNotifications = Readonly<Record<string, number>>
 export interface PendingNotification {
   kind: string
   text: string
+  /** как доставлять: сейчас, молча (без звука) или придержать до утра */
+  delivery: 'now' | 'silent' | 'hold'
+}
+
+/** Местный час игрока (0–23): nowMs в epoch, смещение — минуты к востоку от UTC. */
+export function userLocalHour(nowMs: number, utcOffsetMin: number): number {
+  return new Date(nowMs + utcOffsetMin * 60_000).getUTCHours()
+}
+
+/** Тихие часы: окно может переходить через полночь (22 → 9); from === to — окна нет. */
+export function isQuietHour(localHour: number, config: GameConfig): boolean {
+  const { from, to } = config.notifications.quietHours
+  if (from === to) return false
+  return from < to
+    ? localHour >= from && localHour < to
+    : localHour >= from || localHour < to
 }
 
 const STAGE_TITLES: Record<Exclude<Stage, 'egg'>, string> = {
@@ -37,8 +55,11 @@ export function pendingNotifications(
   config: GameConfig,
   lastSeenAt: number,
   sent: SentNotifications,
+  localHour: number,
 ): PendingNotification[] {
   const result: PendingNotification[] = []
+  // ночью не будим: беда уходит без звука, остальное ждёт утра
+  const quiet = isQuietHour(localHour, config)
 
   // «в беде»: критическая шкала или болезнь — самая срочная новость
   const reasons: string[] = []
@@ -52,6 +73,7 @@ export function pendingNotifications(
       text: pet.sick
         ? `🤒 ${petTitle(pet)} заболел — срочно нужен уход!`
         : `😢 ${petTitle(pet)} ${reasons.join(', ')} — загляни скорее!`,
+      delivery: quiet ? 'silent' : 'now',
     })
   }
 
@@ -60,6 +82,7 @@ export function pendingNotifications(
     result.push({
       kind: `grown:${pet.stage}`,
       text: `🎉 ${petTitle(pet)} вырос — теперь он ${STAGE_TITLES[pet.stage]}!`,
+      delivery: quiet ? 'hold' : 'now',
     })
   }
 
@@ -68,7 +91,7 @@ export function pendingNotifications(
     nowMs - lastSeenAt >= config.notifications.missYouAfterMs &&
     cooldownPassed(sent, 'missYou', nowMs, config.notifications.missYouCooldownMs)
   ) {
-    result.push({ kind: 'missYou', text: `🥺 ${petTitle(pet)} очень скучает без тебя…` })
+    result.push({ kind: 'missYou', text: `🥺 ${petTitle(pet)} очень скучает без тебя…`, delivery: quiet ? 'hold' : 'now' })
   }
 
   return result

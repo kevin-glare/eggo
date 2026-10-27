@@ -46,6 +46,8 @@ export interface GameConfig {
     missYouAfterMs: number
     /** «скучаем»: пауза между повторами */
     missYouCooldownMs: number
+    /** тихие часы по местному времени игрока: часы с from (включительно) до to; окно может переходить через полночь */
+    quietHours: { from: number; to: number }
   }
 }
 
@@ -78,6 +80,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     criticalCooldownMs: 6 * HOUR,
     missYouAfterMs: 24 * HOUR,
     missYouCooldownMs: 24 * HOUR,
+    // не будим игрока с 22:00 до 9:00 по его часам
+    quietHours: { from: 22, to: 9 },
   },
 }
 

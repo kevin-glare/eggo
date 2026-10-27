@@ -7,6 +7,7 @@ import {
   setBotBlocked,
   setPushEnabled,
   upsertSyncUser,
+  FALLBACK_UTC_OFFSET_MIN,
   type D1Database,
 } from './repo'
 import { resolveSync } from './sync'
@@ -21,6 +22,7 @@ export interface Env {
 interface SyncBody {
   initData?: unknown
   save?: unknown
+  tzOffset?: unknown
 }
 
 interface NotifyBody {
@@ -42,10 +44,13 @@ function json(data: unknown, status: number, cors: Record<string, string>): Resp
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...cors } })
 }
 
-function readBody(body: SyncBody): { initData: string; save: string | null } | null {
+function readBody(body: SyncBody): { initData: string; save: string | null; tzOffset: number | null } | null {
   if (typeof body.initData !== 'string' || body.initData === '') return null
   if (body.save !== null && typeof body.save !== 'string') return null
-  return { initData: body.initData, save: body.save ?? null }
+  // таймзона игрока: минуты к востоку от UTC (UTC−12…+14); без поля оставляем прежнюю
+  if (body.tzOffset !== undefined && typeof body.tzOffset !== 'number') return null
+  if (typeof body.tzOffset === 'number' && (!Number.isSafeInteger(body.tzOffset) || body.tzOffset < -720 || body.tzOffset > 840)) return null
+  return { initData: body.initData, save: body.save ?? null, tzOffset: body.tzOffset ?? null }
 }
 
 export default {
@@ -81,6 +86,7 @@ export default {
         firstName: user.first_name,
         saveJson: decision.fromClient ? body.save : row?.save_json ?? null,
         stage: decision.stage,
+        utcOffsetMin: body.tzOffset ?? row?.utc_offset ?? FALLBACK_UTC_OFFSET_MIN,
         lastSeenAt: nowMs,
       })
       return json({ save: decision.raw }, 200, cors)

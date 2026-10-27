@@ -14,6 +14,9 @@ export interface D1Database {
   prepare(query: string): D1Statement
 }
 
+/** Пока клиент не прислал свою таймзону, считаем Москвой: аудитория русскоязычная. */
+export const FALLBACK_UTC_OFFSET_MIN = 180
+
 export interface UserRow {
   telegram_id: number
   username: string | null
@@ -22,6 +25,7 @@ export interface UserRow {
   stage: string | null
   push_enabled: number
   bot_blocked: number
+  utc_offset: number
   last_seen_at: number
   updated_at: number
 }
@@ -32,6 +36,7 @@ export interface SyncUserUpdate {
   firstName: string | null
   saveJson: string | null
   stage: string | null
+  utcOffsetMin: number
   lastSeenAt: number
 }
 
@@ -46,17 +51,18 @@ export async function fetchUser(db: D1Database, telegramId: number): Promise<Use
 export async function upsertSyncUser(db: D1Database, u: SyncUserUpdate): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO users (telegram_id, username, first_name, save_json, stage, last_seen_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO users (telegram_id, username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(telegram_id) DO UPDATE SET
          username = excluded.username,
          first_name = excluded.first_name,
          save_json = excluded.save_json,
          stage = excluded.stage,
+         utc_offset = excluded.utc_offset,
          last_seen_at = excluded.last_seen_at,
          updated_at = excluded.updated_at`,
     )
-    .bind(u.telegramId, u.username, u.firstName, u.saveJson, u.stage, u.lastSeenAt, u.lastSeenAt)
+    .bind(u.telegramId, u.username, u.firstName, u.saveJson, u.stage, u.utcOffsetMin, u.lastSeenAt, u.lastSeenAt)
     .run()
 }
 
@@ -81,13 +87,14 @@ export interface PushTargetRow {
   telegram_id: number
   save_json: string | null
   stage: string | null
+  utc_offset: number
   last_seen_at: number
 }
 
 export async function fetchPushTargets(db: D1Database): Promise<PushTargetRow[]> {
   const result = await db
     .prepare(
-      'SELECT telegram_id, save_json, stage, last_seen_at FROM users WHERE push_enabled = 1 AND bot_blocked = 0',
+      'SELECT telegram_id, save_json, stage, utc_offset, last_seen_at FROM users WHERE push_enabled = 1 AND bot_blocked = 0',
     )
     .all<PushTargetRow>()
   return result.results

@@ -124,7 +124,9 @@ async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promi
     const response = await fetch(`${API_URL}/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData, save: clientRaw }),
+      // tzOffset — таймзона устройства в минутах к востоку от UTC:
+      // по ней сервер знает местный час и не будит ночными пушами
+      body: JSON.stringify({ initData, save: clientRaw, tzOffset: -new Date().getTimezoneOffset() }),
       keepalive,
     })
     if (!response.ok) return null

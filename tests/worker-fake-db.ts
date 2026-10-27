@@ -17,6 +17,7 @@ export class FakeDb implements D1Database {
       stage: null,
       push_enabled: 0,
       bot_blocked: 0,
+      utc_offset: 180,
       last_seen_at: 0,
       updated_at: 0,
       ...row,
@@ -56,14 +57,32 @@ export class FakeDb implements D1Database {
           const [telegram_id, kind, sent_at] = vals as [number, string, number]
           this.sent.set(`${telegram_id}:${kind}`, sent_at)
         } else if (query.startsWith('INSERT INTO users')) {
-          const [telegram_id, username, first_name, last_seen_at, updated_at] = vals as [
-            number, string | null, string | null, number, number,
-          ]
-          if (!this.users.some((u) => u.telegram_id === telegram_id)) {
-            this.users.push({
-              telegram_id, username, first_name, save_json: null, stage: null,
-              push_enabled: 0, bot_blocked: 0, last_seen_at, updated_at,
-            })
+          if (vals.length === 5) {
+            // ensureUser: создать, если ещё нет
+            const [telegram_id, username, first_name, last_seen_at, updated_at] = vals as [
+              number, string | null, string | null, number, number,
+            ]
+            if (!this.users.some((u) => u.telegram_id === telegram_id)) {
+              this.users.push({
+                telegram_id, username, first_name, save_json: null, stage: null,
+                push_enabled: 0, bot_blocked: 0, utc_offset: 180, last_seen_at, updated_at,
+              })
+            }
+          } else {
+            // upsertSyncUser: обновить профиль, сейв и таймзону
+            const [telegram_id, username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at] =
+              vals as [number, string | null, string | null, string | null, string | null, number, number, number]
+            const user = this.users.find((u) => u.telegram_id === telegram_id)
+            if (user) {
+              Object.assign(user, {
+                username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at,
+              })
+            } else {
+              this.users.push({
+                telegram_id, username, first_name, save_json, stage,
+                push_enabled: 0, bot_blocked: 0, utc_offset, last_seen_at, updated_at,
+              })
+            }
           }
         } else if (query.includes('bot_blocked = 1')) {
           const id = vals[1] as number
