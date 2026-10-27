@@ -103,8 +103,8 @@ export default function App() {
 
           <div className="scene-card">
             <PetCanvas stage={pet.stage} mood={mood} appearance={pet.appearance} eggProgress={eggProgress} skyHourOverride={skyHour} />
+            <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
-          <div className="mood">{MOOD_TEXT[mood]}</div>
 
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar
