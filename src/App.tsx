@@ -119,7 +119,9 @@ export default function App() {
         </>
       )}
 
-      {notice && <div className="toast">{notice}</div>}
+      <div className="toast-slot" aria-live="polite">
+        {notice && <div className="toast">{notice}</div>}
+      </div>
 
       {import.meta.env.DEV && (
         <div className="devtools">

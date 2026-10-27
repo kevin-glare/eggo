@@ -373,12 +373,17 @@ body {
   cursor: default;
 }
 
-/* Тост */
+/* Тост — в потоке, под кнопками; место зарезервировано, чтобы
+   появление сообщения не двигало интерфейс */
+.toast-slot {
+  min-height: 48px;
+  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 .toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(28px + env(safe-area-inset-bottom));
-  transform: translateX(-50%);
   background: var(--card-strong);
   border: 1px solid var(--stroke);
   backdrop-filter: blur(10px);
@@ -388,7 +393,16 @@ body {
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
+  max-width: 100%;
   box-shadow: 0 12px 32px -12px rgba(10, 4, 24, 0.8);
+  animation: toast-in 0.18s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 /* Dev-инструменты */
