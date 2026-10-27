@@ -21,11 +21,12 @@ describe('petStore.serverSync', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:8787/sync')
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBe('POST')
+    // JSON.parse превращает -0 в 0, поэтому ожидание считаем без унарного минуса
+    // (иначе тест падает на раннерах с таймзоной UTC, где offset = 0)
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       initData: tg.initData,
       save: 'клиентский',
-      // таймзона устройства: минуты к востоку от UTC (Москва = 180)
-      tzOffset: -new Date().getTimezoneOffset(),
+      tzOffset: 0 - new Date().getTimezoneOffset(), // минуты к востоку от UTC (Москва = 180)
     })
   })
 
