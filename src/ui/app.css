@@ -34,7 +34,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 16px calc(20px + env(safe-area-inset-bottom));
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
   max-width: 480px;
   margin: 0 auto;
 }
@@ -64,7 +64,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 /* стадия и возраст — правой колонкой, прижаты к правому краю;
@@ -316,15 +316,15 @@ body {
   max-width: 360px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 13px;
+  gap: 7px;
+  padding: 12px;
   border-radius: 20px;
   background: var(--card);
   border: 1px solid var(--stroke);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  margin-top: 12px;
-  margin-bottom: 10px;
+  margin-top: 10px;
+  margin-bottom: 8px;
 }
 
 .stat {
@@ -382,7 +382,7 @@ body {
   color: var(--ink);
   border: 1px solid var(--stroke);
   border-radius: 18px;
-  padding: 12px 4px 10px;
+  padding: 10px 4px 8px;
   font: inherit;
   font-size: 11.5px;
   font-weight: 600;
@@ -417,8 +417,8 @@ body {
    появление сообщения не двигало интерфейс */
 .toast-slot {
   flex-shrink: 0;
-  min-height: 48px;
-  margin-top: 10px;
+  min-height: 44px;
+  margin-top: 8px;
   display: flex;
   align-items: flex-start;
   justify-content: center;
