@@ -42,6 +42,12 @@ const MIGRATED_FLAG = 'tamagotchi.migrated.v1'
 const envApiUrl: unknown = import.meta.env.VITE_API_URL
 const API_URL = typeof envApiUrl === 'string' && envApiUrl !== '' ? envApiUrl : 'http://localhost:8787'
 
+/** Сколько ждём ответа API, прежде чем жить дальше по локальному сейву. */
+const SYNC_TIMEOUT_MS = 10_000
+
+/** Сколько ждём старое облако Telegram: замолчавший колбэк не должен вешать загрузку. */
+const CLOUD_STORAGE_TIMEOUT_MS = 5_000
+
 export function tg(): TgWebApp | null {
   const app = window.Telegram?.WebApp
   if (!app || app.platform === 'unknown') return null
@@ -96,14 +102,24 @@ async function legacyCloudLoadRaw(): Promise<string | null> {
   } catch {
     return null
   }
+  // ответ «окончательный», только если колбэк пришёл: при таймауте миграцию
+  // не отмечаем — вдруг облако просто медленное, попробуем в следующий запуск
+  let definitive = false
   const raw = await new Promise<string | null>((resolve) => {
     const cs = tg()?.CloudStorage
     if (!cs) {
+      definitive = true
       resolve(null)
       return
     }
-    cs.getItem(SAVE_KEY, (err, value) => resolve(err ? null : value))
+    const timer = setTimeout(() => resolve(null), CLOUD_STORAGE_TIMEOUT_MS)
+    cs.getItem(SAVE_KEY, (err, value) => {
+      clearTimeout(timer)
+      definitive = true
+      resolve(err ? null : value)
+    })
   })
+  if (!definitive) return raw
   try {
     localStorage.setItem(MIGRATED_FLAG, '1')
   } catch {
@@ -120,6 +136,9 @@ async function legacyCloudLoadRaw(): Promise<string | null> {
 async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promise<{ save: string | null } | null> {
   const initData = tg()?.initData
   if (!initData) return null
+  // AbortController руками, а не AbortSignal.timeout: старые WebView его не умеют
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS)
   try {
     const response = await fetch(`${API_URL}/sync`, {
       method: 'POST',
@@ -128,6 +147,7 @@ async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promi
       // по ней сервер знает местный час и не будит ночными пушами
       body: JSON.stringify({ initData, save: clientRaw, tzOffset: -new Date().getTimezoneOffset() }),
       keepalive,
+      signal: controller.signal,
     })
     if (!response.ok) return null
     const data = JSON.parse(await response.text()) as { save?: unknown }
@@ -135,6 +155,8 @@ async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promi
     return { save: saveRaw }
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 

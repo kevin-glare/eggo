@@ -52,11 +52,16 @@ export function usePet(config: GameConfig) {
       const local = petRef.current
       const fallbackAppearance = local?.appearance ?? rollAppearance(Math.random)
       let best = local
-      const legacyRaw = await petStore.legacyCloudLoad()
-      if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance) ?? best
-      const payload = best?.name != null ? serialize(best) : null
-      const response = await petStore.serverSync(payload)
-      if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance) ?? best
+      // подстраховка: непредвиденный бросок не должен оставлять экран загрузки навсегда
+      try {
+        const legacyRaw = await petStore.legacyCloudLoad()
+        if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance) ?? best
+        const payload = best?.name != null ? serialize(best) : null
+        const response = await petStore.serverSync(payload)
+        if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance) ?? best
+      } catch {
+        // живём на локальном сейве (или новом яйце ниже)
+      }
       // питомца нет нигде — новая игра; чужой сейв досчитываем по времени отсутствия
       const resolved = best ?? createPet(Date.now(), config, rollAppearance(Math.random))
       if (!cancelled && resolved !== local) setPet(catchUp(resolved, Date.now(), config))
