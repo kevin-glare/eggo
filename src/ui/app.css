@@ -52,33 +52,34 @@ body {
   }
 }
 
-/* Шапка: имя слева, справа колонка «возраст + стадия» */
+/* Шапка: имя слева, справа колонка «стадия + возраст»; колонки
+   выровнены по центру, имя по высоте ≈ две строки справа */
 .header {
   width: 100%;
   max-width: 390px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
 }
 
-/* возраст и стадия — правой колонкой, прижаты к правому краю */
+/* стадия и возраст — правой колонкой, прижаты к правому краю */
 .header-meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 3px;
-  padding-top: 4px;
 }
 
 .stage-title {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 22px;
+  font-size: 28px;
+  line-height: 1.15;
   margin: 0;
   letter-spacing: 0.01em;
-  /* длинное имя не толкает чип настроения — обрезается многоточием */
+  /* длинное имя не толкает правую колонку — обрезается многоточием */
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

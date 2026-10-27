@@ -94,11 +94,11 @@ export default function App() {
           <header className="header">
             <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
             <div className="header-meta">
+              {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
               <p className="age-line header-age">
                 Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
                 {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
               </p>
-              {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
             </div>
           </header>
 
