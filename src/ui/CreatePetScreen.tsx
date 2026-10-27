@@ -32,7 +32,7 @@ export default function CreatePetScreen({ maxLength, appearance, skyHourOverride
           eggProgress={eggProgress}
           skyHourOverride={skyHourOverride}
         />
-        <p className="create-brand">
+        <p className="create-brand" data-text="Eggo">
           Egg<span className="create-brand-o">o</span>
         </p>
       </div>

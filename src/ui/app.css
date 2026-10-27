@@ -151,17 +151,29 @@ body {
   letter-spacing: 0.1em;
   pointer-events: none;
   /* «немного радугой»: конфетный градиент в цветах статов игры */
-  background: linear-gradient(92deg, #ff8fae 0%, #ffd76a 30%, #8ee6b8 55%, #7ec8f0 78%, #c9a6ff 100%);
+  background: linear-gradient(92deg, #ff7ab8 0%, #ffb35c 26%, #ffd76a 46%, #8ee6b8 64%, #7ec8f0 82%, #c9a6ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 0 3px 12px rgba(10, 4, 24, 0.4);
+  /* тень — только фильтром: text-shadow с прозрачной заливкой закрашивает
+     буквы цветом тени поверх градиента (баг WebKit/Blink) */
+  filter: drop-shadow(0 3px 10px rgba(10, 4, 24, 0.45));
+}
+
+/* тёмная подложка-обводка тем же словом: без неё пастельная радуга
+   тонет в светлом дневном небе */
+.create-brand::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: rgba(26, 14, 46, 0.92);
+  -webkit-text-stroke: 8px rgba(26, 14, 46, 0.92);
 }
 
 /* «o» в Eggo — это и есть яйцо: золотое, поверх радуги */
 .create-brand-o {
   -webkit-text-fill-color: var(--gold);
-  text-shadow: 0 0 18px rgba(255, 215, 106, 0.55);
+  filter: drop-shadow(0 0 10px rgba(255, 215, 106, 0.6));
 }
 
 /* нижний «лист» с формой — как родная шторка Telegram */
