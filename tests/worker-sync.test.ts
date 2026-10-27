@@ -52,6 +52,22 @@ describe('resolveSync — у кого lastTickAt новее, тот и глав�
     expect(decision.raw).toBe(saveAt(1_000))
   })
 
+  it('безымянный клиентский сейв не перезаписывает именованного питомца, даже если «новее»', () => {
+    const freshEgg = serialize(makePet(config, { lastTickAt: 9_000, name: null }))
+    const namedPet = saveAt(1_000) // makePet по умолчанию даёт имя
+    const decision = resolveSync(freshEgg, namedPet)
+    expect(decision.fromClient).toBe(false)
+    expect(decision.raw).toBe(namedPet)
+  })
+
+  it('именованный клиент новее безымянного серверного → побеждает клиент', () => {
+    const named = serialize(makePet(config, { lastTickAt: 9_000 }))
+    const unnamedServer = serialize(makePet(config, { lastTickAt: 1_000, name: null }))
+    const decision = resolveSync(named, unnamedServer)
+    expect(decision.fromClient).toBe(true)
+    expect(decision.raw).toBe(named)
+  })
+
   it('оба пусты → пусто', () => {
     const decision = resolveSync(null, null)
     expect(decision).toEqual({ raw: null, stage: null, fromClient: false })

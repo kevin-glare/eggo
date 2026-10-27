@@ -19,11 +19,11 @@ export interface SyncDecision {
 /** запасная внешность для очень старых сейвов — общая для воркера */
 export const FALLBACK_APPEARANCE = rollAppearance(() => 0)
 
-function readSave(raw: string | null): { lastTickAt: number; stage: PetState['stage'] } | null {
+function readSave(raw: string | null): { lastTickAt: number; stage: PetState['stage']; name: string | null } | null {
   if (!raw) return null
   const pet = deserialize(raw, FALLBACK_APPEARANCE)
   if (!pet) return null
-  return { lastTickAt: pet.lastTickAt, stage: pet.stage }
+  return { lastTickAt: pet.lastTickAt, stage: pet.stage, name: pet.name }
 }
 
 export function resolveSync(clientRaw: string | null, serverRaw: string | null): SyncDecision {
@@ -32,6 +32,11 @@ export function resolveSync(clientRaw: string | null, serverRaw: string | null):
 
   if (!client) {
     return { raw: serverRaw, stage: server ? server.stage : null, fromClient: false }
+  }
+  // свежее безымянное яйцо с нового устройства не должно побеждать
+  // именованного питомца по lastTickAt — сейв в базе не трогаем
+  if (client.name === null && server?.name != null) {
+    return { raw: serverRaw, stage: server.stage, fromClient: false }
   }
   // битой строке в базе не доверяем — клиент чинит своим сейвом
   if (!server || client.lastTickAt > server.lastTickAt) {

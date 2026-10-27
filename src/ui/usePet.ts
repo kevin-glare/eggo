@@ -50,9 +50,9 @@ export function usePet(config: GameConfig) {
       const local = petRef.current
       let best = local
       const legacyRaw = await petStore.legacyCloudLoad()
-      if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best)
+      if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, local.appearance) ?? best
       const response = await petStore.serverSync(serialize(best))
-      if (response !== null) best = mergeRemoteSave(response.save, best)
+      if (response !== null) best = mergeRemoteSave(response.save, best, local.appearance) ?? best
       // победил чужой сейв — применяем его и досчитываем время отсутствия
       if (!cancelled && best !== local) setPet(catchUp(best, Date.now(), config))
     })()
