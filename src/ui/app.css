@@ -138,11 +138,11 @@ body {
 
 .create-brand {
   position: absolute;
-  top: 0;
+  /* яйцо начинается на ~48–56% высоты сцены — висим прямо над ним */
+  top: 44%;
   left: 0;
   right: 0;
   margin: 0;
-  padding-top: calc(16px + env(safe-area-inset-top));
   text-align: center;
   font-family: var(--font-display);
   font-weight: 700;
