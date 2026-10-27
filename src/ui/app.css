@@ -66,6 +66,12 @@ body {
   white-space: nowrap;
 }
 
+/* возраст — в шапке, справа от имени */
+.header-age {
+  margin: 0 0 0 auto;
+  white-space: nowrap;
+}
+
 .age-line {
   font-size: 13px;
   color: var(--muted);
@@ -239,19 +245,18 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Настроение — чип в шапке, справа от имени */
+/* Настроение — чип под сценой */
 .mood {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  margin: 12px 0 16px;
+  padding: 6px 14px;
   border-radius: 999px;
   background: var(--card);
   border: 1px solid var(--stroke);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 /* Показатели */

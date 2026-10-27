@@ -83,18 +83,18 @@ export default function App() {
           <header className="header">
             <div className="header-row">
               <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
-              <span className="mood">{MOOD_TEXT[mood]}</span>
+              <p className="age-line header-age">
+                Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
+                {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
+              </p>
             </div>
             {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
-            <p className="age-line">
-              Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
-              {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
-            </p>
           </header>
 
           <div className="scene-card">
             <PetCanvas stage={pet.stage} mood={mood} appearance={pet.appearance} eggProgress={eggProgress} skyHourOverride={skyHour} />
           </div>
+          <div className="mood">{MOOD_TEXT[mood]}</div>
 
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar
