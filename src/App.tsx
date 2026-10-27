@@ -97,7 +97,6 @@ export default function App() {
               {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
               <p className="age-line header-age">
                 Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
-                {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
               </p>
             </div>
           </header>
@@ -126,6 +125,7 @@ export default function App() {
       {import.meta.env.DEV && (
         <div className="devtools">
           <span className="devtools-label">dev:</span>
+          {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
           <button type="button" onClick={() => advanceTime(60 * 60_000)}>
             +1 час
           </button>
