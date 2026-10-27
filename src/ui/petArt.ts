@@ -43,6 +43,18 @@ export const PET_PALETTES: Record<PaletteKind, PetPalette> = {
   kiwi: { bodyLight: '#eef9d0', bodyMid: '#cdee83', bodyShade: '#93c246', outline: '#5c7f2a', blush: '#ff9d8a' },
 }
 
+/**
+ * Скорлупа одна на всех: яйцо не выдаёт палитру будущего питомца,
+ * иначе цвет можно перебрасывать, удаляя сейв до вылупления.
+ */
+const EGG_PALETTE: PetPalette = {
+  bodyLight: '#fffef7',
+  bodyMid: '#f6efdc',
+  bodyShade: '#e3d5b4',
+  outline: '#96835f',
+  blush: '#f3b8a0',
+}
+
 /** Цвета, общие для всех палитр: лицо, слюни, капли, росток. */
 const INK = {
   iris: '#4a3728',
@@ -183,7 +195,7 @@ export function drawPet(
   ctx.rotate(v.tilt)
   ctx.scale(v.hatchPop, v.hatchPop * v.squash)
   if (stage === 'egg') {
-    drawEgg(ctx, eggProgress, palette)
+    drawEgg(ctx, eggProgress, EGG_PALETTE)
   } else {
     drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v.blink, tMs)
   }
