@@ -124,7 +124,6 @@ export default function App() {
 
       {import.meta.env.DEV && (
         <div className="devtools">
-          <span className="devtools-label">dev:</span>
           {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
           <button type="button" onClick={() => advanceTime(60 * 60_000)}>
             +1 час

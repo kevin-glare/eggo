@@ -421,12 +421,6 @@ body {
   gap: 8px;
 }
 
-.devtools-label {
-  font-size: 10px;
-  color: var(--muted);
-  font-family: var(--mono);
-}
-
 .devtools button {
   background: transparent;
   border: 1px dashed var(--stroke);
