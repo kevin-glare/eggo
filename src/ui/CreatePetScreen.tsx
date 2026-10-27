@@ -34,29 +34,16 @@ export default function CreatePetScreen({ maxLength, appearance, skyHourOverride
         />
         <svg className="create-brand" viewBox="0 0 260 100" role="img" aria-label="Eggo">
           <defs>
-            <linearGradient id="eggo-rainbow" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#ff7ab8" />
-              <stop offset="0.26" stopColor="#ffb35c" />
-              <stop offset="0.46" stopColor="#ffd76a" />
-              <stop offset="0.64" stopColor="#8ee6b8" />
-              <stop offset="0.82" stopColor="#7ec8f0" />
-              <stop offset="1" stopColor="#c9a6ff" />
-            </linearGradient>
             <path id="eggo-arc" d="M 16 84 Q 130 4 244 84" fill="none" />
           </defs>
           <text
-            fill="url(#eggo-rainbow)"
-            stroke="rgba(26, 14, 46, 0.92)"
-            strokeWidth="7"
-            strokeLinejoin="round"
-            paintOrder="stroke"
             fontFamily="'Comfortaa', 'Nunito', system-ui, sans-serif"
             fontWeight="700"
             fontSize="42"
             letterSpacing="2"
           >
             <textPath href="#eggo-arc" startOffset="50%" textAnchor="middle">
-              Egg<tspan fill="#ffd76a">o</tspan>
+              Egg<tspan className="create-brand-o">o</tspan>
             </textPath>
           </text>
         </svg>

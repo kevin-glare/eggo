@@ -138,7 +138,7 @@ body {
 
 .create-brand {
   position: absolute;
-  /* слово выгнуто дугой-радугой над яйцом (верх скорлупы — 51–58% сцены);
+  /* слово выгнуто дугой над яйцом (верх скорлупы — 51–58% сцены);
      якорь ниже из-за пустого «хвоста» арки в коробке svg */
   bottom: 55%;
   left: 50%;
@@ -146,7 +146,17 @@ body {
   width: clamp(220px, 64vw, 300px);
   height: auto;
   pointer-events: none;
-  filter: drop-shadow(0 3px 8px rgba(10, 4, 24, 0.45));
+  /* мягкая тень, чтобы белое читалось на светлом небе */
+  filter: drop-shadow(0 2px 6px rgba(10, 4, 24, 0.5));
+}
+
+.create-brand text {
+  fill: var(--ink);
+}
+
+/* «o» в Eggo — это и есть яйцо: золотое */
+.create-brand-o {
+  fill: var(--gold);
 }
 
 /* нижний «лист» с формой — как родная шторка Telegram */
