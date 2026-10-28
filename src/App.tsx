@@ -52,8 +52,21 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 ]
 
 export default function App() {
-  const { pet, notice, celebrate, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset } =
-    usePet(config)
+  const {
+    pet,
+    notice,
+    celebrate,
+    feedPet,
+    playPet,
+    washPet,
+    petPet,
+    claimDaily,
+    showNotice,
+    toggleSleep,
+    startGame,
+    advanceTime,
+    reset,
+  } = usePet(config)
   // праздник дружбы: торт стоит весь юбилейный день
   const anniversary = pet !== null ? friendshipDay(pet, Date.now()) !== null : false
   const [skyHour, setSkyHour] = useState<number | null>(null)
@@ -190,7 +203,7 @@ export default function App() {
           </div>
 
           {pet.stage !== 'egg' && pet.daily && (
-            <QuestsBar daily={pet.daily} targets={config.quests.targets} onClaim={onClaim} />
+            <QuestsBar daily={pet.daily} targets={config.quests.targets} onClaim={onClaim} onExplain={showNotice} />
           )}
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar

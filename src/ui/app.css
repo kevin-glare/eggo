@@ -394,18 +394,28 @@ body {
 }
 
 .quest {
-  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 6px 4px;
+  gap: 7px;
+  padding: 5px 8px;
   border-radius: 14px;
   background: var(--card);
   border: 1px solid var(--stroke);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.quest:not(:active):hover {
+  border-color: rgba(255, 179, 92, 0.4);
+}
+
+.quest:active {
+  transform: scale(0.96);
 }
 
 .quest .qicon {
@@ -413,10 +423,24 @@ body {
   line-height: 1;
 }
 
+.quest .qmeta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.quest .qlabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .quest .qcount {
   font-family: var(--mono);
   font-size: 12px;
-  color: var(--muted);
+  color: var(--ink);
   font-weight: 700;
 }
 
@@ -427,15 +451,6 @@ body {
 
 .quest.done .qcount {
   color: #8ee6b8;
-}
-
-/* скрытая подпись для скринридеров */
-.quest .qsr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
 }
 
 .claim {

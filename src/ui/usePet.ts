@@ -239,6 +239,9 @@ export function usePet(config: GameConfig) {
     return result.ok
   }, [config])
 
+  /** Показать разовое сообщение (подсказки интерфейса). */
+  const showNotice = useCallback((text: string) => setNotice(text), [])
+
   /**
    * Дать имя питомцу: без имени игра не начинается.
    * Работает и для свежего яйца, и для старого безымянного сейва.
@@ -282,5 +285,19 @@ export function usePet(config: GameConfig) {
     setNotice('🥚 Новая игра — дай имя!')
   }, [config])
 
-  return { pet, notice, celebrate, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset }
+  return {
+    pet,
+    notice,
+    celebrate,
+    feedPet,
+    playPet,
+    washPet,
+    petPet,
+    claimDaily,
+    showNotice,
+    toggleSleep,
+    startGame,
+    advanceTime,
+    reset,
+  }
 }
