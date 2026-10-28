@@ -39,6 +39,8 @@ interface PetCanvasProps {
   scene?: PetActionKind | null
   /** сценка доиграла: применить действие (один раз, в конце) */
   onSceneComplete?: (kind: PetActionKind) => void
+  /** счётчик праздников: рост n → конфетти и довольный прыжок */
+  celebrate?: number
 }
 
 interface Particle {
@@ -226,6 +228,7 @@ export default function PetCanvas({
   onPetTap,
   scene,
   onSceneComplete,
+  celebrate = 0,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel })
@@ -342,6 +345,36 @@ export default function PetCanvas({
   useEffect(() => {
     gsap.to(visRef.current, { dirtAlpha: dirtIntensity(dirtLevel), duration: 1.2, ease: 'sine.out', overwrite: 'auto' })
   }, [dirtLevel])
+
+  // праздник: конфетти в цветах питомца (награда за задания дня и т.п.)
+  useEffect(() => {
+    if (celebrate <= 0) return
+    const palette = PET_PALETTES[propsRef.current.appearance.palette]
+    const particles = particlesRef.current
+    for (let i = 0; i < 26; i++) {
+      const ang = (Math.PI * 2 * i) / 26 + Math.random() * 0.4
+      particles.push({
+        x: SCENE_W / 2,
+        y: GROUND_Y - 70,
+        vx: Math.cos(ang) * (70 + Math.random() * 110),
+        vy: Math.sin(ang) * (70 + Math.random() * 110) - 110,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 9,
+        life: 0,
+        maxLife: 1 + Math.random() * 0.6,
+        size: 3 + Math.random() * 3.5,
+        color: i % 2 === 0 ? palette.bodyMid : palette.blush,
+        shape: 'shard',
+      })
+    }
+    if (!prefersReducedMotion()) {
+      const v = visRef.current
+      gsap
+        .timeline()
+        .to(v, { jumpY: -34, duration: 0.2, ease: 'power2.out', overwrite: 'auto' })
+        .to(v, { jumpY: 0, duration: 0.6, ease: 'elastic.out(1.1, 0.4)' })
+    }
+  }, [celebrate])
 
   // вылупление: пружинка роста + конфетти из скорлупы
   useEffect(() => {

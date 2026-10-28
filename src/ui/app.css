@@ -369,6 +369,95 @@ body {
   color: var(--ink);
 }
 
+/* Задания дня: чипы с прогрессом + кнопка награды */
+.quests {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.quest {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.quest .qicon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.quest .qcount {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.quest.done {
+  border-color: rgba(142, 230, 184, 0.5);
+  background: rgba(58, 90, 66, 0.4);
+}
+
+.quest.done .qcount {
+  color: #8ee6b8;
+}
+
+/* скрытая подпись для скринридеров */
+.quest .qsr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.claim {
+  flex: 1.2;
+  padding: 6px 4px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.claim.ready {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 14px rgba(255, 179, 92, 0.45);
+}
+
+.claim.ready:not(:active):hover {
+  filter: brightness(1.06);
+}
+
+.claim:not(.ready):not(:active) {
+  opacity: 0.85;
+}
+
+.claim:active {
+  transform: scale(0.96);
+}
+
 /* Действия */
 .actions {
   flex-shrink: 0;
@@ -380,6 +469,7 @@ body {
 }
 
 .actions button {
+  position: relative;
   background: var(--card);
   color: var(--ink);
   border: 1px solid var(--stroke);
@@ -399,6 +489,30 @@ body {
 .actions button .icon {
   font-size: 21px;
   line-height: 1;
+}
+
+/* метка задания дня в углу кнопки: прогресс или галочка */
+.actions .qmark {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 1px solid rgba(58, 36, 16, 0.35);
+}
+
+.actions .qmark.done {
+  background: #8ee6b8;
 }
 
 .actions button:not(:disabled):hover {

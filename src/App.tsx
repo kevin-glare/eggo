@@ -8,7 +8,9 @@ import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
+import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
+import type { QuestId } from './game/quests'
 import { usePet } from './ui/usePet'
 import './ui/app.css'
 
@@ -49,10 +51,13 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 ]
 
 export default function App() {
-  const { pet, notice, feedPet, playPet, washPet, petPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
+  const { pet, notice, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset } =
+    usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
+  // счётчик праздников (награда за задания): рост запускает конфетти в канвасе
+  const [celebrate, setCelebrate] = useState(0)
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
@@ -88,6 +93,29 @@ export default function App() {
   }
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
   const ready = pet !== null
+
+  // забрать награду дня; успех — конфетти в сцене
+  const onClaim = () => {
+    if (claimDaily()) setCelebrate((n) => n + 1)
+  }
+
+  /** Метки заданий дня на кнопках: «1/3» пока идёт, «✓» когда готово. */
+  const questMarks = (() => {
+    const daily = pet?.daily
+    if (!daily || daily.claimed) return undefined
+    const marks: Partial<Record<PetActionKind, string>> = {}
+    const mark = (kind: PetActionKind, quest: QuestId) => {
+      const i = daily.quests.indexOf(quest)
+      if (i === -1) return
+      const p = daily.progress[i] ?? 0
+      const t = config.quests.targets[quest]
+      marks[kind] = p >= t ? '✓' : `${p}/${t}`
+    }
+    mark('feed', 'feed')
+    mark('play', 'play')
+    mark('wash', 'wash')
+    return Object.keys(marks).length > 0 ? marks : undefined
+  })()
 
   // вход: блоки softly всплывают каскадом — когда питомец уже показан
   useEffect(() => {
@@ -151,14 +179,19 @@ export default function App() {
               onPetTap={petPet}
               scene={scene}
               onSceneComplete={onSceneComplete}
+              celebrate={celebrate}
             />
             <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
 
+          {pet.stage !== 'egg' && pet.daily && (
+            <QuestsBar daily={pet.daily} targets={config.quests.targets} onClaim={onClaim} />
+          )}
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar
             isEgg={pet.stage === 'egg'}
             sleeping={pet.sleeping}
+            questMarks={questMarks}
             onFeed={onFeed}
             onPlay={onPlay}
             onWash={onWash}

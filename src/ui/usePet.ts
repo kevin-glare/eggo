@@ -13,7 +13,7 @@ import {
 } from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
-import { recordQuest, type QuestId } from '../game/quests'
+import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
@@ -82,13 +82,17 @@ export function usePet(config: GameConfig) {
     }
   }, [config])
 
-  // при запуске досчитываем всё время, пока приложение было закрыто
+  // при запуске досчитываем всё время, пока приложение было закрыто,
+  // и разыгрываем задания сегодняшнего дня — они видны сразу после входа
   useEffect(() => {
-    setPet((p) => (p === null ? p : catchUp(p, Date.now(), config)))
+    setPet((p) => (p === null ? p : ensureDaily(catchUp(p, Date.now(), config), config, Date.now())))
   }, [config])
 
   useEffect(() => {
-    const id = window.setInterval(() => setPet((p) => (p === null ? p : catchUp(p, Date.now(), config))), 1000)
+    const id = window.setInterval(
+      () => setPet((p) => (p === null ? p : ensureDaily(catchUp(p, Date.now(), config), config, Date.now()))),
+      1000,
+    )
     return () => window.clearInterval(id)
   }, [config])
 
@@ -168,6 +172,22 @@ export function usePet(config: GameConfig) {
     return result
   }, [apply, config])
 
+  /** Забрать награду за задания дня; отказ — с тостом-подсказкой. */
+  const claimDaily = useCallback(() => {
+    const current = petRef.current
+    if (current === null) return false
+    const result = claimReward(current, config)
+    setPet(result.state)
+    if (result.ok) {
+      setNotice(`🎁 Задания дня выполнены: +${config.quests.rewardHappiness} к счастью!`)
+      hapticSuccess()
+    } else {
+      setNotice(result.reason === 'already-claimed' ? '🎁 Награда уже забрана' : '🎯 Сначала выполни задания дня')
+      hapticWarning()
+    }
+    return result.ok
+  }, [config])
+
   /**
    * Дать имя питомцу: без имени игра не начинается.
    * Работает и для свежего яйца, и для старого безымянного сейва.
@@ -211,5 +231,5 @@ export function usePet(config: GameConfig) {
     setNotice('🥚 Новая игра — дай имя!')
   }, [config])
 
-  return { pet, notice, feedPet, playPet, washPet, petPet, toggleSleep, startGame, advanceTime, reset }
+  return { pet, notice, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset }
 }
