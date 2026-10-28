@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_CONFIG, HOUR } from '../src/game/config'
 import { serialize } from '../src/game/storage'
 import { runPushCron } from '../worker/src/pushes'
-import { hatchedPet } from './helpers'
+import { hatchedPet, MINUTE } from './helpers'
 import { FakeDb } from './worker-fake-db'
 
 const config = DEFAULT_CONFIG
@@ -125,7 +125,16 @@ describe('runPushCron', () => {
     const db = new FakeDb([
       {
         telegram_id: 7,
-        save_json: serialize(hatchedPet(config, { stage: 'teen', lastTickAt: Date.now() })),
+        // настоящий возраст подростка: стадию выводит движок из ageMs,
+        // а lastTickAt на минуту в прошлом — крон гарантированно тикает
+        // (без этого тест плавал: успела ли пройти мс между setup и кроном)
+        save_json: serialize(
+          hatchedPet(config, {
+            stage: 'teen',
+            ageMs: config.evolution.eggMs + config.evolution.babyMs + config.evolution.childMs + HOUR,
+            lastTickAt: Date.now() - MINUTE,
+          }),
+        ),
         push_enabled: 1,
         utc_offset: utcOffsetWithLocalHour(23),
         last_seen_at: Date.now() - 30 * HOUR,
@@ -145,7 +154,16 @@ describe('runPushCron', () => {
     const db = new FakeDb([
       {
         telegram_id: 7,
-        save_json: serialize(hatchedPet(config, { stage: 'teen', lastTickAt: Date.now() })),
+        // настоящий возраст подростка: стадию выводит движок из ageMs,
+        // а lastTickAt на минуту в прошлом — крон гарантированно тикает
+        // (без этого тест плавал: успела ли пройти мс между setup и кроном)
+        save_json: serialize(
+          hatchedPet(config, {
+            stage: 'teen',
+            ageMs: config.evolution.eggMs + config.evolution.babyMs + config.evolution.childMs + HOUR,
+            lastTickAt: Date.now() - MINUTE,
+          }),
+        ),
         push_enabled: 1,
         utc_offset: utcOffsetWithLocalHour(9),
         last_seen_at: Date.now() - 30 * HOUR,
