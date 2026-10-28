@@ -369,6 +369,19 @@ body {
   color: var(--ink);
 }
 
+/* бейдж серии дней рядом с именем */
+.streak {
+  margin-left: 8px;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 179, 92, 0.18);
+  border: 1px solid rgba(255, 179, 92, 0.4);
+  font-size: 0.5em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* Задания дня: чипы с прогрессом + кнопка награды */
 .quests {
   flex-shrink: 0;

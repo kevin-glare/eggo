@@ -14,7 +14,7 @@ import {
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/quests'
-import { touchStreak } from '../game/streak'
+import { missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
@@ -33,6 +33,15 @@ const REASON_TEXT: Record<ActionReason, string> = {
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
 
+/** Русская плюрализация: 1 день, 3 дня, 14 дней. */
+function pluralDays(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'день'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня'
+  return 'дней'
+}
+
 function initialPet(): PetState | null {
   // локальный сейв; если его нет — null: новое яйцо не создаём, пока
   // стартовый синк не выяснит, есть ли питомец у пользователя на сервере
@@ -48,6 +57,8 @@ function initialPet(): PetState | null {
 export function usePet(config: GameConfig) {
   const [pet, setPet] = useState<PetState | null>(() => initialPet())
   const [notice, setNotice] = useState<string | null>(null)
+  /** счётчик праздников (конфетти в канвасе): награда дня, порог серии, «скучал» */
+  const [celebrate, setCelebrate] = useState(0)
   const petRef = useRef(pet)
   petRef.current = pet
   const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
@@ -76,7 +87,14 @@ export function usePet(config: GameConfig) {
       }
       // питомца нет нигде — новая игра; чужой сейв досчитываем по времени отсутствия
       const resolved = best ?? createPet(Date.now(), config, rollAppearance(Math.random))
-      if (!cancelled && resolved !== local) setPet(catchUp(resolved, Date.now(), config))
+      if (!cancelled) {
+        // «скучал»: absence считается до досчёта — lastTickAt ещё старый
+        if (best !== null && missYou(best, config, Date.now())) {
+          setNotice(`💗 ${best.name ?? 'Питомец'} скучал по тебе!`)
+          setCelebrate((n) => n + 1)
+        }
+        if (resolved !== local) setPet(catchUp(resolved, Date.now(), config))
+      }
     })()
     return () => {
       cancelled = true
@@ -147,8 +165,13 @@ export function usePet(config: GameConfig) {
       // успешное действие отмечается в заданиях дня и в серии дней
       if (result.ok && questId) {
         let next = recordQuest(result.state, questId, config, Date.now())
-        next = touchStreak(next, config, Date.now()).state
+        const streak = touchStreak(next, config, Date.now())
+        next = streak.state
         setPet(next)
+        if (streak.milestone !== null) {
+          setNotice(`🔥 ${streak.milestone} ${pluralDays(streak.milestone)} подряд!`)
+          setCelebrate((n) => n + 1)
+        }
       } else {
         setPet(result.state)
       }
@@ -187,6 +210,7 @@ export function usePet(config: GameConfig) {
     setPet(result.state)
     if (result.ok) {
       setNotice(`🎁 Задания дня выполнены: +${config.quests.rewardHappiness} к счастью!`)
+      setCelebrate((n) => n + 1)
       hapticSuccess()
     } else {
       setNotice(result.reason === 'already-claimed' ? '🎁 Награда уже забрана' : '🎯 Сначала выполни задания дня')
@@ -238,5 +262,5 @@ export function usePet(config: GameConfig) {
     setNotice('🥚 Новая игра — дай имя!')
   }, [config])
 
-  return { pet, notice, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset }
+  return { pet, notice, celebrate, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset }
 }

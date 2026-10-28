@@ -51,13 +51,11 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 ]
 
 export default function App() {
-  const { pet, notice, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset } =
+  const { pet, notice, celebrate, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset } =
     usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
-  // счётчик праздников (награда за задания): рост запускает конфетти в канвасе
-  const [celebrate, setCelebrate] = useState(0)
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
@@ -94,9 +92,9 @@ export default function App() {
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
   const ready = pet !== null
 
-  // забрать награду дня; успех — конфетти в сцене
+  // забрать награду дня; успех — конфетти в сцене (usePet сам поднимает celebrate)
   const onClaim = () => {
-    if (claimDaily()) setCelebrate((n) => n + 1)
+    claimDaily()
   }
 
   /** Метки заданий дня на кнопках: «1/3» пока идёт, «✓» когда готово. */
@@ -158,7 +156,10 @@ export default function App() {
       ) : (
         <>
           <header className="header">
-            <h1 className="stage-title">{pet.name ?? STAGE_TITLE[pet.stage]}</h1>
+            <h1 className="stage-title">
+              {pet.name ?? STAGE_TITLE[pet.stage]}
+              {pet.streakDays >= 2 && <span className="streak" title="Дней подряд">🔥{pet.streakDays}</span>}
+            </h1>
             <div className="header-meta">
               {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
               <p className="age-line header-age">
