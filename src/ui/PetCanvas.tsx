@@ -16,6 +16,7 @@ import {
 import { drawScene } from './scene'
 import { hapticTap } from '../telegram'
 import { sampleDayCycle } from './dayCycle'
+import { isHintDone, markHintDone, type HintKind } from './hints'
 
 export type PetActionKind = 'feed' | 'play' | 'wash'
 
@@ -134,6 +135,22 @@ const PLAY_HITS = 3
 /** Щедрая хит-зона мяча, px. */
 const PLAY_HIT_R = 36
 const PLAY_IDLE_MS = 10_000
+
+/**
+ * Подсказки сценок: подпись сверху + указатель на цель (кольцо на еде и
+ * мяче, палец при купании). Показываются, пока игрок ни разу не выполнил
+ * интерактив сам — см. ui/hints.
+ */
+interface SceneHint {
+  kind: HintKind
+  alpha: number
+}
+
+const HINT_TEXT: Record<HintKind, string> = {
+  feed: 'Тапай по еде!',
+  wash: 'Води пальцем по питомцу',
+  play: 'Тапай по мячу!',
+}
 
 /* Блуждание по лугу — презентация, не баланс: на логику не влияет. */
 /** Скорость прогулки и возврата к центру, px/с. */
@@ -256,6 +273,30 @@ export default function PetCanvas({
   const dragMovedRef = useRef(false)
   const completeRef = useRef(onSceneComplete)
   completeRef.current = onSceneComplete
+  // подсказка активной сценки; null — скрыта
+  const hintRef = useRef<SceneHint | null>(null)
+
+  /** Показать подсказку сценки, если игрок ещё не делал это сам. */
+  const showHint = (kind: HintKind, delaySec: number) => {
+    if (isHintDone(kind)) return
+    hintRef.current = { kind, alpha: 0 }
+    gsap.to(hintRef.current, { alpha: 1, duration: 0.4, delay: delaySec, overwrite: 'auto' })
+  }
+
+  /** Спрятать подсказку и запомнить, что интерактив освоен. */
+  const hideHint = (kind: HintKind) => {
+    const h = hintRef.current
+    if (!h || h.kind !== kind) return
+    markHintDone(kind)
+    gsap.to(h, {
+      alpha: 0,
+      duration: 0.3,
+      overwrite: 'auto',
+      onComplete: () => {
+        if (hintRef.current === h) hintRef.current = null
+      },
+    })
+  }
   // пузырь желания: альфа твинится при смене, вид запоминается для плавного исчезновения
   const bubbleRef = useRef<{ alpha: number; kind: DesireKind }>({ alpha: 0, kind: 'feed' })
 
@@ -328,6 +369,13 @@ export default function PetCanvas({
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
       drawPet(ctx, st, md, look, v, now, prog, dirt)
+      drawHintOverlay(
+        ctx,
+        hintRef.current,
+        now,
+        feedRef.current?.landed === true,
+        playRef.current?.done === false ? playRef.current.ball : null,
+      )
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
@@ -436,11 +484,13 @@ export default function PetCanvas({
       launchBall(sc)
     }
     sc.idleTimer = window.setTimeout(autoPlayFinish, PLAY_IDLE_MS)
+    showHint('play', 0.6)
     return () => {
       if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
       gsap.killTweensOf(ball)
       removeProp(stageProps, ball)
       playRef.current = null
+      hintRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene])
@@ -483,6 +533,7 @@ export default function PetCanvas({
     const sc = playRef.current
     if (!sc || sc.done) return
     sc.hits += 1
+    hideHint('play')
     if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
     hapticTap()
     spawnSparkles(particlesRef.current)
@@ -522,6 +573,7 @@ export default function PetCanvas({
     stageProps.push(food)
     const sc: FeedScene = { food, bites: 0, landed: false, done: false, autoTimer: null }
     feedRef.current = sc
+    showHint('feed', 0.7)
     const armIdleTimer = () => {
       if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
       sc.autoTimer = window.setTimeout(autoFinish, FEED_IDLE_MS)
@@ -545,6 +597,7 @@ export default function PetCanvas({
       if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
       removeProp(stageProps, food)
       feedRef.current = null
+      hintRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene])
@@ -557,9 +610,11 @@ export default function PetCanvas({
     const sc: WashScene = { strokes: 0, done: false, autoTimer: null }
     washRef.current = sc
     armWashIdle()
+    showHint('wash', 0.6)
     return () => {
       if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
       washRef.current = null
+      hintRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene])
@@ -661,6 +716,7 @@ export default function PetCanvas({
     if (drag.moved < WASH_SEGMENT_PX) return
     drag.moved = 0
     sc.strokes += 1
+    hideHint('wash')
     spawnWashBubbles(particlesRef.current, p.x, p.y)
     hapticTap()
     washProgress(sc, visRef.current)
@@ -677,6 +733,7 @@ export default function PetCanvas({
     const sc = feedRef.current
     if (!sc || sc.done || !sc.landed) return
     sc.bites += 1
+    hideHint('feed')
     sc.food.scale = FEED_SCALES[Math.min(sc.bites, FEED_BITES) - 1]!
     spawnCrumbs(particlesRef.current, sc.food.x, FOOD_Y)
     hapticTap()
@@ -847,6 +904,52 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
+}
+
+/** Подсказка поверх сцены: подпись сверху и указатель, куда тапать/вести. */
+function drawHintOverlay(
+  ctx: CanvasRenderingContext2D,
+  hint: SceneHint | null,
+  now: number,
+  feedLanded: boolean,
+  playBall: StageProp | null,
+): void {
+  if (!hint || hint.alpha <= 0.01) return
+  // указатель цели: кольцо на еде и мяче, ведущий палец при купании
+  let ring: { x: number; y: number } | null = null
+  let finger: { x: number; y: number } | null = null
+  if (hint.kind === 'feed' && feedLanded) ring = { x: FOOD_X, y: FOOD_Y }
+  if (hint.kind === 'play' && playBall) ring = { x: playBall.x, y: playBall.y }
+  if (hint.kind === 'wash') finger = { x: SCENE_W / 2 + Math.sin(now / 700) * 46, y: GROUND_Y - 90 }
+
+  ctx.save()
+  ctx.globalAlpha = hint.alpha
+  // подпись
+  ctx.font = '700 15px Nunito, system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  const w = ctx.measureText(HINT_TEXT[hint.kind]).width + 26
+  ctx.fillStyle = 'rgba(26, 16, 46, 0.78)'
+  ctx.beginPath()
+  roundRect(ctx, SCENE_W / 2 - w / 2, 48, w, 32, 16)
+  ctx.fill()
+  ctx.fillStyle = '#fffdf6'
+  ctx.fillText(HINT_TEXT[hint.kind], SCENE_W / 2, 65)
+  // пульсирующее кольцо вокруг цели
+  if (ring) {
+    const r = 30 + Math.sin(now / 280) * 4
+    ctx.strokeStyle = 'rgba(255, 215, 106, 0.9)'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(ring.x, ring.y, r, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  // палец-демонстрация движения при купании
+  if (finger) {
+    ctx.font = '26px "Apple Color Emoji", "Noto Color Emoji", sans-serif'
+    ctx.fillText('👆', finger.x, finger.y)
+  }
+  ctx.restore()
 }
 
 /** Пузыри и капли там, где трёт палец. */
