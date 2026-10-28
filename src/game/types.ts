@@ -38,4 +38,8 @@ export interface PetState {
   lastTickAt: number
   /** ежедневные задания; null — ещё не начат день (старые сейвы нормализуются) */
   daily: DailyQuests | null
+  /** серия дней с активностью; 0 у старых сейвов (нормализуется) */
+  streakDays: number
+  /** день последней активности ('YYYY-MM-DD'); null — активностей ещё не было */
+  lastVisitDayKey: string | null
 }

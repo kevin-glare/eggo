@@ -14,6 +14,7 @@ import {
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/quests'
+import { touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
@@ -143,8 +144,14 @@ export function usePet(config: GameConfig) {
       const current = petRef.current
       if (current === null) return null
       const result = action(current, config)
-      // успешное действие отмечается в заданиях дня (создаёт daily при первом за день)
-      setPet(questId && result.ok ? recordQuest(result.state, questId, config, Date.now()) : result.state)
+      // успешное действие отмечается в заданиях дня и в серии дней
+      if (result.ok && questId) {
+        let next = recordQuest(result.state, questId, config, Date.now())
+        next = touchStreak(next, config, Date.now()).state
+        setPet(next)
+      } else {
+        setPet(result.state)
+      }
       if (result.ok) {
         setNotice(successText)
         hapticSuccess()

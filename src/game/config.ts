@@ -47,6 +47,8 @@ export interface GameConfig {
     rewardHappiness: number
     targets: Record<QuestId, number>
   }
+  /** серия дней: дни, на которых праздник */
+  streak: { milestones: number[] }
   /** пуши от бота: пороги и кулдауны (логика — game/notifications.ts) */
   notifications: {
     /** «в беде»: пауза между повторными пушами */
@@ -92,6 +94,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     rewardHappiness: 15,
     targets: { feed: 3, play: 2, wash: 2, pet: 3 },
   },
+  streak: { milestones: [3, 7, 14] },
   notifications: {
     criticalCooldownMs: 6 * HOUR,
     missYouAfterMs: 24 * HOUR,

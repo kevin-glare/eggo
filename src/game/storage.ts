@@ -54,6 +54,10 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       name: typeof pet.name === 'string' ? pet.name : null,
       appearance: normalizeAppearance(pet.appearance) ?? fallbackAppearance,
       daily: normalizeDaily(pet.daily),
+      streakDays: typeof pet.streakDays === 'number' && pet.streakDays >= 0 ? Math.floor(pet.streakDays) : 0,
+      lastVisitDayKey: typeof pet.lastVisitDayKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(pet.lastVisitDayKey)
+        ? pet.lastVisitDayKey
+        : null,
     }
   } catch {
     return null
