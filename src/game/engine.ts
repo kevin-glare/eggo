@@ -17,6 +17,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     neglectMs: 0,
     lastTickAt: now,
     appearance,
+    daily: null,
   }
 }
 

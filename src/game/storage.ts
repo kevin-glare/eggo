@@ -1,9 +1,31 @@
 import type { GameConfig } from './config'
 import { normalizeAppearance, type PetAppearance } from './appearance'
 import { tick } from './engine'
+import type { QuestId } from './quests'
+import type { DailyQuests } from './quests'
 import type { PetState } from './types'
 
 const SAVE_VERSION = 1
+
+const QUEST_IDS: QuestId[] = ['feed', 'play', 'wash', 'pet']
+
+/**
+ * Ежедневные задания появились позже сейва v1: их отсутствие или поломка
+ * нормализуется в null — день начнётся заново, питомец не пострадает.
+ */
+function normalizeDaily(raw: unknown): DailyQuests | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const d = raw as Partial<DailyQuests>
+  if (typeof d.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.day)) return null
+  if (!Array.isArray(d.quests) || !Array.isArray(d.progress) || d.quests.length !== d.progress.length) return null
+  if (!d.quests.every((q) => QUEST_IDS.includes(q))) return null
+  return {
+    day: d.day,
+    quests: d.quests,
+    progress: d.progress.map((p) => (typeof p === 'number' && p >= 0 ? Math.floor(p) : 0)),
+    claimed: d.claimed === true,
+  }
+}
 
 interface SaveData {
   version: number
@@ -31,6 +53,7 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       ...pet,
       name: typeof pet.name === 'string' ? pet.name : null,
       appearance: normalizeAppearance(pet.appearance) ?? fallbackAppearance,
+      daily: normalizeDaily(pet.daily),
     }
   } catch {
     return null

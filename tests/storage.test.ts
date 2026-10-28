@@ -28,6 +28,29 @@ describe('serialize / deserialize', () => {
     expect(restored?.name).toBeNull()
   })
 
+  it('старый сейв без daily → daily: null (день начнётся заново)', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.daily
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.daily).toBeNull()
+  })
+
+  it('битый daily в сейве → null: неизвестные задания и кривой прогресс отбрасываются', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    for (const daily of [
+      { day: 'не дата', quests: ['feed', 'play', 'wash'], progress: [1, 2, 3], claimed: false },
+      { day: '2026-10-28', quests: ['рыба', 'play', 'wash'], progress: [1, 2, 3], claimed: false },
+      { day: '2026-10-28', quests: ['feed', 'play'], progress: [1, 2, 3], claimed: false },
+      'мусор',
+    ]) {
+      const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+      data.pet.daily = daily
+      const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+      expect(restored?.daily).toBeNull()
+    }
+  })
+
   it('старый сейв без внешности → запасная внешность', () => {
     const pet = hatchedPet(DEFAULT_CONFIG)
     const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }

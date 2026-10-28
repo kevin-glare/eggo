@@ -1,4 +1,5 @@
 import type { PetAppearance } from './appearance'
+import type { DailyQuests } from './quests'
 
 export type Stage = 'egg' | 'baby' | 'child' | 'teen' | 'adult'
 
@@ -35,4 +36,6 @@ export interface PetState {
   appearance: PetAppearance
   /** реальный момент последнего тика (мс, epoch) — для досчёта оффлайна */
   lastTickAt: number
+  /** ежедневные задания; null — ещё не начат день (старые сейвы нормализуются) */
+  daily: DailyQuests | null
 }

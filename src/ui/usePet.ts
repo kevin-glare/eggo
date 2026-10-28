@@ -13,6 +13,7 @@ import {
 } from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
+import { recordQuest, type QuestId } from '../game/quests'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
@@ -134,11 +135,12 @@ export function usePet(config: GameConfig) {
   }, [notice])
 
   const apply = useCallback(
-    (action: (p: PetState, c: GameConfig) => ActionResult, successText: string) => {
+    (action: (p: PetState, c: GameConfig) => ActionResult, successText: string, questId?: QuestId) => {
       const current = petRef.current
       if (current === null) return null
       const result = action(current, config)
-      setPet(result.state)
+      // успешное действие отмечается в заданиях дня (создаёт daily при первом за день)
+      setPet(questId && result.ok ? recordQuest(result.state, questId, config, Date.now()) : result.state)
       if (result.ok) {
         setNotice(successText)
         hapticSuccess()
@@ -151,9 +153,9 @@ export function usePet(config: GameConfig) {
     [config],
   )
 
-  const feedPet = useCallback(() => apply(feed, '🍗 Ням-ням!'), [apply])
-  const playPet = useCallback(() => apply(play, '😄 Было весело!'), [apply])
-  const washPet = useCallback(() => apply(wash, '🛁 Чистота!'), [apply])
+  const feedPet = useCallback(() => apply(feed, '🍗 Ням-ням!', 'feed'), [apply])
+  const playPet = useCallback(() => apply(play, '😄 Было весело!', 'play'), [apply])
+  const washPet = useCallback(() => apply(wash, '🛁 Чистота!', 'wash'), [apply])
 
   // кулдаун поглаживания живёт в сессии: сердечки при любом тапе остаются,
   // но счастье капает не чаще config.actions.pet.cooldownMs
@@ -161,7 +163,7 @@ export function usePet(config: GameConfig) {
   const petPet = useCallback(() => {
     const now = Date.now()
     if (now - lastPetAtRef.current < config.actions.pet.cooldownMs) return null
-    const result = apply(petAction, '💗 Мур-мур!')
+    const result = apply(petAction, '💗 Мур-мур!', 'pet')
     if (result?.ok) lastPetAtRef.current = now
     return result
   }, [apply, config])

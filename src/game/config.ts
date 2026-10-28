@@ -1,3 +1,4 @@
+import type { QuestId } from './quests'
 import type { Stats } from './types'
 
 /**
@@ -39,6 +40,13 @@ export interface GameConfig {
   catchUpChunkMs: number
   /** предел длины имени питомца (после обрезки пробелов) */
   nameMaxLength: number
+  /** ежедневные задания: сколько в день, награда и цели */
+  quests: {
+    count: number
+    /** +счастья за полный набор дня */
+    rewardHappiness: number
+    targets: Record<QuestId, number>
+  }
   /** пуши от бота: пороги и кулдауны (логика — game/notifications.ts) */
   notifications: {
     /** «в беде»: пауза между повторными пушами */
@@ -79,6 +87,11 @@ export const DEFAULT_CONFIG: GameConfig = {
   maxOfflineMs: 7 * DAY,
   catchUpChunkMs: HOUR,
   nameMaxLength: 16,
+  quests: {
+    count: 3,
+    rewardHappiness: 15,
+    targets: { feed: 3, play: 2, wash: 2, pet: 3 },
+  },
   notifications: {
     criticalCooldownMs: 6 * HOUR,
     missYouAfterMs: 24 * HOUR,
