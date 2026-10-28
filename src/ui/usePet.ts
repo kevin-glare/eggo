@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { rollAppearance } from '../game/appearance'
-import { feed, namePet, play, startSleep, wake, wash, type ActionReason, type ActionResult } from '../game/actions'
+import {
+  feed,
+  namePet,
+  pet as petAction,
+  play,
+  startSleep,
+  wake,
+  wash,
+  type ActionReason,
+  type ActionResult,
+} from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
@@ -145,6 +155,17 @@ export function usePet(config: GameConfig) {
   const playPet = useCallback(() => apply(play, '😄 Было весело!'), [apply])
   const washPet = useCallback(() => apply(wash, '🛁 Чистота!'), [apply])
 
+  // кулдаун поглаживания живёт в сессии: сердечки при любом тапе остаются,
+  // но счастье капает не чаще config.actions.pet.cooldownMs
+  const lastPetAtRef = useRef(0)
+  const petPet = useCallback(() => {
+    const now = Date.now()
+    if (now - lastPetAtRef.current < config.actions.pet.cooldownMs) return null
+    const result = apply(petAction, '💗 Мур-мур!')
+    if (result?.ok) lastPetAtRef.current = now
+    return result
+  }, [apply, config])
+
   /**
    * Дать имя питомцу: без имени игра не начинается.
    * Работает и для свежего яйца, и для старого безымянного сейва.
@@ -188,5 +209,5 @@ export function usePet(config: GameConfig) {
     setNotice('🥚 Новая игра — дай имя!')
   }, [config])
 
-  return { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset }
+  return { pet, notice, feedPet, playPet, washPet, petPet, toggleSleep, startGame, advanceTime, reset }
 }

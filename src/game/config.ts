@@ -29,6 +29,7 @@ export interface GameConfig {
     feed: { fullness: number }
     play: { happiness: number; energy: number }
     wash: { cleanliness: number }
+    pet: { happiness: number; cooldownMs: number }
   }
   /** сколько игровых миллисекунд проходит за 1 мс реального времени */
   timeScale: number
@@ -71,6 +72,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     feed: { fullness: 30 },
     play: { happiness: 25, energy: 15 },
     wash: { cleanliness: 40 },
+    // кулдаун не хранится в сейве — мягкий лимит на сессию
+    pet: { happiness: 3, cooldownMs: 8_000 },
   },
   timeScale: 1,
   maxOfflineMs: 7 * DAY,

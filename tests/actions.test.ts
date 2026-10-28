@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from '../src/game/config'
-import { feed, namePet, play, startSleep, wake, wash } from '../src/game/actions'
+import { feed, namePet, pet, play, startSleep, wake, wash } from '../src/game/actions'
 import { hatchedPet, makePet } from './helpers'
 
 describe('feed', () => {
@@ -90,6 +90,47 @@ describe('wash', () => {
   })
 })
 
+describe('pet', () => {
+  it('повышает счастье', () => {
+    const petState = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 50 })
+    const result = pet(petState, DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state.stats.happiness).toBe(50 + DEFAULT_CONFIG.actions.pet.happiness)
+  })
+
+  it('не поднимает счастье выше 100', () => {
+    const petState = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 99 })
+    const result = pet(petState, DEFAULT_CONFIG)
+    expect(result.state.stats.happiness).toBe(100)
+  })
+
+  it('при полном счастье ласка не запрещается, но и не меняет ничего', () => {
+    const petState = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 100 })
+    const result = pet(petState, DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state).toEqual(petState)
+  })
+
+  it('отклоняется в яйце', () => {
+    const result = pet(makePet(DEFAULT_CONFIG), DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('not-hatched')
+  })
+
+  it('отклоняется во сне', () => {
+    const petState = hatchedPet(DEFAULT_CONFIG, { sleeping: true })
+    const result = pet(petState, DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('sleeping')
+  })
+
+  it('не мутирует исходное состояние', () => {
+    const petState = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 50 })
+    pet(petState, DEFAULT_CONFIG)
+    expect(petState.stats.happiness).toBe(50)
+  })
+})
+
 describe('sleep / wake', () => {
   it('укладывает спать не-яйцо', () => {
     const result = startSleep(hatchedPet(DEFAULT_CONFIG))
@@ -151,12 +192,13 @@ describe('namePet', () => {
 
 describe('чистота функций', () => {
   it('ни одно действие не мутирует исходное состояние', () => {
-    const pet = hatchedPet(DEFAULT_CONFIG)
-    const before = structuredClone(pet)
-    feed(pet, DEFAULT_CONFIG)
-    wash(pet, DEFAULT_CONFIG)
-    play(pet, DEFAULT_CONFIG)
-    wake(pet)
-    expect(pet).toEqual(before)
+    const petState = hatchedPet(DEFAULT_CONFIG)
+    const before = structuredClone(petState)
+    feed(petState, DEFAULT_CONFIG)
+    wash(petState, DEFAULT_CONFIG)
+    play(petState, DEFAULT_CONFIG)
+    pet(petState, DEFAULT_CONFIG)
+    wake(petState)
+    expect(petState).toEqual(before)
   })
 })

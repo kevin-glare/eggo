@@ -77,6 +77,23 @@ export function wash(state: PetState, config: GameConfig): ActionResult {
   })
 }
 
+/**
+ * Погладить: ласка не запрещается даже при полном счастье —
+ * просто нечего прибавлять.
+ */
+export function pet(state: PetState, config: GameConfig): ActionResult {
+  const blocked = guardAwake(state)
+  if (blocked) return blocked
+  if (state.stats.happiness >= 100) return ok(state)
+  return ok({
+    ...state,
+    stats: {
+      ...state.stats,
+      happiness: clampStat(state.stats.happiness + config.actions.pet.happiness),
+    },
+  })
+}
+
 export function startSleep(state: PetState): ActionResult {
   if (state.stage === 'egg') return fail(state, 'not-hatched')
   return ok({ ...state, sleeping: true })

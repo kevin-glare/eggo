@@ -38,6 +38,8 @@ interface PetCanvasProps {
   /** dev: подменный час неба; null = локальное время пользователя */
   skyHourOverride?: number | null
   onTap?: () => void
+  /** тап пришёлся по самому питомцу (поглаживание); в яйце не вызывается */
+  onPetTap?: () => void
 }
 
 interface Particle {
@@ -100,6 +102,7 @@ export default function PetCanvas({
   actionPulse,
   skyHourOverride,
   onTap,
+  onPetTap,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel })
@@ -238,7 +241,15 @@ export default function PetCanvas({
     else runPlay(v, stageProps, particles)
   }, [actionPulse])
 
-  const handleTap = () => {
+  /** Щедрая зона поглаживания: тело и уши питомца в центре сцены. */
+  const hitPet = (x: number, y: number): boolean =>
+    Math.abs(x - SCENE_W / 2) < 78 && y > GROUND_Y - 145 && y < GROUND_Y + 12
+
+  const handleTap = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * SCENE_W
+    const y = ((e.clientY - rect.top) / rect.height) * SCENE_H
+    const stroked = propsRef.current.stage !== 'egg' && hitPet(x, y)
     const v = visRef.current
     for (let i = 0; i < 5; i++) {
       particlesRef.current.push({
@@ -262,7 +273,8 @@ export default function PetCanvas({
         .to(v, { jumpY: 0, duration: 0.65, ease: 'elastic.out(1.1, 0.4)' })
     }
     hapticTap()
-    onTap?.()
+    if (stroked) onPetTap?.()
+    else onTap?.()
   }
 
   return (

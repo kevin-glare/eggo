@@ -48,7 +48,7 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 ]
 
 export default function App() {
-  const { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
+  const { pet, notice, feedPet, playPet, washPet, petPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // успешное действие включает анимацию в сцене; отказ движка — только тост
   const [actionPulse, setActionPulse] = useState<ActionPulse>({ kind: 'feed', n: 0 })
@@ -123,6 +123,7 @@ export default function App() {
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
               actionPulse={actionPulse}
               skyHourOverride={skyHour}
+              onPetTap={petPet}
             />
             <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
