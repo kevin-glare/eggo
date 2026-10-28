@@ -5,7 +5,8 @@ import { getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
-import PetCanvas from './ui/PetCanvas'
+import { dirtLevel } from './ui/dirt'
+import PetCanvas, { type ActionPulse, type PetActionKind } from './ui/PetCanvas'
 import StatsBar from './ui/StatsBar'
 import { usePet } from './ui/usePet'
 import './ui/app.css'
@@ -49,6 +50,18 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 export default function App() {
   const { pet, notice, feedPet, playPet, washPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
+  // успешное действие включает анимацию в сцене; отказ движка — только тост
+  const [actionPulse, setActionPulse] = useState<ActionPulse>({ kind: 'feed', n: 0 })
+  const firePulse = (kind: PetActionKind) => setActionPulse((p) => ({ kind, n: p.n + 1 }))
+  const onFeed = () => {
+    if (feedPet()?.ok) firePulse('feed')
+  }
+  const onPlay = () => {
+    if (playPet()?.ok) firePulse('play')
+  }
+  const onWash = () => {
+    if (washPet()?.ok) firePulse('wash')
+  }
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
   const ready = pet !== null
 
@@ -102,7 +115,15 @@ export default function App() {
           </header>
 
           <div className="scene-card">
-            <PetCanvas stage={pet.stage} mood={mood} appearance={pet.appearance} eggProgress={eggProgress} skyHourOverride={skyHour} />
+            <PetCanvas
+              stage={pet.stage}
+              mood={mood}
+              appearance={pet.appearance}
+              eggProgress={eggProgress}
+              dirtLevel={dirtLevel(pet.stats.cleanliness)}
+              actionPulse={actionPulse}
+              skyHourOverride={skyHour}
+            />
             <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
 
@@ -110,9 +131,9 @@ export default function App() {
           <ActionsBar
             isEgg={pet.stage === 'egg'}
             sleeping={pet.sleeping}
-            onFeed={feedPet}
-            onPlay={playPet}
-            onWash={washPet}
+            onFeed={onFeed}
+            onPlay={onPlay}
+            onWash={onWash}
             onToggleSleep={toggleSleep}
           />
         </>

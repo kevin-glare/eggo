@@ -9,6 +9,7 @@ import type {
   PetAppearance,
 } from '../game/appearance'
 import type { Mood, Stage } from '../game/types'
+import type { DirtLevel } from './dirt'
 
 /**
  * Отрисовка питомца: мягкие градиентные тела, светящийся характер.
@@ -77,6 +78,12 @@ export interface PetVisualState {
   glowRGB: { r: number; g: number; b: number }
   tilt: number
   hatchPop: number
+  /** наклон к еде во время укуса (действие «покормить») */
+  lean: number
+  /** вихляние во время купания */
+  wiggle: number
+  /** 0..1 — насколько заметно рисовать грязь; твинится при изменении чистоты */
+  dirtAlpha: number
 }
 
 export function createVisualState(): PetVisualState {
@@ -90,6 +97,9 @@ export function createVisualState(): PetVisualState {
     glowRGB: { r: 255, g: 214, b: 120 },
     tilt: 0,
     hatchPop: 1,
+    lean: 0,
+    wiggle: 0,
+    dirtAlpha: 0,
   }
 }
 
@@ -164,6 +174,7 @@ export function drawPet(
   v: PetVisualState,
   tMs: number,
   eggProgress: number,
+  dirtLevel: DirtLevel = 0,
 ): void {
   const cx = SCENE_W / 2
   const bob = v.bob + v.jumpY
@@ -192,12 +203,12 @@ export function drawPet(
 
   ctx.save()
   ctx.translate(cx, GROUND_Y + bob)
-  ctx.rotate(v.tilt)
+  ctx.rotate(v.tilt + v.lean + v.wiggle)
   ctx.scale(v.hatchPop, v.hatchPop * v.squash)
   if (stage === 'egg') {
     drawEgg(ctx, eggProgress, EGG_PALETTE)
   } else {
-    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v.blink, tMs)
+    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v.blink, tMs, dirtLevel, v.dirtAlpha)
   }
   ctx.restore()
 }
@@ -210,6 +221,8 @@ function drawCreature(
   mood: Mood,
   blink: number,
   tMs: number,
+  dirtLevel: DirtLevel,
+  dirtAlpha: number,
 ): void {
   const shape = BODY_SHAPE_SCALE[look.body]
   const rx = d.rx * shape.rx
@@ -247,6 +260,7 @@ function drawCreature(
   ctx.fill()
 
   drawSpots(ctx, look, rx, ry, cy, p)
+  drawDirt(ctx, look, rx, ry, cy, dirtLevel, dirtAlpha)
 
   // лицо
   const eyeDX = d.eyeDX * faceScale
@@ -276,6 +290,83 @@ function drawCreature(
   drawMouth(ctx, cy + d.mouthY, mood, p)
 
   if (mood === 'sick') drawSweat(ctx, rx * 0.6, cy - ry * 0.85, tMs)
+  drawFlies(ctx, cy, ry, dirtLevel, dirtAlpha, tMs)
+}
+
+/** Цвета грязи: бурые и зеленоватые пятна + тёмные мухи. */
+const DIRT_INK = {
+  smudge: '138, 107, 74',
+  slime: '122, 138, 74',
+  fly: '40, 34, 30',
+} as const
+
+/**
+ * Пятна грязи на шкурке — чем ниже чистота, тем их больше (уровни 1..3).
+ * Раскладка детерминирована «генами», пятна сидят на боках и низе тела,
+ * не залезая на мордочку; плавно проявляются и смываются через dirtAlpha.
+ */
+function drawDirt(
+  ctx: CanvasRenderingContext2D,
+  look: PetAppearance,
+  rx: number,
+  ry: number,
+  cy: number,
+  level: DirtLevel,
+  alpha: number,
+): void {
+  if (level === 0 || alpha <= 0.01) return
+  ctx.save()
+  ctx.beginPath()
+  ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
+  ctx.clip()
+  const rand = mulberry32(appearanceSeed(look) ^ 0xd177)
+  const count = level * 2
+  for (let i = 0; i < count; i++) {
+    const side = i % 2 === 0 ? -1 : 1
+    const dx = side * (0.2 + rand() * 0.65) * rx
+    const dy = cy + ry * (0.08 + rand() * 0.62)
+    const r = (0.09 + rand() * 0.09) * rx
+    ctx.fillStyle = `rgba(${i % 3 === 0 ? DIRT_INK.slime : DIRT_INK.smudge}, ${0.4 * alpha})`
+    ctx.beginPath()
+    ctx.ellipse(dx, dy, r, r * (0.65 + rand() * 0.4), rand() * Math.PI, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
+/** Мухи вьются над головой у грязнули (уровень 2 — одна, 3 — две). */
+function drawFlies(
+  ctx: CanvasRenderingContext2D,
+  cy: number,
+  ry: number,
+  level: DirtLevel,
+  alpha: number,
+  tMs: number,
+): void {
+  if (level < 2 || alpha <= 0.01) return
+  const count = level - 1
+  for (let i = 0; i < count; i++) {
+    const ph = i * 2.4
+    const x = Math.sin(tMs / 900 + ph) * 22
+    const y = cy - ry - 12 + Math.cos(tMs / 700 + ph * 1.6) * 8
+    ctx.save()
+    ctx.globalAlpha = alpha * 0.85
+    ctx.fillStyle = DIRT_INK.fly
+    ctx.beginPath()
+    ctx.ellipse(x, y, 2.2, 1.6, 0.3, 0, Math.PI * 2)
+    ctx.fill()
+    // трепет крылышек — две светлые чёрточки
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'
+    ctx.lineWidth = 1
+    const flap = Math.sin(tMs / 40 + ph) * 2
+    ctx.beginPath()
+    ctx.moveTo(x - 1, y - 1)
+    ctx.lineTo(x - 4, y - 3 - flap)
+    ctx.moveTo(x + 1, y - 1)
+    ctx.lineTo(x + 4, y - 3 + flap)
+    ctx.stroke()
+    ctx.restore()
+  }
 }
 
 function drawEars(
