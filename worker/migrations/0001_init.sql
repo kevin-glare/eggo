@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   first_name TEXT,
   save_json TEXT,
   stage TEXT,
-  push_enabled INTEGER NOT NULL DEFAULT 0,
+  push_enabled INTEGER NOT NULL DEFAULT 1,
   bot_blocked INTEGER NOT NULL DEFAULT 0,
   last_seen_at INTEGER NOT NULL DEFAULT 0,
   updated_at INTEGER NOT NULL DEFAULT 0
