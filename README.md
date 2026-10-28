@@ -19,7 +19,11 @@ npm run build             # проверка типов + продакшен-с�
 # API-воркер (нужен для синка сейва и пушей):
 npm run worker:migrate:local   # локальная база D1 (один раз)
 npm run worker:dev             # воркер на http://localhost:8787
+npm run worker:metrics         # отчёт по игрокам из прод-базы (DAU, приток, стадии)
 ```
+
+Метрики и планы роста — в `docs/ROADMAP.md`, чеклист запуска (оформление бота,
+каталоги) — в `docs/launch-kit.md`.
 
 Для проверки пушей локально положите тестовый токен бота в `worker/.dev.vars`:
 
