@@ -37,6 +37,7 @@ body {
   padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
   max-width: 480px;
   margin: 0 auto;
+  position: relative;
 }
 
 /* Загрузка: стартовый синк выясняет, есть ли питомец у пользователя */
@@ -134,7 +135,7 @@ body {
   min-height: 230px;
   /* потолок только против гигантомании планшетов; на телефонах сцена
      растёт до конца экрана — внизу не должно оставаться пустоты */
-  max-height: 560px;
+  max-height: 640px;
   position: relative;
   overflow: hidden;
   border-radius: 24px;
@@ -566,13 +567,18 @@ body {
 
 /* Тост — в потоке, под кнопками; место зарезервировано, чтобы
    появление сообщения не двигало интерфейс */
+/* Тосты плавают НАД кнопками действий (137 = паддинг 14 + кнопки 62 + зазор 8),
+   слегка перекрывая нижний край статов; места в потоке не занимают —
+   иначе пустая полка съедает у сцены ~50px высоты */
 .toast-slot {
-  flex-shrink: 0;
-  min-height: 44px;
-  margin-top: 8px;
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: calc(137px + env(safe-area-inset-bottom));
   display: flex;
-  align-items: flex-start;
   justify-content: center;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .toast {
@@ -586,6 +592,7 @@ body {
   font-weight: 600;
   white-space: nowrap;
   max-width: 100%;
+  pointer-events: auto;
   box-shadow: 0 12px 32px -12px rgba(10, 4, 24, 0.8);
   animation: toast-in 0.18s ease-out;
 }
