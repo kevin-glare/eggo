@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import type { PetAppearance } from '../game/appearance'
+import type { DesireKind } from '../game/engine'
 import type { Mood, Stage } from '../game/types'
 import { dirtIntensity, type DirtLevel } from './dirt'
 import {
@@ -35,6 +36,8 @@ interface PetCanvasProps {
   dirtLevel?: DirtLevel
   /** последнее успешное действие — для анимации отклика */
   actionPulse?: ActionPulse | null
+  /** чего питомец хочет прямо сейчас — пузырёк над головой; null = скрыт */
+  desire?: DesireKind | null
   /** dev: подменный час неба; null = локальное время пользователя */
   skyHourOverride?: number | null
   onTap?: () => void
@@ -100,6 +103,7 @@ export default function PetCanvas({
   eggProgress,
   dirtLevel = 0,
   actionPulse,
+  desire,
   skyHourOverride,
   onTap,
   onPetTap,
@@ -112,6 +116,13 @@ export default function PetCanvas({
   const particlesRef = useRef<Particle[]>([])
   const stagePropsRef = useRef<StageProp[]>([])
   const prevStageRef = useRef(stage)
+  // пузырь желания: альфа твинится при смене, вид запоминается для плавного исчезновения
+  const bubbleRef = useRef<{ alpha: number; kind: DesireKind }>({ alpha: 0, kind: 'feed' })
+
+  useEffect(() => {
+    if (desire) bubbleRef.current.kind = desire
+    gsap.to(bubbleRef.current, { alpha: desire ? 1 : 0, duration: 0.3, ease: 'power1.out', overwrite: 'auto' })
+  }, [desire])
 
   // канвас, рендер-цикл и вечные GSAP-циклы (дыхание, покачивание, моргание)
   useEffect(() => {
@@ -165,6 +176,7 @@ export default function PetCanvas({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now, sky)
       drawTrash(ctx, dirt, v.dirtAlpha)
+      if (bubbleRef.current.alpha > 0.01) drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now)
       drawStageProps(ctx, stageProps)
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
@@ -289,6 +301,59 @@ export default function PetCanvas({
 }
 
 /* ---------- анимации действий ---------- */
+
+const DESIRE_ICON: Record<DesireKind, string> = {
+  feed: '🍔',
+  play: '🎮',
+  wash: '🛁',
+  sleep: '😴',
+}
+
+/** Пузырёк желания: болтается над головой питомца и показывает, чего он хочет. */
+function drawDesireBubble(ctx: CanvasRenderingContext2D, kind: DesireKind, alpha: number, now: number): void {
+  const bob = Math.sin(now / 500) * 3
+  const x = SCENE_W / 2
+  const y = GROUND_Y - 165 + bob
+  ctx.save()
+  ctx.globalAlpha = alpha
+  // пузырь
+  ctx.beginPath()
+  roundRect(ctx, x - 23, y - 20, 46, 40, 12)
+  ctx.fillStyle = '#fffdf6'
+  ctx.strokeStyle = 'rgba(90, 70, 50, 0.25)'
+  ctx.lineWidth = 1.5
+  ctx.fill()
+  ctx.stroke()
+  // хвостик вниз к питомцу
+  ctx.beginPath()
+  ctx.moveTo(x - 7, y + 18.6)
+  ctx.lineTo(x, y + 30)
+  ctx.lineTo(x + 7, y + 18.6)
+  ctx.closePath()
+  ctx.fillStyle = '#fffdf6'
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(90, 70, 50, 0.25)'
+  ctx.beginPath()
+  ctx.moveTo(x - 7, y + 19)
+  ctx.lineTo(x, y + 30)
+  ctx.lineTo(x + 7, y + 19)
+  ctx.stroke()
+  // иконка желания
+  ctx.font = '24px "Apple Color Emoji", "Noto Color Emoji", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(DESIRE_ICON[kind], x, y + 1)
+  ctx.restore()
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
 
 function runFeed(v: PetVisualState, stageProps: StageProp[], particles: Particle[]): void {
   const food: StageProp = { kind: 'drumstick', x: FOOD_X, y: -30, rot: 0.5, scale: 1, alpha: 1 }

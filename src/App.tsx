@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
-import { getMood } from './game/engine'
+import { desire, getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
@@ -90,6 +90,7 @@ export default function App() {
 
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
+  const desireKind = desire(pet, config)
   // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
   const isCreating = pet.name === null
 
@@ -122,6 +123,7 @@ export default function App() {
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
               actionPulse={actionPulse}
+              desire={desireKind}
               skyHourOverride={skyHour}
               onPetTap={petPet}
             />

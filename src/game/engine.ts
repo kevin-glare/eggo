@@ -1,6 +1,6 @@
 import type { GameConfig } from './config'
 import type { PetAppearance } from './appearance'
-import type { Mood, PetState, Stage, Stats } from './types'
+import type { Mood, PetState, Stage, StatKey, Stats } from './types'
 
 const STAT_KEYS = ['fullness', 'happiness', 'energy', 'cleanliness'] as const
 const HOUR = 3_600_000
@@ -89,4 +89,28 @@ export function getMood(state: PetState, config: GameConfig): Mood {
   if (avg >= config.happyThreshold) return 'happy'
   if (avg >= config.contentThreshold) return 'content'
   return 'sad'
+}
+
+export type DesireKind = 'feed' | 'play' | 'wash' | 'sleep'
+
+/**
+ * Чего питомец хочет прямо сейчас: самый низкий стат ниже порога комфорта.
+ * Производное, нигде не хранится; во сне и в яйце желаний нет.
+ * Ничья разрешается в порядке перечисления — сытость важнее всего.
+ */
+export function desire(state: PetState, config: GameConfig): DesireKind | null {
+  if (state.stage === 'egg' || state.sleeping) return null
+  const wants: [StatKey, DesireKind][] = [
+    ['fullness', 'feed'],
+    ['happiness', 'play'],
+    ['cleanliness', 'wash'],
+    ['energy', 'sleep'],
+  ]
+  let worst: { kind: DesireKind; value: number } | null = null
+  for (const [key, kind] of wants) {
+    const value = state.stats[key]
+    if (value >= config.contentThreshold) continue
+    if (worst === null || value < worst.value) worst = { kind, value }
+  }
+  return worst?.kind ?? null
 }

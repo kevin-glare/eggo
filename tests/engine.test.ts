@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, DEV_CONFIG } from '../src/game/config'
 import { rollAppearance } from '../src/game/appearance'
-import { averageStats, createPet, getMood, tick } from '../src/game/engine'
+import { averageStats, createPet, desire, getMood, tick } from '../src/game/engine'
 import type { PetState } from '../src/game/types'
 import { DAY, HOUR, MINUTE, hatchedPet, makePet } from './helpers'
 
@@ -171,5 +171,57 @@ describe('DEV_CONFIG', () => {
     // 5 секунд реального времени × 60 = 5 минут игры — ровно eggMs в dev
     expect(egg.stage).toBe('egg')
     expect(fiveSeconds * DEV_CONFIG.timeScale).toBeGreaterThanOrEqual(DEV_CONFIG.evolution.eggMs)
+  })
+})
+
+describe('desire', () => {
+  it('все статы в комфорте — желания нет', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    expect(desire(pet, DEFAULT_CONFIG)).toBeNull()
+  })
+
+  it('низкая сытость — хочет есть', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { fullness: 30 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBe('feed')
+  })
+
+  it('низкое счастье — хочет играть', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { happiness: 30 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBe('play')
+  })
+
+  it('низкая чистота — хочет мыться', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { cleanliness: 30 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBe('wash')
+  })
+
+  it('низкая энергия — хочет спать', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { energy: 30 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBe('sleep')
+  })
+
+  it('берётся самый низкий стат', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { fullness: 10, happiness: 30, cleanliness: 40 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBe('feed')
+  })
+
+  it('ничья разрешается в фиксированном порядке: сытость раньше счастья', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { fullness: 20, happiness: 20 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBe('feed')
+  })
+
+  it('стат ровно на пороге — ещё не желание', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {}, { fullness: DEFAULT_CONFIG.contentThreshold })
+    expect(desire(pet, DEFAULT_CONFIG)).toBeNull()
+  })
+
+  it('во сне желаний нет', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, { sleeping: true }, { fullness: 10 })
+    expect(desire(pet, DEFAULT_CONFIG)).toBeNull()
+  })
+
+  it('яйцо ничего не хочет', () => {
+    const egg = makePet(DEFAULT_CONFIG, {}, { fullness: 10 })
+    expect(desire(egg, DEFAULT_CONFIG)).toBeNull()
   })
 })
