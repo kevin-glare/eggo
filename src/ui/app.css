@@ -382,57 +382,62 @@ body {
   white-space: nowrap;
 }
 
-/* Задания дня: чипы с прогрессом + кнопка награды */
+/* Задания дня: одна карточка, 4 колонки — в языке панели статов */
 .quests {
   flex-shrink: 0;
   width: 100%;
   max-width: 360px;
   display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 8px;
-}
-
-.quest {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 6px;
-  border-radius: 14px;
+  align-items: stretch;
+  padding: 4px;
+  border-radius: 20px;
   background: var(--card);
   border: 1px solid var(--stroke);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  margin-bottom: 8px;
+}
+
+.qcell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
   color: var(--ink);
   font: inherit;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s;
 }
 
-.quest:not(:active):hover {
-  border-color: rgba(255, 179, 92, 0.4);
+.qcell:not(:active):hover {
+  background: rgba(167, 149, 201, 0.08);
 }
 
-.quest:active {
+.qcell:active {
   transform: scale(0.96);
 }
 
-.quest .qicon {
-  font-size: 14px;
-  line-height: 1;
-}
-
-.quest .qmeta {
+.qcell .qtop {
   display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+  align-items: center;
+  gap: 3px;
   min-width: 0;
 }
 
-.quest .qlabel {
-  font-size: 9px;
+.qcell .qicon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.qcell .qlabel {
+  font-size: 9.5px;
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
@@ -440,60 +445,50 @@ body {
   text-overflow: ellipsis;
 }
 
-.quest .qcount {
+.qcell .qcount {
   font-family: var(--mono);
-  font-size: 12px;
-  color: var(--ink);
+  font-size: 12.5px;
   font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
 }
 
-.quest.done {
-  border-color: rgba(142, 230, 184, 0.5);
-  background: rgba(58, 90, 66, 0.4);
-}
-
-.quest.done .qcount {
+.qcell.done .qcount {
   color: #8ee6b8;
 }
 
-.claim {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  padding: 6px 6px;
-  border-radius: 14px;
-  border: 1px solid var(--stroke);
-  background: var(--card);
+.qcell.claim {
   color: var(--muted);
-  font: inherit;
-  font-size: 11.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.claim.ready {
+.qcell.claim .qword {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.qcell.claim.ready {
   background: var(--accent);
-  border-color: var(--accent);
   color: var(--accent-ink);
   box-shadow: 0 0 14px rgba(255, 179, 92, 0.45);
 }
 
-.claim.ready:not(:active):hover {
+.qcell.claim.ready:not(:active):hover {
   filter: brightness(1.06);
 }
 
-.claim:not(.ready):not(:active) {
-  opacity: 0.85;
+.qcell.claim.claimed {
+  opacity: 0.75;
 }
 
-.claim:active {
-  transform: scale(0.96);
+.qcell.claim.claimed .qword {
+  color: #8ee6b8;
 }
 
-/* Экраны уже iPhone SE (375): в чипе заданий остаются иконка и счётчик —
+/* Экраны уже iPhone SE (375): в колонке заданий остаются иконка и счётчик —
    подпись по тапу. На 360px полные подписи не влезают без обрезки. */
 @media (max-width: 374px) {
-  .quest .qlabel {
+  .qcell .qlabel {
     display: none;
   }
 }

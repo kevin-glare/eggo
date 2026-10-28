@@ -5,7 +5,7 @@ interface QuestsBarProps {
   daily: DailyQuests
   targets: Record<QuestId, number>
   onClaim: () => void
-  /** пояснение по тапу на чип (тост) */
+  /** пояснение по тапу на колонку (тост) */
   onExplain: (text: string) => void
 }
 
@@ -18,11 +18,11 @@ const QUEST_LABELS: Record<QuestId, string> = {
 }
 
 /**
- * Полоска заданий дня. Чип читается как задание (подпись + счётчик «2/3»),
- * а не как статус питомца: задания считают заботу за сегодня, а статы
- * а не как статус питомца: задания считают заботу за сегодня, а статы
- * падают сами. Кнопка «Получить» до готовности кликабельна — движок
- * откажет с подсказкой (как и остальные действия).
+ * Задания дня — одна карточка с четырьмя колонками, в языке панели статов:
+ * иконка + подпись сверху, счётчик «2/3» снизу. Последняя колонка — награда:
+ * тусклая, пока задания не выполнены, золотая и кликабельная когда готова,
+ * «Получено» после забора. До готовности кликабельна — движок откажет
+ * с подсказкой (как и остальные действия).
  */
 export default function QuestsBar({ daily, targets, onClaim, onExplain }: QuestsBarProps) {
   const complete = daily.quests.every((q, i) => (daily.progress[i] ?? 0) >= targets[q])
@@ -43,28 +43,31 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
         return (
           <button
             type="button"
-            className={done ? 'quest done' : 'quest'}
+            className={done ? 'qcell done' : 'qcell'}
             key={q}
             onClick={() => explain(q, p)}
             aria-label={`Задание «${QUEST_LABELS[q]}»: ${p} из ${t} сегодня`}
           >
-            <span className="qicon" aria-hidden="true">
-              {QUEST_ICONS[q]}
-            </span>
-            <span className="qmeta">
+            <span className="qtop">
+              <span className="qicon" aria-hidden="true">
+                {QUEST_ICONS[q]}
+              </span>
               <span className="qlabel">{QUEST_LABELS[q]}</span>
-              <span className="qcount">{p}/{t}</span>
             </span>
+            <span className="qcount">{p}/{t}</span>
           </button>
         )
       })}
       <button
         type="button"
-        className={complete && !daily.claimed ? 'claim ready' : 'claim'}
+        className={daily.claimed ? 'qcell claim claimed' : complete ? 'qcell claim ready' : 'qcell claim'}
         onClick={onClaim}
         aria-label={daily.claimed ? 'Награда получена' : 'Получить награду дня'}
       >
-        {daily.claimed ? '🎁 Получено' : '🎁 Получить'}
+        <span className="qicon" aria-hidden="true">
+          🎁
+        </span>
+        <span className="qword">{daily.claimed ? 'Получено' : 'Получить'}</span>
       </button>
     </section>
   )
