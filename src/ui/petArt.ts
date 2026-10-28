@@ -84,6 +84,8 @@ export interface PetVisualState {
   wiggle: number
   /** 0..1 — насколько заметно рисовать грязь; твинится при изменении чистоты */
   dirtAlpha: number
+  /** смещение по лугу от центра (px); твинит машина блуждания в PetCanvas */
+  wanderX: number
 }
 
 export function createVisualState(): PetVisualState {
@@ -100,6 +102,7 @@ export function createVisualState(): PetVisualState {
     lean: 0,
     wiggle: 0,
     dirtAlpha: 0,
+    wanderX: 0,
   }
 }
 
@@ -176,7 +179,7 @@ export function drawPet(
   eggProgress: number,
   dirtLevel: DirtLevel = 0,
 ): void {
-  const cx = SCENE_W / 2
+  const cx = SCENE_W / 2 + v.wanderX
   const bob = v.bob + v.jumpY
   const palette = PET_PALETTES[look.palette]
 

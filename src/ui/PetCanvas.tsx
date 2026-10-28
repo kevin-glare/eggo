@@ -78,6 +78,73 @@ const FOOD_X = SCENE_W / 2 + 64
 const FOOD_Y = GROUND_Y - 10
 const BALL_REST_Y = GROUND_Y - 12
 
+/* Блуждание по лугу — презентация, не баланс: на логику не влияет. */
+/** Скорость прогулки и возврата к центру, px/с. */
+const WANDER_SPEED = 26
+const RETURN_SPEED = 110
+/** Дальность прогулок от центра и зона принюхивания. */
+const WANDER_RANGE = 95
+const SNIFF_MS = 900
+/** Сколько стоять на месте до следующей прогулки. */
+const STAND_MIN_MS = 2_500
+const STAND_MAX_MS = 7_000
+
+/** Машина блуждания: стоим → идём к случайной точке → принюхиваемся → стоим. */
+interface WanderState {
+  x: number
+  target: number
+  mode: 'stand' | 'walk' | 'sniff'
+  /** до какого времени стоять/нюхать (performance.now) */
+  until: number
+}
+
+function updateWander(w: WanderState, v: PetVisualState, now: number, dtSec: number): void {
+  if (w.mode === 'stand') {
+    v.tilt = 0
+    if (now < w.until) return
+    w.target = (Math.random() * 2 - 1) * WANDER_RANGE
+    if (Math.abs(w.target - w.x) < 24) w.target = Math.sign(w.target - w.x) * (24 + Math.random() * 40)
+    w.mode = 'walk'
+    return
+  }
+  if (w.mode === 'sniff') {
+    // принюхивается: мелкое покачивание носом к земле
+    v.tilt = Math.sin(now / 85) * 0.045
+    if (now >= w.until) {
+      w.mode = 'stand'
+      w.until = now + STAND_MIN_MS + Math.random() * (STAND_MAX_MS - STAND_MIN_MS)
+    }
+    return
+  }
+  // walk
+  const dir = Math.sign(w.target - w.x)
+  if (dir === 0) {
+    w.mode = 'sniff'
+    w.until = now + SNIFF_MS
+    return
+  }
+  w.x += dir * WANDER_SPEED * dtSec
+  v.tilt = Math.sin(now / 130) * 0.035
+  if ((dir > 0 && w.x >= w.target) || (dir < 0 && w.x <= w.target)) {
+    w.x = w.target
+    w.mode = 'sniff'
+    w.until = now + SNIFF_MS
+  }
+}
+
+/** Вернуться к центру: действие или сон заставляют питомца подбежать обратно. */
+function returnToCenter(w: WanderState, v: PetVisualState, now: number, dtSec: number): void {
+  if (Math.abs(w.x) < 1) {
+    w.x = 0
+    w.mode = 'stand'
+    w.until = now + 2_000
+    v.tilt = 0
+    return
+  }
+  w.x -= Math.sign(w.x) * RETURN_SPEED * dtSec
+  v.tilt = Math.sin(now / 110) * 0.045
+}
+
 /** Настроение задаёт цвет света питомца и жизнь фоновой сцены. */
 const MOOD_LIGHT: Record<Mood, { mul: number; alpha: number; rgb: [number, number, number]; energy: number; warm: number }> = {
   happy: { mul: 1.18, alpha: 0.5, rgb: [255, 214, 120], energy: 0.95, warm: 1 },
@@ -116,6 +183,9 @@ export default function PetCanvas({
   const particlesRef = useRef<Particle[]>([])
   const stagePropsRef = useRef<StageProp[]>([])
   const prevStageRef = useRef(stage)
+  // блуждание: пока питомец «занят» (действие, тап, вылупление) — бежит в центр
+  const wanderRef = useRef<WanderState>({ x: 0, target: 0, mode: 'stand', until: 0 })
+  const busyUntilRef = useRef(0)
   // пузырь желания: альфа твинится при смене, вид запоминается для плавного исчезновения
   const bubbleRef = useRef<{ alpha: number; kind: DesireKind }>({ alpha: 0, kind: 'feed' })
 
@@ -134,6 +204,7 @@ export default function PetCanvas({
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     canvas.width = SCENE_W * dpr
     canvas.height = SCENE_H * dpr
+    const reducedMotion = prefersReducedMotion()
 
     const v = visRef.current
     const particles = particlesRef.current
@@ -164,9 +235,13 @@ export default function PetCanvas({
       // яйцо качается тем сильнее, чем ближе вылупление
       if (st === 'egg') {
         v.tilt = Math.sin((now / 1000) * (2 + 7 * prog)) * (0.02 + 0.09 * prog)
+        wanderRef.current.x = 0
+      } else if (reducedMotion || md === 'sleeping' || now < busyUntilRef.current) {
+        returnToCenter(wanderRef.current, v, now, dt / 1000)
       } else {
-        v.tilt = 0
+        updateWander(wanderRef.current, v, now, dt / 1000)
       }
+      v.wanderX = wanderRef.current.x
 
       // небо: подменный час (dev) или локальное время пользователя
       const d = new Date()
@@ -176,7 +251,8 @@ export default function PetCanvas({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now, sky)
       drawTrash(ctx, dirt, v.dirtAlpha)
-      if (bubbleRef.current.alpha > 0.01) drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now)
+      if (bubbleRef.current.alpha > 0.01)
+        drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now, SCENE_W / 2 + wanderRef.current.x)
       drawStageProps(ctx, stageProps)
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
@@ -210,6 +286,7 @@ export default function PetCanvas({
     if (prevStageRef.current === 'egg' && stage !== 'egg') {
       const v = visRef.current
       const particles = particlesRef.current
+      busyUntilRef.current = performance.now() + 1_500
       // конфетти из скорлупы — в цветах палитры питомца
       const palette = PET_PALETTES[appearance.palette]
       for (let i = 0; i < 16; i++) {
@@ -245,6 +322,8 @@ export default function PetCanvas({
   useEffect(() => {
     if (!actionPulse || actionPulse.n === 0) return
     if (propsRef.current.stage === 'egg') return
+    // на время сценки питомец занят: стоит в центре, где лежит реквизит
+    busyUntilRef.current = performance.now() + 2_600
     const v = visRef.current
     const particles = particlesRef.current
     const stageProps = stagePropsRef.current
@@ -253,9 +332,11 @@ export default function PetCanvas({
     else runPlay(v, stageProps, particles)
   }, [actionPulse])
 
-  /** Щедрая зона поглаживания: тело и уши питомца в центре сцены. */
-  const hitPet = (x: number, y: number): boolean =>
-    Math.abs(x - SCENE_W / 2) < 78 && y > GROUND_Y - 145 && y < GROUND_Y + 12
+  /** Щедрая зона поглаживания: тело и уши питомца, где бы он ни гулял. */
+  const hitPet = (x: number, y: number): boolean => {
+    const petX = SCENE_W / 2 + wanderRef.current.x
+    return Math.abs(x - petX) < 78 && y > GROUND_Y - 145 && y < GROUND_Y + 12
+  }
 
   const handleTap = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -263,9 +344,11 @@ export default function PetCanvas({
     const y = ((e.clientY - rect.top) / rect.height) * SCENE_H
     const stroked = propsRef.current.stage !== 'egg' && hitPet(x, y)
     const v = visRef.current
+    busyUntilRef.current = performance.now() + 1_200
+    const petX = SCENE_W / 2 + wanderRef.current.x
     for (let i = 0; i < 5; i++) {
       particlesRef.current.push({
-        x: SCENE_W / 2 + (Math.random() - 0.5) * 40,
+        x: petX + (Math.random() - 0.5) * 40,
         y: GROUND_Y - 110,
         vx: (Math.random() - 0.5) * 70,
         vy: -60 - Math.random() * 70,
@@ -310,9 +393,9 @@ const DESIRE_ICON: Record<DesireKind, string> = {
 }
 
 /** Пузырёк желания: болтается над головой питомца и показывает, чего он хочет. */
-function drawDesireBubble(ctx: CanvasRenderingContext2D, kind: DesireKind, alpha: number, now: number): void {
+function drawDesireBubble(ctx: CanvasRenderingContext2D, kind: DesireKind, alpha: number, now: number, petX: number): void {
   const bob = Math.sin(now / 500) * 3
-  const x = SCENE_W / 2
+  const x = petX
   const y = GROUND_Y - 165 + bob
   ctx.save()
   ctx.globalAlpha = alpha
