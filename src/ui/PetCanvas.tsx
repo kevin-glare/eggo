@@ -103,6 +103,22 @@ const FEED_SCALES = [0.7, 0.4, 0.05]
 /** Хит-зона еды, px. */
 const FOOD_HIT_R = 36
 
+/**
+ * Сценка «купание-тёрка»: игрок водит пальцем по питомцу, от проведений —
+ * пузыри и плавное смывание грязи; WASH_STROKES проведений — чист.
+ * Без движений WASH_IDLE_MS — домывает сам. Движок — один раз в конце.
+ */
+interface WashScene {
+  strokes: number
+  done: boolean
+  autoTimer: number | null
+}
+
+const WASH_STROKES = 6
+/** Сколько px пути пальцем засчитывается как одно проведение. */
+const WASH_SEGMENT_PX = 56
+const WASH_IDLE_MS = 8_000
+
 /* Блуждание по лугу — презентация, не баланс: на логику не влияет. */
 /** Скорость прогулки и возврата к центру, px/с. */
 const WANDER_SPEED = 26
@@ -215,6 +231,10 @@ export default function PetCanvas({
   const busyUntilRef = useRef(0)
   // сценка кормления: еда ждёт тапов-укусов; onSceneComplete через ref — без stale-замыканий
   const feedRef = useRef<FeedScene | null>(null)
+  // сценка купания: путь пальца по питомцу копится в проведениях
+  const washRef = useRef<WashScene | null>(null)
+  const dragRef = useRef<{ active: boolean; x: number; y: number; moved: number } | null>(null)
+  const dragMovedRef = useRef(false)
   const completeRef = useRef(onSceneComplete)
   completeRef.current = onSceneComplete
   // пузырь желания: альфа твинится при смене, вид запоминается для плавного исчезновения
@@ -349,17 +369,13 @@ export default function PetCanvas({
     prevStageRef.current = stage
   }, [stage])
 
-  // анимация отклика на действие: купание, игра с мячиком (кормление — отдельная сценка)
+  // анимация отклика: игра с мячиком (кормление и купание — отдельные сценки)
   useEffect(() => {
     if (!actionPulse || actionPulse.n === 0) return
     if (propsRef.current.stage === 'egg') return
     // на время сценки питомец занят: стоит в центре, где лежит реквизит
     busyUntilRef.current = performance.now() + 2_600
-    const v = visRef.current
-    const particles = particlesRef.current
-    const stageProps = stagePropsRef.current
-    if (actionPulse.kind === 'wash') runWash(v, particles)
-    else runPlay(v, stageProps, particles)
+    runPlay(visRef.current, stagePropsRef.current, particlesRef.current)
   }, [actionPulse])
 
   // сценка «кормление с руки»: еда падает, ждёт тапов-укусов, доиграла — complete
@@ -399,6 +415,129 @@ export default function PetCanvas({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene])
+
+  // сценка «купание-тёрка»: жду проведения пальцем, таймер простоя домывает сам
+  useEffect(() => {
+    if (!scene || scene !== 'wash') return
+    if (propsRef.current.stage === 'egg') return
+    busyUntilRef.current = performance.now() + 14_000
+    const sc: WashScene = { strokes: 0, done: false, autoTimer: null }
+    washRef.current = sc
+    armWashIdle()
+    return () => {
+      if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+      washRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene])
+
+  /** Перевзвод таймера простоя: любое движение пальцем откладывает «домывает сам». */
+  function armWashIdle(): void {
+    const sc = washRef.current
+    if (!sc || sc.done) return
+    if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+    sc.autoTimer = window.setTimeout(autoWashFinish, WASH_IDLE_MS)
+  }
+
+  /** Домывает сам: оставшиеся проведения проигрываются подряд, потом complete. */
+  function autoWashFinish(): void {
+    const sc = washRef.current
+    if (!sc || sc.done) return
+    sc.done = true
+    if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+    const v = visRef.current
+    const tl = gsap.timeline({ onComplete: () => completeRef.current?.('wash') })
+    const remaining = WASH_STROKES - sc.strokes
+    for (let i = 0; i < remaining; i++) {
+      tl.add(() => {
+        sc.strokes += 1
+        spawnWashBubbles(particlesRef.current, SCENE_W / 2 + (Math.random() - 0.5) * 90, GROUND_Y - 50 - Math.random() * 60)
+        washProgress(sc, v)
+      })
+      tl.to({}, { duration: 0.22 })
+    }
+  }
+
+  /** Прогресс купания: грязь бледнеет, питомец вихляет. */
+  function washProgress(sc: WashScene, v: PetVisualState): void {
+    const progress = Math.min(1, sc.strokes / WASH_STROKES)
+    const base = dirtIntensity(propsRef.current.dirtLevel)
+    if (prefersReducedMotion()) {
+      v.dirtAlpha = base * (1 - progress)
+      return
+    }
+    gsap.to(v, { dirtAlpha: base * (1 - progress), duration: 0.3, ease: 'sine.out', overwrite: 'auto' })
+    gsap.to(v, {
+      wiggle: 0.08,
+      duration: 0.1,
+      yoyo: true,
+      repeat: 1,
+      ease: 'sine.inOut',
+      overwrite: 'auto',
+      onComplete: () => {
+        v.wiggle = 0
+      },
+    })
+  }
+
+  /** Вымыт: финальные пузыри, довольный прыжок, применяем wash(). */
+  function finishWash(): void {
+    const sc = washRef.current
+    if (!sc || sc.done) return
+    sc.done = true
+    if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+    const v = visRef.current
+    spawnWashBubbles(particlesRef.current, SCENE_W / 2, GROUND_Y - 70, 10)
+    if (prefersReducedMotion()) {
+      v.dirtAlpha = 0
+      completeRef.current?.('wash')
+      return
+    }
+    gsap
+      .timeline({ delay: 0.25, onComplete: () => completeRef.current?.('wash') })
+      .to(v, { dirtAlpha: 0, duration: 0.4, overwrite: 'auto' })
+      .to(v, { jumpY: -20, duration: 0.16, ease: 'power2.out', overwrite: 'auto' }, 0.1)
+      .to(v, { jumpY: 0, duration: 0.5, ease: 'elastic.out(1.1, 0.4)' })
+  }
+
+  const scenePoint = (e: React.PointerEvent<HTMLCanvasElement>): { x: number; y: number } => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    return { x: ((e.clientX - rect.left) / rect.width) * SCENE_W, y: ((e.clientY - rect.top) / rect.height) * SCENE_H }
+  }
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const p = scenePoint(e)
+    dragRef.current = { active: true, x: p.x, y: p.y, moved: 0 }
+    dragMovedRef.current = false
+  }
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const drag = dragRef.current
+    if (!drag?.active) return
+    const sc = washRef.current
+    if (!sc || sc.done) return
+    const p = scenePoint(e)
+    const seg = Math.hypot(p.x - drag.x, p.y - drag.y)
+    if (seg < 6) return
+    dragMovedRef.current = true
+    drag.x = p.x
+    drag.y = p.y
+    // трём только по питомцу; мимо — просто едем дальше без счёта
+    if (!hitPet(p.x, p.y)) return
+    drag.moved += seg
+    if (drag.moved < WASH_SEGMENT_PX) return
+    drag.moved = 0
+    sc.strokes += 1
+    spawnWashBubbles(particlesRef.current, p.x, p.y)
+    hapticTap()
+    washProgress(sc, visRef.current)
+    if (sc.strokes >= WASH_STROKES) finishWash()
+    else armWashIdle()
+  }
+
+  const handlePointerUp = () => {
+    dragRef.current = null
+  }
 
   /** Укус: еда уменьшается, летят крошки, питомец наклоняется. */
   const biteFood = () => {
@@ -457,6 +596,11 @@ export default function PetCanvas({
   }
 
   const handleTap = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // после проведения пальцем click не должен срабатывать как тап
+    if (dragMovedRef.current) {
+      dragMovedRef.current = false
+      return
+    }
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * SCENE_W
     const y = ((e.clientY - rect.top) / rect.height) * SCENE_H
@@ -500,9 +644,13 @@ export default function PetCanvas({
     <canvas
       ref={canvasRef}
       onClick={handleTap}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       role="img"
       aria-label="Питомец"
-      style={{ width: '100%', display: 'block', touchAction: 'manipulation', cursor: 'pointer' }}
+      style={{ width: '100%', display: 'block', touchAction: 'none', cursor: 'pointer' }}
     />
   )
 }
@@ -562,19 +710,18 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
-function runWash(v: PetVisualState, particles: Particle[]): void {
-  if (prefersReducedMotion()) return
-  // облако пузырей вокруг питомца
-  for (let i = 0; i < 9; i++) {
+/** Пузыри и капли там, где трёт палец. */
+function spawnWashBubbles(particles: Particle[], x: number, y: number, count = 5): void {
+  for (let i = 0; i < count; i++) {
     particles.push({
-      x: SCENE_W / 2 + (Math.random() - 0.5) * 120,
-      y: GROUND_Y - 10 - Math.random() * 80,
-      vx: 0,
+      x: x + (Math.random() - 0.5) * 34,
+      y: y + (Math.random() - 0.5) * 26,
+      vx: (Math.random() - 0.5) * 20,
       vy: -(15 + Math.random() * 25),
       rot: 0,
       vr: 0,
       life: 0,
-      maxLife: 1.1 + Math.random() * 0.9,
+      maxLife: 1 + Math.random() * 0.8,
       size: 3 + Math.random() * 5,
       color: '#cdeaff',
       shape: 'bubble',
@@ -583,11 +730,10 @@ function runWash(v: PetVisualState, particles: Particle[]): void {
       wobPh: Math.random() * Math.PI * 2,
     })
   }
-  // брызги стекают с питомца
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 2; i++) {
     particles.push({
-      x: SCENE_W / 2 + (Math.random() - 0.5) * 80,
-      y: GROUND_Y - 100 - Math.random() * 25,
+      x: x + (Math.random() - 0.5) * 26,
+      y: y + (Math.random() - 0.5) * 20,
       vx: (Math.random() - 0.5) * 30,
       vy: 10,
       rot: 0,
@@ -599,17 +745,6 @@ function runWash(v: PetVisualState, particles: Particle[]): void {
       shape: 'drop',
     })
   }
-  gsap.to(v, {
-    wiggle: 0.09,
-    duration: 0.14,
-    yoyo: true,
-    repeat: 7,
-    ease: 'sine.inOut',
-    overwrite: 'auto',
-    onComplete: () => {
-      v.wiggle = 0
-    },
-  })
 }
 
 function runPlay(v: PetVisualState, stageProps: StageProp[], particles: Particle[]): void {

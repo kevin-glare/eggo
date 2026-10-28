@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
-import { feed } from './game/actions'
+import { feed, wash } from './game/actions'
 import { desire, getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
@@ -69,14 +69,20 @@ export default function App() {
   const onSceneComplete = (kind: PetActionKind) => {
     setScene(null)
     if (kind === 'feed') feedPet()
+    else if (kind === 'wash') washPet()
   }
   const onPlay = () => {
     if (scene !== null) return
     if (playPet()?.ok) firePulse('play')
   }
   const onWash = () => {
-    if (scene !== null) return
-    if (washPet()?.ok) firePulse('wash')
+    if (scene !== null || pet === null) return
+    // guard'ы — чистым вызовом: отказ с тостом как раньше, успех — сценка
+    if (!wash(pet, config).ok) {
+      washPet()
+      return
+    }
+    setScene('wash')
   }
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
   const ready = pet !== null
