@@ -79,11 +79,98 @@ describe('pendingNotifications — «скучаем»', () => {
   })
 })
 
+describe('pendingNotifications — «выспался»', () => {
+  it('спит с полной энергией → зовём будить', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 100 })
+    const list = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)
+    expect(list[0]?.kind).toBe('slept')
+    expect(list[0]?.text).toContain('выспался')
+  })
+
+  it('энергия ещё не добралась до ста — молчим', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 90 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('бодрствующему «выспался» не нужен', () => {
+    const pet = hatchedPet(config, {}, { energy: 100 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('кулдаун 12 часов: питомец спит с полной энергией, без него пуш ушёл бы каждый час', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 100 })
+    const recent: SentNotifications = { ...GROWN_SEEN, slept: NOW - 11 * HOUR }
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, recent, DAY_HOUR)).toEqual([])
+    const old: SentNotifications = { ...GROWN_SEEN, slept: NOW - 13 * HOUR }
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, old, DAY_HOUR)[0]?.kind).toBe('slept')
+  })
+
+  it('ночью придерживаем до утра — будить питомца в 3 ночи странно', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 100 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, 3)[0]?.delivery).toBe('hold')
+  })
+})
+
+describe('pendingNotifications — «пора спать»', () => {
+  it('энергия ниже мягкого порога, но ещё не беда → намёк уложить', () => {
+    const pet = hatchedPet(config, {}, { energy: 30 })
+    const list = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)
+    expect(list[0]?.kind).toBe('sleepy')
+    expect(list[0]?.text).toContain('спать')
+  })
+
+  it('энергия выше порога — молчим', () => {
+    const pet = hatchedPet(config, {}, { energy: 45 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('питомец в беде — мягкий намёк не дублируем', () => {
+    const pet = hatchedPet(config, {}, { energy: 30, fullness: 20 })
+    const kinds = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR).map((n) => n.kind)
+    expect(kinds).toEqual(['critical'])
+  })
+
+  it('болезнь глушит намёк, даже когда critical на кулдауне', () => {
+    const pet = hatchedPet(config, { sick: true }, { energy: 30 })
+    const recentCritical: SentNotifications = { ...GROWN_SEEN, critical: NOW - HOUR }
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, recentCritical, DAY_HOUR)).toEqual([])
+  })
+
+  it('спящему «пора спать» не нужно', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 30 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('кулдаун 12 часов', () => {
+    const pet = hatchedPet(config, {}, { energy: 30 })
+    const recent: SentNotifications = { ...GROWN_SEEN, sleepy: NOW - 11 * HOUR }
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, recent, DAY_HOUR)).toEqual([])
+  })
+
+  it('ночью уходит молча: не будим игрока, но и не теряем', () => {
+    const pet = hatchedPet(config, {}, { energy: 30 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, 3)[0]?.delivery).toBe('silent')
+  })
+})
+
 describe('pendingNotifications — приоритеты и имя', () => {
   it('беда важнее взросления, взросление важнее «скучаем»', () => {
     const pet = hatchedPet(config, { stage: 'adult' }, { fullness: 10 })
     const kinds = pendingNotifications(pet, NOW, config, NOW - 30 * HOUR, {}, DAY_HOUR).map((n) => n.kind)
     expect(kinds).toEqual(['critical', 'grown:adult', 'missYou'])
+  })
+
+  it('про сон важнее «скучаем»: и «выспался», и «пора спать» идут перед ним', () => {
+    const sleeping = hatchedPet(config, { sleeping: true }, { energy: 100 })
+    expect(pendingNotifications(sleeping, NOW, config, NOW - 30 * HOUR, GROWN_SEEN, DAY_HOUR).map((n) => n.kind)).toEqual([
+      'slept',
+      'missYou',
+    ])
+    const awake = hatchedPet(config, {}, { energy: 30 })
+    expect(pendingNotifications(awake, NOW, config, NOW - 30 * HOUR, GROWN_SEEN, DAY_HOUR).map((n) => n.kind)).toEqual([
+      'sleepy',
+      'missYou',
+    ])
   })
 
   it('безымянному питомцу пишем «Питомец»', () => {

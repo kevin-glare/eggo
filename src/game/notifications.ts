@@ -86,6 +86,30 @@ export function pendingNotifications(
     })
   }
 
+  // «выспался»: спит с полным запасом энергии — зовём будить
+  if (pet.sleeping && pet.stats.energy >= 100 && cooldownPassed(sent, 'slept', nowMs, config.notifications.sleptCooldownMs)) {
+    result.push({
+      kind: 'slept',
+      text: `☀️ ${petTitle(pet)} выспался — разбуди его!`,
+      delivery: quiet ? 'hold' : 'now',
+    })
+  }
+
+  // «пора спать»: мягкий намёк уложить, когда беды ещё нет — при беде и болезни кричит critical
+  if (
+    !pet.sleeping &&
+    !pet.sick &&
+    reasons.length === 0 &&
+    pet.stats.energy < config.notifications.sleepyThreshold &&
+    cooldownPassed(sent, 'sleepy', nowMs, config.notifications.sleepyCooldownMs)
+  ) {
+    result.push({
+      kind: 'sleepy',
+      text: `🥱 ${petTitle(pet)} зевает — уложи его спать!`,
+      delivery: quiet ? 'silent' : 'now',
+    })
+  }
+
   // «скучаем»: игрока не видно дольше missYouAfterMs
   if (
     nowMs - lastSeenAt >= config.notifications.missYouAfterMs &&

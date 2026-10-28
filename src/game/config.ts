@@ -53,6 +53,12 @@ export interface GameConfig {
   notifications: {
     /** «в беде»: пауза между повторными пушами */
     criticalCooldownMs: number
+    /** «пора спать»: порог энергии, ниже которого питомец зевает (выше критического — беду кричит critical) */
+    sleepyThreshold: number
+    /** «пора спать»: пауза между повторами */
+    sleepyCooldownMs: number
+    /** «выспался»: пауза между повторами, пока питомец спит с полной энергией */
+    sleptCooldownMs: number
     /** «скучаем»: после сколького отсутствия напомнить о себе */
     missYouAfterMs: number
     /** «скучаем»: пауза между повторами */
@@ -97,6 +103,10 @@ export const DEFAULT_CONFIG: GameConfig = {
   streak: { milestones: [3, 7, 14] },
   notifications: {
     criticalCooldownMs: 6 * HOUR,
+    // зевает при энергии < 40: от беды (< 25) это отделяют ~2 часа бодрствования
+    sleepyThreshold: 40,
+    sleepyCooldownMs: 12 * HOUR,
+    sleptCooldownMs: 12 * HOUR,
     missYouAfterMs: 24 * HOUR,
     missYouCooldownMs: 24 * HOUR,
     // не будим игрока с 22:00 до 9:00 по его часам
