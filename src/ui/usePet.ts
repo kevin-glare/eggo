@@ -14,7 +14,7 @@ import {
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/quests'
-import { missYou, touchStreak } from '../game/streak'
+import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
@@ -40,6 +40,15 @@ function pluralDays(n: number): string {
   if (mod10 === 1 && mod100 !== 11) return 'день'
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня'
   return 'дней'
+}
+
+/** Русская плюрализация: 1 неделю, 2 недели, 5 недель. */
+function pluralWeeks(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'неделю'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'недели'
+  return 'недель'
 }
 
 function initialPet(): PetState | null {
@@ -156,6 +165,17 @@ export function usePet(config: GameConfig) {
     const id = window.setTimeout(() => setNotice(null), 2600)
     return () => window.clearTimeout(id)
   }, [notice])
+
+  // праздник дружбы: тост и конфетти один раз на юбилейный день
+  const anniversaryRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (pet === null) return
+    const weeks = friendshipDay(pet, Date.now())
+    if (weeks === null || anniversaryRef.current === weeks) return
+    anniversaryRef.current = weeks
+    setNotice(`🎂 ${weeks} ${pluralWeeks(weeks)} дружбы!`)
+    setCelebrate((n) => n + 1)
+  }, [pet])
 
   const apply = useCallback(
     (action: (p: PetState, c: GameConfig) => ActionResult, successText: string, questId?: QuestId) => {

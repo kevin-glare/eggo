@@ -41,6 +41,8 @@ interface PetCanvasProps {
   onSceneComplete?: (kind: PetActionKind) => void
   /** счётчик праздников: рост n → конфетти и довольный прыжок */
   celebrate?: number
+  /** праздник дружбы: торт на траве на весь юбилейный день */
+  cake?: boolean
 }
 
 interface Particle {
@@ -75,6 +77,8 @@ interface StageProp {
 const FOOD_X = SCENE_W / 2 + 64
 const FOOD_Y = GROUND_Y - 10
 const BALL_REST_Y = GROUND_Y - 12
+/** Торт праздника дружбы — на траве слева от питомца. */
+const CAKE_X = SCENE_W / 2 - 120
 
 /**
  * Сценка «кормление с руки»: еда падает рядом с питомцем и ждёт тапов.
@@ -229,10 +233,11 @@ export default function PetCanvas({
   scene,
   onSceneComplete,
   celebrate = 0,
+  cake = false,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel })
-  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel }
+  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, cake })
+  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, cake }
   const visRef = useRef<PetVisualState>(createVisualState())
   const sceneRef = useRef({ energy: 0.7, warm: 0.9 })
   const particlesRef = useRef<Particle[]>([])
@@ -294,7 +299,7 @@ export default function PetCanvas({
     const frame = (now: number) => {
       const dt = Math.min(64, now - last)
       last = now
-      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour, dirtLevel: dirt } =
+      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour, dirtLevel: dirt, cake: showCake } =
         propsRef.current
 
       // яйцо качается тем сильнее, чем ближе вылупление
@@ -316,6 +321,7 @@ export default function PetCanvas({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now, sky)
       drawTrash(ctx, dirt, v.dirtAlpha)
+      if (showCake) drawCake(ctx, CAKE_X, GROUND_Y + 3, now)
       if (bubbleRef.current.alpha > 0.01)
         drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now, SCENE_W / 2 + wanderRef.current.x)
       drawStageProps(ctx, stageProps)
@@ -925,6 +931,51 @@ function drawStageProps(ctx: CanvasRenderingContext2D, props: StageProp[]): void
     if (p.kind === 'drumstick') drawDrumstick(ctx, p)
     else drawBall(ctx, p)
   }
+}
+
+/** Торт праздника дружбы: коржи с кремом, свеча с мерцающим огоньком. */
+function drawCake(ctx: CanvasRenderingContext2D, x: number, y: number, tMs: number): void {
+  ctx.save()
+  ctx.translate(x, y)
+  // тарелочка
+  ctx.fillStyle = '#f3ecdf'
+  ctx.strokeStyle = '#b7a98d'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.ellipse(0, 2, 26, 6, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.stroke()
+  // два коржа с кремовой прослойкой
+  ctx.strokeStyle = '#7a4a22'
+  ctx.lineWidth = 1.8
+  ctx.fillStyle = '#c9803f'
+  ctx.beginPath()
+  roundRect(ctx, -20, -10, 40, 9, 4)
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#ffe3ee'
+  ctx.fillRect(-20, -13, 40, 4)
+  ctx.fillStyle = '#f79cd0'
+  ctx.beginPath()
+  roundRect(ctx, -20, -21, 40, 9, 4)
+  ctx.fill()
+  ctx.stroke()
+  // кремовые пики сверху
+  ctx.fillStyle = '#ffe3ee'
+  for (const dx of [-14, -5, 4, 13]) {
+    ctx.beginPath()
+    ctx.arc(dx, -21, 4.5, Math.PI, 0)
+    ctx.fill()
+  }
+  // свеча и огонёк — мерцает
+  ctx.fillStyle = '#8fd3ff'
+  ctx.fillRect(-2, -33, 4, 12)
+  const flicker = 1 + Math.sin(tMs / 120) * 0.18
+  ctx.fillStyle = '#ffd76a'
+  ctx.beginPath()
+  ctx.ellipse(0, -37, 2.6 * flicker, 4 * flicker, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
 }
 
 /** Ножка: мясо с косточкой, повёрнута к питомцу. */

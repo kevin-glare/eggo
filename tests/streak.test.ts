@@ -82,3 +82,36 @@ describe('missYou', () => {
     expect(missYou(pet, DEFAULT_CONFIG, NOW)).toBe(true)
   })
 })
+
+import { friendshipDay } from '../src/game/streak'
+
+describe('friendshipDay', () => {
+  const CREATED = Date.UTC(2026, 9, 21, 12, 0, 0)
+  const created = () => makePet(DEFAULT_CONFIG, { createdAt: CREATED })
+
+  it('моложе недели — праздника нет', () => {
+    expect(friendshipDay(created(), CREATED + 6 * DAY)).toBeNull()
+  })
+
+  it('ровно неделя от создания — первая годовщина', () => {
+    expect(friendshipDay(created(), CREATED + 7 * DAY)).toBe(1)
+  })
+
+  it('весь календарный день юбилея — праздник', () => {
+    // юбилей наступает в 12:00 UTC, вечер того же дня — ещё праздник
+    expect(friendshipDay(created(), CREATED + 7 * DAY + 10 * HOUR)).toBe(1)
+  })
+
+  it('на следующий день праздник кончился', () => {
+    expect(friendshipDay(created(), CREATED + 7 * DAY + DAY)).toBeNull()
+  })
+
+  it('две недели — вторая годовщина', () => {
+    expect(friendshipDay(created(), CREATED + 14 * DAY)).toBe(2)
+  })
+
+  it('не мутирует состояние и не зависит от lastTickAt', () => {
+    const pet = makePet(DEFAULT_CONFIG, { createdAt: CREATED, lastTickAt: NOW })
+    expect(friendshipDay(pet, CREATED + 7 * DAY)).toBe(1)
+  })
+})

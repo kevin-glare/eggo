@@ -33,3 +33,19 @@ export function touchStreak(state: PetState, config: GameConfig, now: number): S
 export function missYou(state: PetState, config: GameConfig, now: number): boolean {
   return now - state.lastTickAt >= config.notifications.missYouAfterMs
 }
+
+/** Праздник дружбы — раз в неделю от момента создания. */
+export const FRIENDSHIP_WEEK_MS = 7 * 24 * 3_600_000
+
+/**
+ * Праздник дружбы: сколько полных недель питомец с хозяином, если сегодня
+ * юбилейный день (локальный календарный день недели от createdAt),
+ * иначе null. Праздник длится весь день юбилея, но только в этот день.
+ */
+export function friendshipDay(state: PetState, now: number): number | null {
+  const age = now - state.createdAt
+  if (age < FRIENDSHIP_WEEK_MS) return null
+  const weeks = Math.floor(age / FRIENDSHIP_WEEK_MS)
+  const anniversary = state.createdAt + weeks * FRIENDSHIP_WEEK_MS
+  return dayKey(now) === dayKey(anniversary) ? weeks : null
+}

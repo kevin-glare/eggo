@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
+import { friendshipDay } from './game/streak'
 import { desire, getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
@@ -53,6 +54,8 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 export default function App() {
   const { pet, notice, celebrate, feedPet, playPet, washPet, petPet, claimDaily, toggleSleep, startGame, advanceTime, reset } =
     usePet(config)
+  // праздник дружбы: торт стоит весь юбилейный день
+  const anniversary = pet !== null ? friendshipDay(pet, Date.now()) !== null : false
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
@@ -181,6 +184,7 @@ export default function App() {
               scene={scene}
               onSceneComplete={onSceneComplete}
               celebrate={celebrate}
+              cake={anniversary}
             />
             <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
