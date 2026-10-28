@@ -20,7 +20,8 @@ const QUEST_LABELS: Record<QuestId, string> = {
 /**
  * Полоска заданий дня. Чип читается как задание (подпись + счётчик «2/3»),
  * а не как статус питомца: задания считают заботу за сегодня, а статы
- * падают сами. Кнопка «Забрать» до готовности кликабельна — движок
+ * а не как статус питомца: задания считают заботу за сегодня, а статы
+ * падают сами. Кнопка «Получить» до готовности кликабельна — движок
  * откажет с подсказкой (как и остальные действия).
  */
 export default function QuestsBar({ daily, targets, onClaim, onExplain }: QuestsBarProps) {
@@ -61,9 +62,9 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
         type="button"
         className={complete && !daily.claimed ? 'claim ready' : 'claim'}
         onClick={onClaim}
-        aria-label={daily.claimed ? 'Награда забрана' : 'Забрать награду дня'}
+        aria-label={daily.claimed ? 'Награда получена' : 'Получить награду дня'}
       >
-        {daily.claimed ? '🎁 Забрано' : '🎁 Забрать'}
+        {daily.claimed ? '🎁 Получено' : '🎁 Получить'}
       </button>
     </section>
   )

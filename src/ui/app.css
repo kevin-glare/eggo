@@ -389,16 +389,17 @@ body {
   max-width: 360px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   margin-bottom: 8px;
 }
 
 .quest {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 8px;
+  gap: 4px;
+  padding: 5px 6px;
   border-radius: 14px;
   background: var(--card);
   border: 1px solid var(--stroke);
@@ -419,7 +420,7 @@ body {
 }
 
 .quest .qicon {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -431,10 +432,12 @@ body {
 }
 
 .quest .qlabel {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .quest .qcount {
@@ -454,14 +457,15 @@ body {
 }
 
 .claim {
-  flex: 1.2;
-  padding: 6px 4px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 6px 6px;
   border-radius: 14px;
   border: 1px solid var(--stroke);
   background: var(--card);
   color: var(--muted);
   font: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -484,6 +488,14 @@ body {
 
 .claim:active {
   transform: scale(0.96);
+}
+
+/* Экраны уже iPhone SE (375): в чипе заданий остаются иконка и счётчик —
+   подпись по тапу. На 360px полные подписи не влезают без обрезки. */
+@media (max-width: 374px) {
+  .quest .qlabel {
+    display: none;
+  }
 }
 
 /* Действия */

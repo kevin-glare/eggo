@@ -233,7 +233,7 @@ export function usePet(config: GameConfig) {
       setCelebrate((n) => n + 1)
       hapticSuccess()
     } else {
-      setNotice(result.reason === 'already-claimed' ? '🎁 Награда уже забрана' : '🎯 Сначала выполни задания дня')
+      setNotice(result.reason === 'already-claimed' ? '🎁 Награда уже получена' : '🎯 Сначала выполни задания дня')
       hapticWarning()
     }
     return result.ok
