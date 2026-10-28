@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
+import { feed } from './game/actions'
 import { desire, getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
@@ -53,13 +54,28 @@ export default function App() {
   // успешное действие включает анимацию в сцене; отказ движка — только тост
   const [actionPulse, setActionPulse] = useState<ActionPulse>({ kind: 'feed', n: 0 })
   const firePulse = (kind: PetActionKind) => setActionPulse((p) => ({ kind, n: p.n + 1 }))
+  // активная интерактивная сценка; на время сценки остальные действия не стартуют
+  const [scene, setScene] = useState<PetActionKind | null>(null)
   const onFeed = () => {
-    if (feedPet()?.ok) firePulse('feed')
+    if (scene !== null || pet === null) return
+    // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
+    if (!feed(pet, config).ok) {
+      feedPet()
+      return
+    }
+    setScene('feed')
+  }
+  // сценка доиграла: действие применяется один раз, здесь
+  const onSceneComplete = (kind: PetActionKind) => {
+    setScene(null)
+    if (kind === 'feed') feedPet()
   }
   const onPlay = () => {
+    if (scene !== null) return
     if (playPet()?.ok) firePulse('play')
   }
   const onWash = () => {
+    if (scene !== null) return
     if (washPet()?.ok) firePulse('wash')
   }
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
@@ -126,6 +142,8 @@ export default function App() {
               desire={desireKind}
               skyHourOverride={skyHour}
               onPetTap={petPet}
+              scene={scene}
+              onSceneComplete={onSceneComplete}
             />
             <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
@@ -137,7 +155,10 @@ export default function App() {
             onFeed={onFeed}
             onPlay={onPlay}
             onWash={onWash}
-            onToggleSleep={toggleSleep}
+            onToggleSleep={() => {
+              if (scene !== null) return
+              toggleSleep()
+            }}
           />
         </>
       )}

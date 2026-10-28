@@ -43,6 +43,10 @@ interface PetCanvasProps {
   onTap?: () => void
   /** тап пришёлся по самому питомцу (поглаживание); в яйце не вызывается */
   onPetTap?: () => void
+  /** активная интерактивная сценка действия (кормление с руки) */
+  scene?: PetActionKind | null
+  /** сценка доиграла: применить действие (один раз, в конце) */
+  onSceneComplete?: (kind: PetActionKind) => void
 }
 
 interface Particle {
@@ -77,6 +81,27 @@ interface StageProp {
 const FOOD_X = SCENE_W / 2 + 64
 const FOOD_Y = GROUND_Y - 10
 const BALL_REST_Y = GROUND_Y - 12
+
+/**
+ * Сценка «кормление с руки»: еда падает рядом с питомцем и ждёт тапов.
+ * Тап = укус (крошки, еда уменьшается); три укуса — сыт. Если по еде
+ * не тапать FEED_IDLE_MS — питомец доедает сам. Движок вызывается один раз
+ * в конце (onSceneComplete), отказы проверены до старта сценки.
+ */
+interface FeedScene {
+  food: StageProp
+  bites: number
+  landed: boolean
+  done: boolean
+  autoTimer: number | null
+}
+
+const FEED_BITES = 3
+const FEED_IDLE_MS = 6_000
+/** Размер еды после каждого укуса. */
+const FEED_SCALES = [0.7, 0.4, 0.05]
+/** Хит-зона еды, px. */
+const FOOD_HIT_R = 36
 
 /* Блуждание по лугу — презентация, не баланс: на логику не влияет. */
 /** Скорость прогулки и возврата к центру, px/с. */
@@ -174,6 +199,8 @@ export default function PetCanvas({
   skyHourOverride,
   onTap,
   onPetTap,
+  scene,
+  onSceneComplete,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel })
@@ -186,6 +213,10 @@ export default function PetCanvas({
   // блуждание: пока питомец «занят» (действие, тап, вылупление) — бежит в центр
   const wanderRef = useRef<WanderState>({ x: 0, target: 0, mode: 'stand', until: 0 })
   const busyUntilRef = useRef(0)
+  // сценка кормления: еда ждёт тапов-укусов; onSceneComplete через ref — без stale-замыканий
+  const feedRef = useRef<FeedScene | null>(null)
+  const completeRef = useRef(onSceneComplete)
+  completeRef.current = onSceneComplete
   // пузырь желания: альфа твинится при смене, вид запоминается для плавного исчезновения
   const bubbleRef = useRef<{ alpha: number; kind: DesireKind }>({ alpha: 0, kind: 'feed' })
 
@@ -318,7 +349,7 @@ export default function PetCanvas({
     prevStageRef.current = stage
   }, [stage])
 
-  // анимация отклика на действие: ням-ням, купание, игра с мячиком
+  // анимация отклика на действие: купание, игра с мячиком (кормление — отдельная сценка)
   useEffect(() => {
     if (!actionPulse || actionPulse.n === 0) return
     if (propsRef.current.stage === 'egg') return
@@ -327,10 +358,97 @@ export default function PetCanvas({
     const v = visRef.current
     const particles = particlesRef.current
     const stageProps = stagePropsRef.current
-    if (actionPulse.kind === 'feed') runFeed(v, stageProps, particles)
-    else if (actionPulse.kind === 'wash') runWash(v, particles)
+    if (actionPulse.kind === 'wash') runWash(v, particles)
     else runPlay(v, stageProps, particles)
   }, [actionPulse])
+
+  // сценка «кормление с руки»: еда падает, ждёт тапов-укусов, доиграла — complete
+  useEffect(() => {
+    if (!scene || scene !== 'feed') return
+    if (propsRef.current.stage === 'egg') return
+    // питомец занят всю сценку: бежит к центру и ждёт у своей миски
+    busyUntilRef.current = performance.now() + 10_000
+    const stageProps = stagePropsRef.current
+    const food: StageProp = { kind: 'drumstick', x: FOOD_X, y: -30, rot: 0.5, scale: 1, alpha: 1 }
+    stageProps.push(food)
+    const sc: FeedScene = { food, bites: 0, landed: false, done: false, autoTimer: null }
+    feedRef.current = sc
+    const armIdleTimer = () => {
+      if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+      sc.autoTimer = window.setTimeout(autoFinish, FEED_IDLE_MS)
+    }
+    if (prefersReducedMotion()) {
+      food.y = FOOD_Y
+      sc.landed = true
+      armIdleTimer()
+    } else {
+      gsap.to(food, {
+        y: FOOD_Y,
+        duration: 0.55,
+        ease: 'bounce.out',
+        onComplete: () => {
+          sc.landed = true
+          armIdleTimer()
+        },
+      })
+    }
+    return () => {
+      if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+      removeProp(stageProps, food)
+      feedRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene])
+
+  /** Укус: еда уменьшается, летят крошки, питомец наклоняется. */
+  const biteFood = () => {
+    const sc = feedRef.current
+    if (!sc || sc.done || !sc.landed) return
+    sc.bites += 1
+    sc.food.scale = FEED_SCALES[Math.min(sc.bites, FEED_BITES) - 1]!
+    spawnCrumbs(particlesRef.current, sc.food.x, FOOD_Y)
+    hapticTap()
+    const v = visRef.current
+    gsap
+      .timeline({ overwrite: 'auto' })
+      .to(v, { lean: 0.14, duration: 0.1, ease: 'power2.out' })
+      .to(v, { lean: 0, duration: 0.18, ease: 'sine.inOut' })
+    if (sc.bites >= FEED_BITES) {
+      sc.done = true
+      if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+      gsap.to(sc.food, { alpha: 0, duration: 0.25, delay: 0.3 })
+      gsap
+        .timeline({ delay: 0.35, onComplete: () => completeRef.current?.('feed') })
+        .to(v, { jumpY: -24, duration: 0.18, ease: 'power2.out', overwrite: 'auto' })
+        .to(v, { jumpY: 0, duration: 0.55, ease: 'elastic.out(1.1, 0.4)' })
+    } else {
+      if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+      sc.autoTimer = window.setTimeout(autoFinish, FEED_IDLE_MS)
+    }
+  }
+
+  /** Доедает сам: недостающие укусы проигрываются подряд, потом complete. */
+  const autoFinish = () => {
+    const sc = feedRef.current
+    if (!sc || sc.done) return
+    sc.done = true
+    if (sc.autoTimer !== null) window.clearTimeout(sc.autoTimer)
+    const v = visRef.current
+    const tl = gsap.timeline({ onComplete: () => completeRef.current?.('feed') })
+    const remaining = FEED_BITES - sc.bites
+    for (let i = 0; i < remaining; i++) {
+      tl.to(v, { lean: 0.14, duration: 0.1, ease: 'power2.out', overwrite: 'auto' })
+      tl.add(() => {
+        sc.food.scale = FEED_SCALES[Math.min(sc.bites + 1, FEED_BITES) - 1]!
+        spawnCrumbs(particlesRef.current, sc.food.x, FOOD_Y)
+        sc.bites += 1
+      })
+      tl.to(v, { lean: 0, duration: 0.18, ease: 'sine.inOut' })
+    }
+    tl.to(v, { jumpY: -24, duration: 0.18, ease: 'power2.out', overwrite: 'auto' })
+    tl.to(v, { jumpY: 0, duration: 0.55, ease: 'elastic.out(1.1, 0.4)' })
+    gsap.to(sc.food, { alpha: 0, duration: 0.25, delay: remaining * 0.28 + 0.3 })
+  }
 
   /** Щедрая зона поглаживания: тело и уши питомца, где бы он ни гулял. */
   const hitPet = (x: number, y: number): boolean => {
@@ -342,9 +460,15 @@ export default function PetCanvas({
     const rect = e.currentTarget.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * SCENE_W
     const y = ((e.clientY - rect.top) / rect.height) * SCENE_H
+    // сценка кормления: тап по еде — укус (остальная реакция кадра не нужна)
+    const sc = feedRef.current
+    if (sc && sc.landed && !sc.done && Math.hypot(x - FOOD_X, y - FOOD_Y) <= FOOD_HIT_R) {
+      biteFood()
+      return
+    }
     const stroked = propsRef.current.stage !== 'egg' && hitPet(x, y)
     const v = visRef.current
-    busyUntilRef.current = performance.now() + 1_200
+    busyUntilRef.current = Math.max(busyUntilRef.current, performance.now() + 1_200)
     const petX = SCENE_W / 2 + wanderRef.current.x
     for (let i = 0; i < 5; i++) {
       particlesRef.current.push({
@@ -436,30 +560,6 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, r)
   ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
-}
-
-function runFeed(v: PetVisualState, stageProps: StageProp[], particles: Particle[]): void {
-  const food: StageProp = { kind: 'drumstick', x: FOOD_X, y: -30, rot: 0.5, scale: 1, alpha: 1 }
-  stageProps.push(food)
-  if (prefersReducedMotion()) {
-    food.y = FOOD_Y
-    gsap.to(food, { alpha: 0, delay: 0.9, duration: 0.4, onComplete: () => removeProp(stageProps, food) })
-    return
-  }
-  const tl = gsap.timeline({ onComplete: () => removeProp(stageProps, food) })
-  tl.to(food, { y: FOOD_Y, duration: 0.55, ease: 'bounce.out' })
-  // три укуса: питомец наклоняется, ножка уменьшается, летят крошки
-  for (const scale of [0.62, 0.32, 0.001]) {
-    tl.to(v, { lean: 0.14, duration: 0.1, ease: 'power2.out', overwrite: 'auto' })
-    tl.add(() => {
-      food.scale = scale
-      spawnCrumbs(particles, food.x, FOOD_Y)
-    })
-    tl.to(v, { lean: 0, duration: 0.18, ease: 'sine.inOut' })
-  }
-  // наелся — довольный прыжок
-  tl.to(v, { jumpY: -24, duration: 0.18, ease: 'power2.out' })
-  tl.to(v, { jumpY: 0, duration: 0.55, ease: 'elastic.out(1.1, 0.4)' })
 }
 
 function runWash(v: PetVisualState, particles: Particle[]): void {
