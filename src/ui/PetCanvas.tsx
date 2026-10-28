@@ -19,12 +19,6 @@ import { sampleDayCycle } from './dayCycle'
 
 export type PetActionKind = 'feed' | 'play' | 'wash'
 
-/** Импульс успешного действия: n растёт — канвас проигрывает анимацию заново. */
-export interface ActionPulse {
-  kind: PetActionKind
-  n: number
-}
-
 interface PetCanvasProps {
   stage: Stage
   mood: Mood
@@ -34,8 +28,6 @@ interface PetCanvasProps {
   eggProgress: number
   /** 0..3 — насколько питомец грязный (из чистоты); undefined = чист */
   dirtLevel?: DirtLevel
-  /** последнее успешное действие — для анимации отклика */
-  actionPulse?: ActionPulse | null
   /** чего питомец хочет прямо сейчас — пузырёк над головой; null = скрыт */
   desire?: DesireKind | null
   /** dev: подменный час неба; null = локальное время пользователя */
@@ -118,6 +110,24 @@ const WASH_STROKES = 6
 /** Сколько px пути пальцем засчитывается как одно проведение. */
 const WASH_SEGMENT_PX = 56
 const WASH_IDLE_MS = 8_000
+
+/**
+ * Сценка «поймай мяч»: мяч летает по дугам, тап по нему — отбивание
+ * (питомец прыгает, искры); PLAY_HITS отбиваний — наигрались.
+ * Промахи не штрафуют; без отбиваний PLAY_IDLE_MS — мяч улетает,
+ * действие всё равно применяется. Движок — один раз в конце.
+ */
+interface PlayScene {
+  ball: StageProp
+  hits: number
+  done: boolean
+  idleTimer: number | null
+}
+
+const PLAY_HITS = 3
+/** Щедрая хит-зона мяча, px. */
+const PLAY_HIT_R = 36
+const PLAY_IDLE_MS = 10_000
 
 /* Блуждание по лугу — презентация, не баланс: на логику не влияет. */
 /** Скорость прогулки и возврата к центру, px/с. */
@@ -210,7 +220,6 @@ export default function PetCanvas({
   appearance,
   eggProgress,
   dirtLevel = 0,
-  actionPulse,
   desire,
   skyHourOverride,
   onTap,
@@ -233,6 +242,8 @@ export default function PetCanvas({
   const feedRef = useRef<FeedScene | null>(null)
   // сценка купания: путь пальца по питомцу копится в проведениях
   const washRef = useRef<WashScene | null>(null)
+  // сценка с мячом: тапы по летящему мячу
+  const playRef = useRef<PlayScene | null>(null)
   const dragRef = useRef<{ active: boolean; x: number; y: number; moved: number } | null>(null)
   const dragMovedRef = useRef(false)
   const completeRef = useRef(onSceneComplete)
@@ -369,14 +380,97 @@ export default function PetCanvas({
     prevStageRef.current = stage
   }, [stage])
 
-  // анимация отклика: игра с мячиком (кормление и купание — отдельные сценки)
+  // сценка «поймай мяч»: мяч летает по дугам, ждёт тапов-отбиваний
   useEffect(() => {
-    if (!actionPulse || actionPulse.n === 0) return
+    if (!scene || scene !== 'play') return
     if (propsRef.current.stage === 'egg') return
-    // на время сценки питомец занят: стоит в центре, где лежит реквизит
-    busyUntilRef.current = performance.now() + 2_600
-    runPlay(visRef.current, stagePropsRef.current, particlesRef.current)
-  }, [actionPulse])
+    busyUntilRef.current = performance.now() + 20_000
+    const stageProps = stagePropsRef.current
+    const ball: StageProp = { kind: 'ball', x: -30, y: BALL_REST_Y, rot: 0, scale: 1, alpha: 1 }
+    stageProps.push(ball)
+    const sc: PlayScene = { ball, hits: 0, done: false, idleTimer: null }
+    playRef.current = sc
+    if (prefersReducedMotion()) {
+      ball.x = SCENE_W / 2
+      ball.y = GROUND_Y - 120
+    } else {
+      launchBall(sc)
+    }
+    sc.idleTimer = window.setTimeout(autoPlayFinish, PLAY_IDLE_MS)
+    return () => {
+      if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
+      gsap.killTweensOf(ball)
+      removeProp(stageProps, ball)
+      playRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene])
+
+  /** Новая дуга в случайную точку неба; живёт, пока сцена активна. */
+  function launchBall(sc: PlayScene): void {
+    if (sc.done || playRef.current !== sc) return
+    const from = { x: sc.ball.x, y: sc.ball.y }
+    const to = { x: 55 + Math.random() * (SCENE_W - 110), y: 70 + Math.random() * (GROUND_Y - 170) }
+    const dur = Math.max(0.6, Math.min(1.1, Math.hypot(to.x - from.x, to.y - from.y) / 380))
+    const peak = Math.min(from.y, to.y) - 45
+    gsap.killTweensOf(sc.ball)
+    gsap.to(sc.ball, { x: to.x, duration: dur, ease: 'none' })
+    gsap.to(sc.ball, { y: peak, duration: dur / 2, ease: 'power2.out' })
+    gsap.to(sc.ball, {
+      y: to.y,
+      duration: dur / 2,
+      ease: 'power2.in',
+      delay: dur / 2,
+      onComplete: () => gsap.delayedCall(0.15, () => launchBall(sc)),
+    })
+    gsap.to(sc.ball, { rot: '+=6', duration: dur, ease: 'none' })
+  }
+
+  /** Мяч улетает, сцена доиграна: действие применяется даже без отбиваний. */
+  function autoPlayFinish(): void {
+    const sc = playRef.current
+    if (!sc || sc.done) return
+    sc.done = true
+    if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
+    if (!prefersReducedMotion()) {
+      gsap.killTweensOf(sc.ball)
+      gsap.to(sc.ball, { x: SCENE_W + 60, duration: 0.7, ease: 'none' })
+    }
+    gsap.delayedCall(0.75, () => completeRef.current?.('play'))
+  }
+
+  /** Отбить мяч: прыжок питомца, искры, новая дуга; три отбивания — наигрались. */
+  const hitBall = () => {
+    const sc = playRef.current
+    if (!sc || sc.done) return
+    sc.hits += 1
+    if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
+    hapticTap()
+    spawnSparkles(particlesRef.current)
+    const v = visRef.current
+    if (!prefersReducedMotion()) {
+      gsap
+        .timeline({ overwrite: 'auto' })
+        .to(v, { jumpY: -30, duration: 0.16, ease: 'power2.out' })
+        .to(v, { jumpY: 0, duration: 0.45, ease: 'elastic.out(1.1, 0.4)' })
+    }
+    if (sc.hits >= PLAY_HITS) {
+      sc.done = true
+      if (prefersReducedMotion()) {
+        sc.ball.alpha = 0
+        completeRef.current?.('play')
+        return
+      }
+      gsap.killTweensOf(sc.ball)
+      gsap.to(sc.ball, { x: SCENE_W + 60, duration: 0.7, ease: 'none' })
+      gsap.to(sc.ball, { y: BALL_REST_Y - 50, duration: 0.35, ease: 'power2.out' })
+      gsap.to(sc.ball, { y: BALL_REST_Y, duration: 0.35, ease: 'power2.in', delay: 0.35 })
+      gsap.delayedCall(0.75, () => completeRef.current?.('play'))
+    } else {
+      sc.idleTimer = window.setTimeout(autoPlayFinish, PLAY_IDLE_MS)
+      launchBall(sc)
+    }
+  }
 
   // сценка «кормление с руки»: еда падает, ждёт тапов-укусов, доиграла — complete
   useEffect(() => {
@@ -610,6 +704,12 @@ export default function PetCanvas({
       biteFood()
       return
     }
+    // сценка с мячом: тап по мячу — отбивание
+    const ps = playRef.current
+    if (ps && !ps.done && Math.hypot(x - ps.ball.x, y - ps.ball.y) <= PLAY_HIT_R) {
+      hitBall()
+      return
+    }
     const stroked = propsRef.current.stage !== 'egg' && hitPet(x, y)
     const v = visRef.current
     busyUntilRef.current = Math.max(busyUntilRef.current, performance.now() + 1_200)
@@ -745,29 +845,6 @@ function spawnWashBubbles(particles: Particle[], x: number, y: number, count = 5
       shape: 'drop',
     })
   }
-}
-
-function runPlay(v: PetVisualState, stageProps: StageProp[], particles: Particle[]): void {
-  const ball: StageProp = { kind: 'ball', x: -30, y: BALL_REST_Y, rot: 0, scale: 1, alpha: 1 }
-  stageProps.push(ball)
-  if (prefersReducedMotion()) {
-    ball.x = SCENE_W / 2 - 70
-    gsap.to(ball, { alpha: 0, delay: 1, duration: 0.4, onComplete: () => removeProp(stageProps, ball) })
-    return
-  }
-  const tl = gsap.timeline({ onComplete: () => removeProp(stageProps, ball) })
-  // мячик закатывается слева двумя дугами
-  tl.to(ball, { x: SCENE_W / 2 - 70, duration: 0.8, ease: 'none' }, 0)
-  tl.to(ball, { y: BALL_REST_Y - 62, duration: 0.4, ease: 'power2.out' }, 0)
-  tl.to(ball, { y: BALL_REST_Y, duration: 0.4, ease: 'power2.in' }, 0.4)
-  // питомец прыгает навстречу и отбивает
-  tl.to(v, { jumpY: -30, duration: 0.16, ease: 'power2.out', overwrite: 'auto' }, 0.8)
-  tl.to(v, { jumpY: 0, duration: 0.12, ease: 'power2.in' }, 0.96)
-  tl.to(ball, { x: SCENE_W + 40, duration: 0.75, ease: 'none' }, 1.08)
-  tl.to(ball, { y: BALL_REST_Y - 55, duration: 0.3, ease: 'power2.out' }, 1.08)
-  tl.to(ball, { y: BALL_REST_Y, duration: 0.45, ease: 'power2.in' }, 1.38)
-  tl.to(ball, { rot: 9, duration: 1.8, ease: 'none' }, 0)
-  tl.add(() => spawnSparkles(particles), 1.1)
 }
 
 function spawnCrumbs(particles: Particle[], x: number, y: number): void {

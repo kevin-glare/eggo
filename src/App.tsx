@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
-import { feed, wash } from './game/actions'
+import { feed, play, wash } from './game/actions'
 import { desire, getMood } from './game/engine'
 import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
-import PetCanvas, { type ActionPulse, type PetActionKind } from './ui/PetCanvas'
+import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import StatsBar from './ui/StatsBar'
 import { usePet } from './ui/usePet'
 import './ui/app.css'
@@ -51,9 +51,6 @@ const SKY_MODES: { label: string; hour: number | null }[] = [
 export default function App() {
   const { pet, notice, feedPet, playPet, washPet, petPet, toggleSleep, startGame, advanceTime, reset } = usePet(config)
   const [skyHour, setSkyHour] = useState<number | null>(null)
-  // успешное действие включает анимацию в сцене; отказ движка — только тост
-  const [actionPulse, setActionPulse] = useState<ActionPulse>({ kind: 'feed', n: 0 })
-  const firePulse = (kind: PetActionKind) => setActionPulse((p) => ({ kind, n: p.n + 1 }))
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
   const onFeed = () => {
@@ -70,10 +67,15 @@ export default function App() {
     setScene(null)
     if (kind === 'feed') feedPet()
     else if (kind === 'wash') washPet()
+    else if (kind === 'play') playPet()
   }
   const onPlay = () => {
-    if (scene !== null) return
-    if (playPet()?.ok) firePulse('play')
+    if (scene !== null || pet === null) return
+    if (!play(pet, config).ok) {
+      playPet()
+      return
+    }
+    setScene('play')
   }
   const onWash = () => {
     if (scene !== null || pet === null) return
@@ -144,7 +146,6 @@ export default function App() {
               appearance={pet.appearance}
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
-              actionPulse={actionPulse}
               desire={desireKind}
               skyHourOverride={skyHour}
               onPetTap={petPet}
