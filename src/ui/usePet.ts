@@ -79,6 +79,8 @@ export function usePet(config: GameConfig) {
   petRef.current = pet
   const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
   const lastSyncRef = useRef(0)
+  /** действие игрока сменило состояние — следующий сейв едет на сервер без троттлинга */
+  const forceSyncRef = useRef(false)
   /** стартовый синк закончился (любым исходом) — сторожу больше нечего делать */
   const startSyncSettledRef = useRef(false)
 
@@ -158,10 +160,13 @@ useEffect(() => {
     petStore.saveLocal(raw)
     if (pet.name === null) return
     const now = Date.now()
-    if (now - lastSyncRef.current >= SERVER_SYNC_INTERVAL_MS) {
-      lastSyncRef.current = now
-      void petStore.serverSync(raw)
-    }
+    // крон решает пуши по сейву из базы: сон, не доехавший до неё за троттлинг,
+    // превращается в «уложи спать» для уже спящего питомца
+    const forced = forceSyncRef.current
+    forceSyncRef.current = false
+    if (!forced && now - lastSyncRef.current < SERVER_SYNC_INTERVAL_MS) return
+    lastSyncRef.current = now
+    void petStore.serverSync(raw)
   }, [pet])
 
   // при уходе со страницы — залить актуальный сейв на сервер
@@ -221,6 +226,7 @@ useEffect(() => {
         setPet(result.state)
       }
       if (result.ok) {
+        forceSyncRef.current = true
         setNotice(successText)
         hapticSuccess()
       } else {
@@ -254,6 +260,7 @@ useEffect(() => {
     const result = claimReward(current, config)
     setPet(result.state)
     if (result.ok) {
+      forceSyncRef.current = true
       setNotice(`🎁 Задания дня выполнены: +${config.quests.rewardHappiness} к счастью!`)
       setCelebrate((n) => n + 1)
       hapticSuccess()
@@ -281,6 +288,7 @@ useEffect(() => {
         hapticWarning()
         return false
       }
+      forceSyncRef.current = true
       setPet(result.state)
       hapticSuccess()
       setNotice(result.state.stage === 'egg' ? '🥚 Появилось яйцо!' : `🎉 ${result.state.name} — отличное имя!`)
