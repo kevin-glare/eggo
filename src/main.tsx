@@ -1,8 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { initMetrika } from './metrika'
 import { hasTelegramSession } from './telegram'
 import TelegramGate from './ui/TelegramGate'
+
+initMetrika()
 
 // в проде без Telegram играть нельзя: нет initData — нет синка и пушей,
 // питомец живёт в одном браузере и теряется. В дев-режиме (localhost) — можно
