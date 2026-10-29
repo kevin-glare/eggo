@@ -180,6 +180,10 @@ export default function App() {
               celebrate={celebrate}
               cake={anniversary}
             />
+            {/* тост всплывает на небе, в верхней части сцены */}
+            <div className="toast-slot" aria-live="polite">
+              {notice && <div className="toast">{notice}</div>}
+            </div>
             <div className="mood">{MOOD_TEXT[mood]}</div>
           </div>
 
@@ -200,10 +204,6 @@ export default function App() {
           />
         </>
       )}
-
-      <div className="toast-slot" aria-live="polite">
-        {notice && <div className="toast">{notice}</div>}
-      </div>
 
       {import.meta.env.DEV && (
         <div className="devtools">

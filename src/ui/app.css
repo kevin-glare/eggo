@@ -539,16 +539,13 @@ body {
   cursor: default;
 }
 
-/* Тост — в потоке, под кнопками; место зарезервировано, чтобы
-   появление сообщения не двигало интерфейс */
-/* Тосты плавают НАД кнопками действий (137 = паддинг 14 + кнопки 62 + зазор 8),
-   слегка перекрывая нижний край статов; места в потоке не занимают —
-   иначе пустая полка съедает у сцены ~50px высоты */
+/* Тост всплывает на небе — в верхней части сцены, как облако-гребёнка;
+   места в потоке не занимает, на квесты/статы не давит */
 .toast-slot {
   position: absolute;
+  top: 12px;
   left: 16px;
   right: 16px;
-  bottom: calc(137px + env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -574,7 +571,7 @@ body {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(-10px);
   }
 }
 
