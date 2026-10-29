@@ -54,10 +54,14 @@ export function tg(): TgWebApp | null {
   return app
 }
 
-/** Открыто в настоящем Telegram: платформа реальная и подписанные данные на месте. */
+/**
+ * Открыто как мини-апп: подписанные данные запуска на месте.
+ * Платформу намеренно не проверяем: часть клиентов (старые десктопы,
+ * сторонние сборки) отдаёт platform 'unknown', но initData им приходит.
+ */
 export function hasTelegramSession(): boolean {
-  const app = tg()
-  return app !== null && app.initData !== ''
+  const data = window.Telegram?.WebApp?.initData
+  return typeof data === 'string' && data !== ''
 }
 
 /** Вызвать один раз на старте. */
