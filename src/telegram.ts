@@ -54,6 +54,12 @@ export function tg(): TgWebApp | null {
   return app
 }
 
+/** Открыто в настоящем Telegram: платформа реальная и подписанные данные на месте. */
+export function hasTelegramSession(): boolean {
+  const app = tg()
+  return app !== null && app.initData !== ''
+}
+
 /** Вызвать один раз на старте. */
 export function initTelegram(): void {
   const app = tg()

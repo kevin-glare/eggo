@@ -56,7 +56,10 @@ BOT_TOKEN="123456:TEST-TOKEN"
 1. Создайте репозиторий на GitHub и запушьте код (ветка `main`).
 2. В настройках репозитория: **Settings → Pages → Source: GitHub Actions**.
 3. Там же: **Settings → Secrets and variables → Actions → Variables** —
-   добавьте `VITE_API_URL` = адрес воркера, например `https://api.ваш-домен.ру`.
+   добавьте `VITE_API_URL` = адрес воркера, например `https://api.ваш-домен.ру`,
+   и `VITE_BOT_URL` = ссылка на бота, например `https://t.me/ваш_бот`.
+   Без Telegram прод-версия показывает заглушку «открой через бота» с этой
+   кнопкой; в дев-режиме (`npm run dev`) играть можно и без Telegram.
 4. Дальше каждый пуш в `main` сам собирает и публикует фронт
    (воркфлоу `.github/workflows/deploy.yml`).
 
