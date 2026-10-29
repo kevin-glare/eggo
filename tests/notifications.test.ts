@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CONFIG, HOUR } from '../src/game/config'
+import { DEFAULT_CONFIG, HOUR, MINUTE } from '../src/game/config'
 import { isQuietHour, pendingNotifications, userLocalHour, type SentNotifications } from '../src/game/notifications'
 import { hatchedPet, makePet } from './helpers'
 
@@ -150,6 +150,28 @@ describe('pendingNotifications — «пора спать»', () => {
   it('ночью уходит молча: не будим игрока, но и не теряем', () => {
     const pet = hatchedPet(config, {}, { energy: 30 })
     expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, 3)[0]?.delivery).toBe('silent')
+  })
+})
+
+describe('pendingNotifications — свежая активность игрока', () => {
+  it('игрок был в приложении 5 минут назад: «выспался» не уходит — он сам это видит', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 100 })
+    expect(pendingNotifications(pet, NOW, config, NOW - 5 * MINUTE, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('игрок был в приложении 5 минут назад: «пора спать» не уходит', () => {
+    const pet = hatchedPet(config, {}, { energy: 30 })
+    expect(pendingNotifications(pet, NOW, config, NOW - 5 * MINUTE, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('беда кричит даже при свежей активности', () => {
+    const pet = hatchedPet(config, {}, { fullness: 20 })
+    expect(pendingNotifications(pet, NOW, config, NOW - 5 * MINUTE, GROWN_SEEN, DAY_HOUR)[0]?.kind).toBe('critical')
+  })
+
+  it('активность старше окна — несрочные пуши снова работают', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 100 })
+    expect(pendingNotifications(pet, NOW, config, NOW - 15 * MINUTE, GROWN_SEEN, DAY_HOUR)[0]?.kind).toBe('slept')
   })
 })
 

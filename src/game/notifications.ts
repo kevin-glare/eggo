@@ -60,6 +60,9 @@ export function pendingNotifications(
   const result: PendingNotification[] = []
   // ночью не будим: беда уходит без звука, остальное ждёт утра
   const quiet = isQuietHour(localHour, config)
+  // игрок недавно был в приложении и сам всё видит: несрочные пуши молчат,
+  // беда (critical) кричит всегда
+  const active = nowMs - lastSeenAt < config.notifications.activityWindowMs
 
   // «в беде»: критическая шкала или болезнь — самая срочная новость
   const reasons: string[] = []
@@ -87,7 +90,7 @@ export function pendingNotifications(
   }
 
   // «выспался»: спит с полным запасом энергии — зовём будить
-  if (pet.sleeping && pet.stats.energy >= 100 && cooldownPassed(sent, 'slept', nowMs, config.notifications.sleptCooldownMs)) {
+  if (!active && pet.sleeping && pet.stats.energy >= 100 && cooldownPassed(sent, 'slept', nowMs, config.notifications.sleptCooldownMs)) {
     result.push({
       kind: 'slept',
       text: `☀️ ${petTitle(pet)} выспался — разбуди его!`,
@@ -97,6 +100,7 @@ export function pendingNotifications(
 
   // «пора спать»: мягкий намёк уложить, когда беды ещё нет — при беде и болезни кричит critical
   if (
+    !active &&
     !pet.sleeping &&
     !pet.sick &&
     reasons.length === 0 &&
@@ -112,6 +116,7 @@ export function pendingNotifications(
 
   // «скучаем»: игрока не видно дольше missYouAfterMs
   if (
+    !active &&
     nowMs - lastSeenAt >= config.notifications.missYouAfterMs &&
     cooldownPassed(sent, 'missYou', nowMs, config.notifications.missYouCooldownMs)
   ) {

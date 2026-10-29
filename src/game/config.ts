@@ -63,6 +63,8 @@ export interface GameConfig {
     missYouAfterMs: number
     /** «скучаем»: пауза между повторами */
     missYouCooldownMs: number
+    /** свежая активность игрока: был в приложении недавно — несрочные пуши молчат, он всё видит сам; беда (critical) кричит всегда */
+    activityWindowMs: number
     /** тихие часы по местному времени игрока: часы с from (включительно) до to; окно может переходить через полночь */
     quietHours: { from: number; to: number }
   }
@@ -109,6 +111,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     sleptCooldownMs: 12 * HOUR,
     missYouAfterMs: 24 * HOUR,
     missYouCooldownMs: 24 * HOUR,
+    // крон шлёт каждые 30 мин: окно в 10 минут надёжно перекрывает сессию в аппе
+    activityWindowMs: 10 * MINUTE,
     // не будим игрока с 22:00 до 9:00 по его часам
     quietHours: { from: 22, to: 9 },
   },
