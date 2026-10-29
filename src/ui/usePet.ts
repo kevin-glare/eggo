@@ -33,6 +33,13 @@ const REASON_TEXT: Record<ActionReason, string> = {
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
 
+/**
+ * Страховка от вечной загрузки: у некоторых вебвью фетч может зависнуть
+ * навсегда и не отозваться на abort. Худший честный путь стартового синка —
+ * 5с облако + 10с фетч, поэтому сторож срабатывает позже — на 20-й секунде.
+ */
+const SYNC_WATCHDOG_MS = 20_000
+
 /** Русская плюрализация: 1 день, 3 дня, 14 дней. */
 function pluralDays(n: number): string {
   const mod10 = n % 10
@@ -72,6 +79,8 @@ export function usePet(config: GameConfig) {
   petRef.current = pet
   const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
   const lastSyncRef = useRef(0)
+  /** стартовый синк закончился (любым исходом) — сторожу больше нечего делать */
+  const startSyncSettledRef = useRef(false)
 
   // старт: Telegram-инициализация, разовая миграция старого облака Telegram
   // и сервер-синк. Сравнение сейвов честное — по lastTickAt до досчёта времени.
@@ -91,24 +100,40 @@ export function usePet(config: GameConfig) {
         const payload = best?.name != null ? serialize(best) : null
         const response = await petStore.serverSync(payload)
         if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance) ?? best
-      } catch {
-        // живём на локальном сейве (или новом яйце ниже)
-      }
-      // питомца нет нигде — новая игра; чужой сейв досчитываем по времени отсутствия
-      const resolved = best ?? createPet(Date.now(), config, rollAppearance(Math.random))
-      if (!cancelled) {
-        // «скучал»: absence считается до досчёта — lastTickAt ещё старый
-        if (best !== null && missYou(best, config, Date.now())) {
-          setNotice(`💗 ${best.name ?? 'Питомец'} скучал по тебе!`)
-          setCelebrate((n) => n + 1)
-        }
-        if (resolved !== local) setPet(catchUp(resolved, Date.now(), config))
-      }
-    })()
-    return () => {
-      cancelled = true
+    } catch {
+      // живём на локальном сейве (или новом яйце ниже)
     }
-  }, [config])
+    startSyncSettledRef.current = true
+    // питомца нет нигде — новая игра; чужой сейв досчитываем по времени отсутствия
+    const resolved = best ?? createPet(Date.now(), config, rollAppearance(Math.random))
+    if (!cancelled) {
+      // «скучал»: absence считается до досчёта — lastTickAt ещё старый
+      if (best !== null && missYou(best, config, Date.now())) {
+        setNotice(`💗 ${best.name ?? 'Питомец'} скучал по тебе!`)
+        setCelebrate((n) => n + 1)
+      }
+      // пока синк висел, сторож мог дать яйцо — не отбираем его запоздалым
+      // ответом: при следующем запуске слияние само разберётся, чей сейв главный
+      if (local === null && petRef.current !== null) return
+      if (resolved !== local) setPet(catchUp(resolved, Date.now(), config))
+    }
+  })()
+  return () => {
+    cancelled = true
+  }
+}, [config])
+
+// сторож вечной загрузки: локаль пуста, синк завис — начинаем с нового яйца.
+// Безымянное яйцо сервер не перебьёт, а настоящий питомец с сервера выиграет
+// у него при следующем запуске по правилам слияния
+useEffect(() => {
+  const timer = window.setTimeout(() => {
+    if (startSyncSettledRef.current || petRef.current !== null) return
+    const fresh = catchUp(createPet(Date.now(), config, rollAppearance(Math.random)), Date.now(), config)
+    setPet(fresh)
+  }, SYNC_WATCHDOG_MS)
+  return () => window.clearTimeout(timer)
+}, [config])
 
   // при запуске досчитываем всё время, пока приложение было закрыто,
   // и разыгрываем задания сегодняшнего дня — они видны сразу после входа
