@@ -11,7 +11,6 @@ import { dirtLevel } from './ui/dirt'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
-import type { QuestId } from './game/quests'
 import { usePet } from './ui/usePet'
 import './ui/app.css'
 
@@ -113,24 +112,6 @@ export default function App() {
     claimDaily()
   }
 
-  /** Метки заданий дня на кнопках: «1/3» пока идёт, «✓» когда готово. */
-  const questMarks = (() => {
-    const daily = pet?.daily
-    if (!daily || daily.claimed) return undefined
-    const marks: Partial<Record<PetActionKind, string>> = {}
-    const mark = (kind: PetActionKind, quest: QuestId) => {
-      const i = daily.quests.indexOf(quest)
-      if (i === -1) return
-      const p = daily.progress[i] ?? 0
-      const t = config.quests.targets[quest]
-      marks[kind] = p >= t ? '✓' : `${p}/${t}`
-    }
-    mark('feed', 'feed')
-    mark('play', 'play')
-    mark('wash', 'wash')
-    return Object.keys(marks).length > 0 ? marks : undefined
-  })()
-
   // вход: блоки softly всплывают каскадом — когда питомец уже показан
   useEffect(() => {
     if (!ready) return
@@ -209,7 +190,6 @@ export default function App() {
           <ActionsBar
             isEgg={pet.stage === 'egg'}
             sleeping={pet.sleeping}
-            questMarks={questMarks}
             onFeed={onFeed}
             onPlay={onPlay}
             onWash={onWash}
