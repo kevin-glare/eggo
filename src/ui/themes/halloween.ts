@@ -33,8 +33,11 @@ const PUMPKINS = [
   { x: 0.335, y: 0.885, r: 10 },
 ]
 
-/** Паутина свисает с «потолка» сцены — верхней кромки канваса; x — доля ширины. */
-const WEB = { x: 0.62, r: 52 }
+/** Паутина в правом нижнем углу: якорь на нижней кромке, веер смотрит
+    вверх-влево. x — доля ширины. На высоких экранах правый край канваса
+    срезается cover'ом, поэтому паутина прячется в угол лишь частично —
+    как паутинка, зацепившаяся за самую рамку окна. */
+const WEB = { x: 0.88, r: 58 }
 
 /** Паук на нитке: x, y — доли сцены (y — точка покоя), s — размер, ph — фаза. */
 const HANGING_SPIDER = { x: 0.34, y: 0.24, s: 1.15, ph: 1.2 }
@@ -50,8 +53,8 @@ export function drawHalloween(
   // ночью мыши и пауки подсвечиваются фиолетовым, чтобы не тонули в тёмном небе
   const night = sky.star
   const batColor = `rgb(${22 + 68 * night | 0}, ${14 + 56 * night | 0}, ${40 + 104 * night | 0})`
-  // паутина под «потолком», поверх неба, но за летящими мышами
-  drawWeb(ctx, WEB.x * w, 0, WEB.r)
+  // паутина в правом нижнем углу, поверх травы, но за летящими мышами
+  drawWeb(ctx, WEB.x * w, h, WEB.r, Math.PI, Math.PI * 1.5)
   const hs = HANGING_SPIDER
   const hangY = (hs.y + Math.sin(t * 0.7 + hs.ph) * 0.022) * h
   ctx.strokeStyle = 'rgba(250, 248, 255, 0.4)'
@@ -66,8 +69,8 @@ export function drawHalloween(
     const y = (bat.y0 + Math.sin(t * 0.6 + bat.ph) * 0.012) * h
     drawBat(ctx, x, y, bat.s, Math.sin(t * bat.flapSp + bat.ph), batColor)
   }
-  // паучок сидит на нижней кромке паутины
-  drawSpider(ctx, WEB.x * w, WEB.r + 6, 0.85, batColor)
+  // паучок сидит на паутине со стороны видимого края
+  drawSpider(ctx, WEB.x * w - WEB.r * 0.66, h - WEB.r * 0.66, 0.85, batColor)
   // днём лица как нарисованные, ночью светятся изнутри
   const glow = 0.45 + 0.55 * (1 - sky.sun)
   for (const p of PUMPKINS) drawPumpkin(ctx, p.x * w, p.y * h, p.r, tMs, glow)
@@ -175,14 +178,19 @@ function drawPumpkin(
   ctx.restore()
 }
 
-/** Паутина-веер, свисающая с верхней кромки: спицы из точки-якоря и
+/** Паутина-веер из точки-якоря между углами a0..a1 (радианы): спицы и
     кольца, которые слегка провисают между спицами. Полупрозрачная —
     читается и днём, и как лунная ночью. */
-function drawWeb(ctx: CanvasRenderingContext2D, ax: number, ay: number, r: number): void {
+function drawWeb(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  r: number,
+  a0: number,
+  a1: number,
+): void {
   ctx.save()
   ctx.strokeStyle = 'rgba(250, 248, 255, 0.55)'
-  const a0 = Math.PI * 0.12
-  const a1 = Math.PI * 0.88
   const spokes = 7
   ctx.lineWidth = 1.4
   ctx.beginPath()
