@@ -365,7 +365,6 @@ export default function PetCanvas({
       // праздничный декор поверх сцены, до питомца; null — рисуем как обычно
       const holiday = resolveHolidayTheme(d)
       if (holiday) holiday.draw(ctx, SCENE_W, SCENE_H, now, sky)
-      drawTrash(ctx, dirt, v.dirtAlpha)
       if (showCake) drawCake(ctx, CAKE_X, GROUND_Y + 3, now)
       if (bubbleRef.current.alpha > 0.01)
         drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now, SCENE_W / 2 + wanderRef.current.x)
@@ -1031,7 +1030,7 @@ function spawnSparkles(particles: Particle[]): void {
   }
 }
 
-/* ---------- отрисовка реквизита, мусора и частиц ---------- */
+/* ---------- отрисовка реквизита и частиц ---------- */
 
 function drawStageProps(ctx: CanvasRenderingContext2D, props: StageProp[]): void {
   for (const p of props) {
@@ -1147,38 +1146,6 @@ function drawBall(ctx: CanvasRenderingContext2D, b: StageProp): void {
   ctx.arc(-4.5, -5.5, 2.6, 0, Math.PI * 2)
   ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
   ctx.fill()
-  ctx.restore()
-}
-
-/**
- * Реквизит грязнули на полянке: у самого запущенного — смятый комок слева.
- * Основной сигнал запущенности — пятна на самом питомце (dirt.ts).
- */
-function drawTrash(ctx: CanvasRenderingContext2D, level: DirtLevel, alpha: number): void {
-  if (level < 3 || alpha <= 0.01) return
-  ctx.save()
-  ctx.globalAlpha = alpha * 0.9
-  drawScrap(ctx, SCENE_W / 2 - 98, GROUND_Y + 4)
-  ctx.restore()
-}
-
-function drawScrap(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.fillStyle = '#d8d2c4'
-  ctx.strokeStyle = '#a89f8c'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.arc(0, 0, 6.5, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(-4, -2)
-  ctx.lineTo(1, 1)
-  ctx.lineTo(-1, 4)
-  ctx.moveTo(3, -3)
-  ctx.lineTo(0, 2)
-  ctx.stroke()
   ctx.restore()
 }
 
