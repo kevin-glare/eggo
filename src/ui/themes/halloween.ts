@@ -33,11 +33,11 @@ const PUMPKINS = [
   { x: 0.335, y: 0.885, r: 10 },
 ]
 
-/** Паутина в правом нижнем углу: якорь на нижней кромке, веер смотрит
-    вверх-влево. x — доля ширины. На высоких экранах правый край канваса
-    срезается cover'ом, поэтому паутина прячется в угол лишь частично —
-    как паутинка, зацепившаяся за самую рамку окна. */
-const WEB = { x: 0.88, r: 58 }
+/** Паутина в самом правом нижнем углу сцены: якорь в точке (w, h),
+    веер расходится вдоль стенок — влево и вверх. Радиус взят с запасом,
+    чтобы на сильно вытянутых экранах (cover режет правый край) дуги у
+    нижнего края всё равно оставались в кадре. */
+const WEB = { r: 80 }
 
 /** Паук на нитке: x, y — доли сцены (y — точка покоя), s — размер, ph — фаза. */
 const HANGING_SPIDER = { x: 0.34, y: 0.24, s: 1.15, ph: 1.2 }
@@ -53,8 +53,8 @@ export function drawHalloween(
   // ночью мыши и пауки подсвечиваются фиолетовым, чтобы не тонули в тёмном небе
   const night = sky.star
   const batColor = `rgb(${22 + 68 * night | 0}, ${14 + 56 * night | 0}, ${40 + 104 * night | 0})`
-  // паутина в правом нижнем углу, поверх травы, но за летящими мышами
-  drawWeb(ctx, WEB.x * w, h, WEB.r, Math.PI, Math.PI * 1.5)
+  // паутина в самом углу сцены, поверх травы, но за летящими мышами
+  drawWeb(ctx, w, h, WEB.r, Math.PI, Math.PI * 1.5)
   const hs = HANGING_SPIDER
   const hangY = (hs.y + Math.sin(t * 0.7 + hs.ph) * 0.022) * h
   ctx.strokeStyle = 'rgba(250, 248, 255, 0.4)'
@@ -69,8 +69,8 @@ export function drawHalloween(
     const y = (bat.y0 + Math.sin(t * 0.6 + bat.ph) * 0.012) * h
     drawBat(ctx, x, y, bat.s, Math.sin(t * bat.flapSp + bat.ph), batColor)
   }
-  // паучок сидит на паутине со стороны видимого края
-  drawSpider(ctx, WEB.x * w - WEB.r * 0.66, h - WEB.r * 0.66, 0.85, batColor)
+  // паучок сидит на паутине по диагонали от угла
+  drawSpider(ctx, w - WEB.r * 0.6 * Math.SQRT1_2, h - WEB.r * 0.6 * Math.SQRT1_2, 0.95, batColor)
   // днём лица как нарисованные, ночью светятся изнутри
   const glow = 0.45 + 0.55 * (1 - sky.sun)
   for (const p of PUMPKINS) drawPumpkin(ctx, p.x * w, p.y * h, p.r, tMs, glow)
