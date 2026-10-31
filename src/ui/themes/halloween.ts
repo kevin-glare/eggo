@@ -33,6 +33,12 @@ const PUMPKINS = [
   { x: 0.335, y: 0.885, r: 10 },
 ]
 
+/** Паутина свисает с «потолка» сцены — верхней кромки канваса; x — доля ширины. */
+const WEB = { x: 0.62, r: 52 }
+
+/** Паук на нитке: x, y — доли сцены (y — точка покоя), s — размер, ph — фаза. */
+const HANGING_SPIDER = { x: 0.34, y: 0.24, s: 1.15, ph: 1.2 }
+
 export function drawHalloween(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -41,14 +47,27 @@ export function drawHalloween(
   sky: DayPalette,
 ): void {
   const t = tMs / 1000
-  // ночью мыши подсвечиваются фиолетовым, чтобы не тонули в тёмном небе
+  // ночью мыши и пауки подсвечиваются фиолетовым, чтобы не тонули в тёмном небе
   const night = sky.star
   const batColor = `rgb(${22 + 68 * night | 0}, ${14 + 56 * night | 0}, ${40 + 104 * night | 0})`
+  // паутина под «потолком», поверх неба, но за летящими мышами
+  drawWeb(ctx, WEB.x * w, 0, WEB.r)
+  const hs = HANGING_SPIDER
+  const hangY = (hs.y + Math.sin(t * 0.7 + hs.ph) * 0.022) * h
+  ctx.strokeStyle = 'rgba(250, 248, 255, 0.4)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(hs.x * w, 0)
+  ctx.lineTo(hs.x * w, hangY - 7 * hs.s)
+  ctx.stroke()
+  drawSpider(ctx, hs.x * w, hangY, hs.s, batColor)
   for (const bat of BATS) {
     const x = (((bat.x0 + t * bat.speed) % 1.2) - 0.1) * w
     const y = (bat.y0 + Math.sin(t * 0.6 + bat.ph) * 0.012) * h
     drawBat(ctx, x, y, bat.s, Math.sin(t * bat.flapSp + bat.ph), batColor)
   }
+  // паучок сидит на нижней кромке паутины
+  drawSpider(ctx, WEB.x * w, WEB.r + 6, 0.85, batColor)
   // днём лица как нарисованные, ночью светятся изнутри
   const glow = 0.45 + 0.55 * (1 - sky.sun)
   for (const p of PUMPKINS) drawPumpkin(ctx, p.x * w, p.y * h, p.r, tMs, glow)
@@ -152,6 +171,87 @@ function drawPumpkin(
   ctx.arc(0, -r * 0.45, r * 0.5, Math.PI * 0.12, Math.PI * 0.88)
   ctx.arc(0, -r * 0.58, r * 0.4, Math.PI * 0.8, Math.PI * 0.2, true)
   ctx.closePath()
+  ctx.fill()
+  ctx.restore()
+}
+
+/** Паутина-веер, свисающая с верхней кромки: спицы из точки-якоря и
+    кольца, которые слегка провисают между спицами. Полупрозрачная —
+    читается и днём, и как лунная ночью. */
+function drawWeb(ctx: CanvasRenderingContext2D, ax: number, ay: number, r: number): void {
+  ctx.save()
+  ctx.strokeStyle = 'rgba(250, 248, 255, 0.55)'
+  const a0 = Math.PI * 0.12
+  const a1 = Math.PI * 0.88
+  const spokes = 7
+  ctx.lineWidth = 1.4
+  ctx.beginPath()
+  for (let i = 0; i < spokes; i++) {
+    const a = a0 + ((a1 - a0) * i) / (spokes - 1)
+    ctx.moveTo(ax, ay)
+    ctx.lineTo(ax + Math.cos(a) * r, ay + Math.sin(a) * r)
+  }
+  ctx.stroke()
+  ctx.lineWidth = 1.1
+  for (const k of [0.3, 0.55, 0.78, 0.97]) {
+    ctx.beginPath()
+    for (let i = 0; i < spokes - 1; i++) {
+      const sa = a0 + ((a1 - a0) * i) / (spokes - 1)
+      const ea = a0 + ((a1 - a0) * (i + 1)) / (spokes - 1)
+      const mid = (sa + ea) / 2
+      const rr = r * k
+      if (i === 0) ctx.moveTo(ax + Math.cos(sa) * rr, ay + Math.sin(sa) * rr)
+      ctx.quadraticCurveTo(
+        ax + Math.cos(mid) * rr * 1.12,
+        ay + Math.sin(mid) * rr * 1.12,
+        ax + Math.cos(ea) * rr,
+        ay + Math.sin(ea) * rr,
+      )
+    }
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+/** Лапки: точки крепления [dx, dy] относительно тела, лапка тянется дальше наружу. */
+const SPIDER_LEGS: readonly (readonly [number, number])[] = [
+  [-3.2, -3],
+  [-4.4, -0.5],
+  [-4.2, 2.5],
+  [-2.6, 5],
+]
+
+/** Паук: брюшко, головогрудь, лапки дугами и золотистые глазки. */
+function drawSpider(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  color: string,
+): void {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(s, s)
+  ctx.fillStyle = color
+  ctx.beginPath()
+  ctx.ellipse(0, 2.5, 4.5, 5.5, 0, 0, Math.PI * 2)
+  ctx.ellipse(0, -3.5, 3, 2.6, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = color
+  ctx.lineWidth = 1.1
+  ctx.lineCap = 'round'
+  for (const side of [-1, 1]) {
+    for (const [dx, dy] of SPIDER_LEGS) {
+      ctx.beginPath()
+      ctx.moveTo(side * 1.5, -2)
+      ctx.quadraticCurveTo(side * dx * 1.6, dy - 2.5, side * dx * 2.2, dy + 1.5)
+      ctx.stroke()
+    }
+  }
+  ctx.fillStyle = 'rgba(255, 214, 106, 0.9)'
+  ctx.beginPath()
+  ctx.arc(-1.1, -3.9, 0.7, 0, Math.PI * 2)
+  ctx.arc(1.1, -3.9, 0.7, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 }
