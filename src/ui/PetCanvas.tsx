@@ -1151,46 +1151,14 @@ function drawBall(ctx: CanvasRenderingContext2D, b: StageProp): void {
 }
 
 /**
- * Мусор на полянке у грязнули: рыбья кость справа, у самого запущенного —
- * ещё и смятый комок слева. Проявляется и смывается вместе с dirtAlpha.
+ * Реквизит грязнули на полянке: у самого запущенного — смятый комок слева.
+ * Основной сигнал запущенности — пятна на самом питомце (dirt.ts).
  */
 function drawTrash(ctx: CanvasRenderingContext2D, level: DirtLevel, alpha: number): void {
-  if (level < 2 || alpha <= 0.01) return
+  if (level < 3 || alpha <= 0.01) return
   ctx.save()
   ctx.globalAlpha = alpha * 0.9
-  drawFishbone(ctx, SCENE_W / 2 + 94, GROUND_Y + 5)
-  if (level >= 3) drawScrap(ctx, SCENE_W / 2 - 98, GROUND_Y + 4)
-  ctx.restore()
-}
-
-function drawFishbone(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-  ctx.save()
-  ctx.translate(x, y)
-  ctx.rotate(-0.12)
-  ctx.strokeStyle = '#9aa7b0'
-  ctx.fillStyle = '#9aa7b0'
-  ctx.lineWidth = 1.8
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.moveTo(-10, 0)
-  ctx.lineTo(-15, -4)
-  ctx.moveTo(-10, 0)
-  ctx.lineTo(-15, 4)
-  ctx.moveTo(-12, 0)
-  ctx.lineTo(8, 0)
-  ctx.stroke()
-  for (const rx of [-6, 0, 6]) {
-    ctx.beginPath()
-    ctx.moveTo(rx, -5)
-    ctx.quadraticCurveTo(rx + 2.5, 0, rx, 5)
-    ctx.stroke()
-  }
-  ctx.beginPath()
-  ctx.moveTo(8, -4.5)
-  ctx.lineTo(14.5, 0)
-  ctx.lineTo(8, 4.5)
-  ctx.closePath()
-  ctx.fill()
+  drawScrap(ctx, SCENE_W / 2 - 98, GROUND_Y + 4)
   ctx.restore()
 }
 
