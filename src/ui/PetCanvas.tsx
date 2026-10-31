@@ -14,6 +14,7 @@ import {
   type PetVisualState,
 } from './petArt'
 import { drawScene } from './scene'
+import { resolveHolidayTheme } from './holidays'
 import { hapticTap } from '../telegram'
 import { sampleDayCycle } from './dayCycle'
 import { isHintDone, markHintDone, type HintKind } from './hints'
@@ -361,6 +362,9 @@ export default function PetCanvas({
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       drawScene(ctx, SCENE_W, SCENE_H, sceneRef.current, now, sky)
+      // праздничный декор поверх сцены, до питомца; null — рисуем как обычно
+      const holiday = resolveHolidayTheme(d)
+      if (holiday) holiday.draw(ctx, SCENE_W, SCENE_H, now, sky)
       drawTrash(ctx, dirt, v.dirtAlpha)
       if (showCake) drawCake(ctx, CAKE_X, GROUND_Y + 3, now)
       if (bubbleRef.current.alpha > 0.01)

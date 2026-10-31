@@ -27,6 +27,7 @@ Worker + D1 (`worker/`), пуши через бота. Проект учебны
 - `quests.ts`, `streak.ts` — дневные задания и серия дней.
 - `appearance.ts` — «гены» внешности питомца.
 - `notifications.ts` — какие пуши пора слать (решение; отправка — в воркере).
+- `holidays.ts` — праздничные окна: какая тема оформления активна сегодня.
 
 `src/` (React-слой):
 - `usePet.ts` — главный хук-владелец состояния: сейвы (localStorage +
@@ -38,6 +39,9 @@ Worker + D1 (`worker/`), пуши через бота. Проект учебны
   `QuestsBar.tsx` — экран и панели.
 - `scene.ts`, `dayCycle.ts`, `dirt.ts`, `petArt.ts` — фон, небо по времени
   суток, грязь сцены, отрисовка питомца.
+- `holidays.ts` + `themes/` — реестр праздничных тем и их арт; новая тема =
+  файл в `themes/` + строка реестра, окно и выключатель — в `config.ts`
+  (`holidays`), отладка — `VITE_HOLIDAY_THEME=<id>|off`.
 
 `worker/src/`: `index` (роутер /sync, /notify + крон), `auth` (проверка
 Telegram initData), `sync` (слияние по lastTickAt), `repo` (D1), `pushes`

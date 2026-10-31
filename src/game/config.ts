@@ -1,3 +1,4 @@
+import type { HolidayWindows } from './holidays'
 import type { QuestId } from './quests'
 import type { Stats } from './types'
 
@@ -49,6 +50,8 @@ export interface GameConfig {
   }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
+  /** праздничные темы оформления: окна по (месяц, день) включительно; откат темы — enabled: false */
+  holidays: HolidayWindows
   /** пуши от бота: пороги и кулдауны (логика — game/notifications.ts) */
   notifications: {
     /** «в беде»: пауза между повторными пушами */
@@ -103,6 +106,10 @@ export const DEFAULT_CONFIG: GameConfig = {
     targets: { feed: 3, play: 2, wash: 2, pet: 3 },
   },
   streak: { milestones: [3, 7, 14] },
+  // Хэллоуин: с 24 октября по 2 ноября
+  holidays: {
+    halloween: { enabled: true, from: [10, 24], to: [11, 2] },
+  },
   notifications: {
     criticalCooldownMs: 6 * HOUR,
     // зевает при энергии < 40: от беды (< 25) это отделяют ~2 часа бодрствования
