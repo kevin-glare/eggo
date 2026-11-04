@@ -24,6 +24,8 @@ interface TgWebApp {
   CloudStorage?: {
     getItem: (key: string, cb?: (err: unknown, value: string | null) => void) => void
   }
+  /** открыть ссылку t.me/… штатным клиентом Telegram (шер, канал, чат автора) */
+  openTelegramLink?: (url: string) => void
 }
 
 declare global {
@@ -43,6 +45,10 @@ const MIGRATED_FLAG = 'tamagotchi.migrated.v1'
 /** Адрес API-воркера; для продакшена задаётся VITE_API_URL при сборке. */
 const envApiUrl: unknown = import.meta.env.VITE_API_URL
 const API_URL = typeof envApiUrl === 'string' && envApiUrl !== '' ? envApiUrl : 'http://localhost:8787'
+
+/** Ссылка на бота (t.me/…): шер и заглушка гейта; задаётся VITE_BOT_URL при сборке. */
+const envBotUrl: unknown = import.meta.env.VITE_BOT_URL
+export const BOT_URL: string | null = typeof envBotUrl === 'string' && envBotUrl !== '' ? envBotUrl : null
 
 /** Сколько ждём ответа API, прежде чем жить дальше по локальному сейву. */
 const SYNC_TIMEOUT_MS = 10_000

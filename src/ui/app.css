@@ -113,6 +113,35 @@ body {
   margin: 4px 0 0;
 }
 
+/* служебные кнопки шапки: пуши, поделиться, автору — компактный ряд справа,
+   ниже заголовка, высоту шапки не увеличивают */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* круглая стеклянная кнопка в языке лакированных карточек */
+.tool-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  box-shadow: inset 0 1px 0 var(--sheen);
+  font-size: 14px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tool-btn:active {
+  transform: translateY(1px);
+}
+
 .age-line .num {
   font-family: var(--mono);
   color: var(--ink);

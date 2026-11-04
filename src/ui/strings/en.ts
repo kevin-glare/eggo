@@ -90,6 +90,12 @@ export const en: Strings = {
   notifBlocked: '✋ Open the bot chat, tap “Start”, then try again',
   notifError: '⚠️ Something went wrong — try again',
 
+  // --- header: share and contact the author ---
+  shareText: (stage: string, days: number) =>
+    `My Eggo has been with me for ${days} ${days === 1 ? 'day' : 'days'}! Stage: ${stage}. Get your own 🥚`,
+  shareAria: 'Share your pet',
+  authorAria: 'Message the author',
+
   gate: {
     title: 'Eggo lives in Telegram',
     textInTg:

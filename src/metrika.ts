@@ -4,7 +4,7 @@
 const METRIKA_ID = 113874165
 const SCRIPT_URL = `https://mc.yandex.ru/metrika/tag.js?id=${METRIKA_ID}`
 
-type YmCall = [id: number, method: string, params?: Record<string, unknown>]
+type YmCall = [id: number, method: string, params?: string | Record<string, unknown>]
 type YmFn = ((...args: YmCall) => void) & { a?: YmCall[]; l?: number }
 
 export function initMetrika(): void {
@@ -32,4 +32,14 @@ export function initMetrika(): void {
     accurateTrackBounce: true,
     trackLinks: true,
   })
+}
+
+/**
+ * Цель Метрики (reachGoal). Имена целей — латиницей ('feed', 'share',
+ * 'notif-on'…): они же создаются в кабинете Метрики. В dev и тестах — тихо.
+ */
+export function track(goal: string): void {
+  if (!import.meta.env.PROD) return
+  const ym = (window as Window & { ym?: YmFn }).ym
+  ym?.(METRIKA_ID, 'reachGoal', goal)
 }

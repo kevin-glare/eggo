@@ -9,15 +9,12 @@
  * Строка диагностики внизу — только в dev: почему гейт сработал.
  */
 
+import { BOT_URL } from '../telegram'
 import { getStrings } from './i18n'
 
 const str = getStrings()
 
 const webApp = window.Telegram?.WebApp
-
-/** Ссылка на бота для кнопки; задаётся VITE_BOT_URL при сборке (Settings → Variables). */
-const envBotUrl: unknown = import.meta.env.VITE_BOT_URL
-const BOT_URL: string | null = typeof envBotUrl === 'string' && envBotUrl !== '' ? envBotUrl : null
 
 /** В браузере Telegram, но мини-апп не запущен: платформа при этом известна. */
 const IN_TELEGRAM_BROWSER = typeof webApp?.platform === 'string' && webApp.platform !== 'unknown'

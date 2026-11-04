@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchNotifyState, hapticTap, setNotifyEnabled, tg } from '../telegram'
+import { track } from '../metrika'
 import { getStrings } from './i18n'
 
 const str = getStrings()
@@ -43,6 +44,7 @@ export function useNotifications() {
     if (result === 'ok') {
       setEnabled(!enabled)
       setNotice(!enabled ? str.notifOn : str.notifOff)
+      track(!enabled ? 'notif-on' : 'notif-off')
     } else if (result === 'blocked') {
       setNotice(str.notifBlocked)
     } else {

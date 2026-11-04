@@ -116,6 +116,12 @@ export const ru = {
   notifBlocked: '✋ Открой чат с ботом и нажми «Запустить», потом попробуй снова',
   notifError: '⚠️ Не получилось — попробуй ещё раз',
 
+  // --- шапка: поделиться и написать автору ---
+  shareText: (stage: string, days: number) =>
+    `Мой Eggo с нами уже ${days} ${pluralDays(days)}! Стадия: ${stage}. Заведи своего 🥚`,
+  shareAria: 'Поделиться питомцем',
+  authorAria: 'Написать автору',
+
   // --- заглушка вне Telegram ---
   gate: {
     title: 'Eggo живёт в Telegram',
