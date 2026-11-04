@@ -212,6 +212,10 @@ function lightenRGB(c: RGB, k: number): RGB {
   return [c[0] + (255 - c[0]) * k, c[1] + (255 - c[1]) * k, c[2] + (255 - c[2]) * k]
 }
 
+function darkenRGB(c: RGB, k: number): RGB {
+  return [c[0] * (1 - k), c[1] * (1 - k), c[2] * (1 - k)]
+}
+
 export function drawScene(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -307,6 +311,27 @@ export function drawScene(
   ctx.moveTo(0, seaTop)
   ctx.lineTo(w, seaTop)
   ctx.stroke()
+  // световой столб от светила на воде: тёплый от солнца, прохладный от луны
+  if (sunA > 0.01) {
+    const sx = sky.sunPos[0] * w
+    const colW = w * 0.16
+    const col = ctx.createLinearGradient(sx - colW, 0, sx + colW, 0)
+    col.addColorStop(0, rgba(sky.sunColor, 0))
+    col.addColorStop(0.5, rgba(sky.sunColor, 0.22 * sunA * (0.5 + 0.5 * mood.energy)))
+    col.addColorStop(1, rgba(sky.sunColor, 0))
+    ctx.fillStyle = col
+    ctx.fillRect(sx - colW, seaTop, colW * 2, seaBot - seaTop)
+  }
+  if (moonA > 0.01) {
+    const mx = MOON_POS[0] * w
+    const colW = w * 0.12
+    const col = ctx.createLinearGradient(mx - colW, 0, mx + colW, 0)
+    col.addColorStop(0, 'rgba(247, 237, 216, 0)')
+    col.addColorStop(0.5, `rgba(247, 237, 216, ${(0.1 + 0.08 * mood.energy) * moonA})`)
+    col.addColorStop(1, 'rgba(247, 237, 216, 0)')
+    ctx.fillStyle = col
+    ctx.fillRect(mx - colW, seaTop, colW * 2, seaBot - seaTop)
+  }
   // солнечные блики на воде — мерцающие чёрточки у горизонта
   const glintA = (0.15 + 0.35 * mood.energy) * (0.4 + 0.6 * sky.sun)
   for (const s of SEA_GLINTS) {
@@ -319,8 +344,13 @@ export function drawScene(
     ctx.stroke()
   }
 
-  // луг — питомец стоит на нём
-  ctx.fillStyle = rgba(sky.meadow, 1)
+  // луг — питомец стоит на нём; градиент по глубине: у горизонта светлее,
+  // к нижнему краю темнее — луг «ложится» под ноги зрителю
+  const meadowGrad = ctx.createLinearGradient(0, h * 0.73, 0, h)
+  meadowGrad.addColorStop(0, rgba(lightenRGB(sky.meadow, 0.14), 1))
+  meadowGrad.addColorStop(0.5, rgba(sky.meadow, 1))
+  meadowGrad.addColorStop(1, rgba(darkenRGB(sky.meadow, 0.22), 1))
+  ctx.fillStyle = meadowGrad
   ctx.beginPath()
   ctx.moveTo(0, h * 0.75)
   ctx.bezierCurveTo(w * 0.25, h * 0.73, w * 0.6, h * 0.77, w, h * 0.74)
