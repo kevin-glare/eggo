@@ -1,47 +1,43 @@
 import { rollAppearance } from '../../src/game/appearance'
-import { deserialize } from '../../src/game/storage'
+import { DEFAULT_CONFIG } from '../../src/game/config'
+import { deserialize, mergeStates, serialize } from '../../src/game/storage'
 import type { PetState } from '../../src/game/types'
 
 /**
- * Решение о слиянии сейвов при /sync. Правило то же, что было у CloudStorage:
- * у кого lastTickAt новее (позже сохранялся), тот и главный.
+ * Решение о слиянии сейвов при /sync. Обе стороны досчитываются до общей
+ * временной шкалы, статы и возраст берутся по максимуму, событийные поля —
+ * у более свежего события игрока (mergeStates): действие с одного девайса
+ * не затирается тиками с другого.
  */
 
 export interface SyncDecision {
-  /** главный сейв — что сервер считает правдой и вернёт клиенту */
+  /** главный сейв — что сервер сохранит в базу и вернёт клиенту */
   raw: string | null
-  /** стадия победившего сейва: крон по нему заметит взросление */
+  /** стадия итогового сейва: крон по нему заметит взросление */
   stage: PetState['stage'] | null
-  /** true — клиентский сейв победил, сервер должен его сохранить */
-  fromClient: boolean
 }
 
 /** запасная внешность для очень старых сейвов — общая для воркера */
 export const FALLBACK_APPEARANCE = rollAppearance(() => 0)
 
-function readSave(raw: string | null): { lastTickAt: number; stage: PetState['stage']; name: string | null } | null {
-  if (!raw) return null
-  const pet = deserialize(raw, FALLBACK_APPEARANCE)
-  if (!pet) return null
-  return { lastTickAt: pet.lastTickAt, stage: pet.stage, name: pet.name }
-}
-
 export function resolveSync(clientRaw: string | null, serverRaw: string | null): SyncDecision {
-  const client = readSave(clientRaw)
-  const server = readSave(serverRaw)
+  // кросс-подстановка внешности: сейв без «генов» получает гены второй стороны
+  const serverFirst = serverRaw === null ? null : deserialize(serverRaw, FALLBACK_APPEARANCE)
+  const client = clientRaw === null ? null : deserialize(clientRaw, serverFirst?.appearance ?? FALLBACK_APPEARANCE)
+  const server = serverRaw === null ? null : deserialize(serverRaw, client?.appearance ?? FALLBACK_APPEARANCE)
 
   if (!client) {
-    return { raw: serverRaw, stage: server ? server.stage : null, fromClient: false }
+    return { raw: serverRaw, stage: server ? server.stage : null }
   }
   // свежее безымянное яйцо с нового устройства не должно побеждать
-  // именованного питомца по lastTickAt — сейв в базе не трогаем
+  // именованного питомца — сейв в базе не трогаем
   if (client.name === null && server?.name != null) {
-    return { raw: serverRaw, stage: server.stage, fromClient: false }
+    return { raw: serverRaw, stage: server.stage }
   }
   // битой строке в базе не доверяем — клиент чинит своим сейвом
-  if (!server || client.lastTickAt > server.lastTickAt) {
-    return { raw: clientRaw, stage: client.stage, fromClient: true }
+  if (!server) {
+    return { raw: clientRaw, stage: client.stage }
   }
-  // ничья по lastTickAt — оставляем серверный, без лишней перезаписи
-  return { raw: serverRaw, stage: server.stage, fromClient: false }
+  const merged = mergeStates(client, server, DEFAULT_CONFIG)
+  return { raw: serialize(merged), stage: merged.stage }
 }

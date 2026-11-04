@@ -84,7 +84,8 @@ export default {
         telegramId: user.id,
         username: user.username,
         firstName: user.first_name,
-        saveJson: decision.fromClient ? body.save : row?.save_json ?? null,
+        // сервер хранит слитый сейв — его же вернёт следующему синку
+        saveJson: decision.raw,
         stage: decision.stage,
         utcOffsetMin: body.tzOffset ?? row?.utc_offset ?? FALLBACK_UTC_OFFSET_MIN,
         lastSeenAt: nowMs,
