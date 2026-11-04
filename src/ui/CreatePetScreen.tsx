@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import type { PetAppearance } from '../game/appearance'
 import type { Mood } from '../game/types'
+import { getStrings } from './i18n'
 import PetCanvas from './PetCanvas'
+
+const str = getStrings()
 
 interface CreatePetScreenProps {
   maxLength: number
@@ -49,8 +52,8 @@ export default function CreatePetScreen({ maxLength, appearance, skyHourOverride
         </svg>
       </div>
       <div className="create-panel">
-        <h1 className="create-headline">Как назовём питомца?</h1>
-        <p className="create-sub">Питомец вылупится, когда получит имя</p>
+        <h1 className="create-headline">{str.create.headline}</h1>
+        <p className="create-sub">{str.create.sub}</p>
         <form
           className="create-form"
           onSubmit={(e) => {
@@ -63,18 +66,18 @@ export default function CreatePetScreen({ maxLength, appearance, skyHourOverride
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={maxLength}
-            placeholder="Имя питомца"
-            aria-label="Имя питомца"
+            placeholder={str.create.namePlaceholder}
+            aria-label={str.create.namePlaceholder}
             autoComplete="off"
             spellCheck={false}
             enterKeyHint="done"
             required
           />
           <button type="submit" disabled={!draft.trim()}>
-            Дать имя
+            {str.create.nameButton}
           </button>
         </form>
-        <p className="create-pitch">Корми, играй и смотри, как он растёт</p>
+        <p className="create-pitch">{str.create.pitch}</p>
       </div>
     </section>
   )

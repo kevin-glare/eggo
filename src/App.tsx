@@ -4,10 +4,10 @@ import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
 import { friendshipDay } from './game/streak'
 import { desire, getMood } from './game/engine'
-import type { Mood, Stage } from './game/types'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
+import { getStrings } from './ui/i18n'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
@@ -17,37 +17,15 @@ import './ui/app.css'
 // в dev-режиме время ×60 — эволюцию видно за минуты
 const config: GameConfig = import.meta.env.DEV ? DEV_CONFIG : DEFAULT_CONFIG
 
-const STAGE_TITLE: Record<Stage, string> = {
-  egg: '🥚 Яйцо',
-  baby: '🐣 Малыш',
-  child: '🐤 Ребёнок',
-  teen: '🐓 Подросток',
-  adult: '🐥 Взрослый',
-}
-
-const MOOD_TEXT: Record<Mood, string> = {
-  happy: '🤩 Счастлив',
-  content: '😌 Спокоен',
-  sad: '😢 Грустит',
-  sick: '🤒 Болеет — нужен уход',
-  sleeping: '😴 Спит',
-}
-
-function formatAge(ageMs: number): string {
-  const minutes = Math.floor(ageMs / 60_000)
-  if (minutes < 60) return `${minutes} мин`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} ч ${minutes % 60} мин`
-  return `${Math.floor(hours / 24)} дн ${hours % 24} ч`
-}
+const str = getStrings()
 
 /** Dev-переключатель неба: авто = локальное время пользователя. */
 const SKY_MODES: { label: string; hour: number | null }[] = [
-  { label: 'авто', hour: null },
-  { label: '🌅 утро', hour: 6.5 },
-  { label: '☀️ день', hour: 13 },
-  { label: '🌆 вечер', hour: 19 },
-  { label: '🌙 ночь', hour: 23.5 },
+  { label: str.dev.skyAuto, hour: null },
+  { label: str.dev.skyMorning, hour: 6.5 },
+  { label: str.dev.skyDay, hour: 13 },
+  { label: str.dev.skyEvening, hour: 19 },
+  { label: str.dev.skyNight, hour: 23.5 },
 ]
 
 export default function App() {
@@ -130,7 +108,7 @@ export default function App() {
   if (pet === null) {
     return (
       <main className="app">
-        <div className="loading">Загружаем питомца…</div>
+        <div className="loading">{str.loading}</div>
       </main>
     )
   }
@@ -154,13 +132,13 @@ export default function App() {
         <>
           <header className="header">
             <h1 className="stage-title">
-              {pet.name ?? STAGE_TITLE[pet.stage]}
-              {pet.streakDays >= 2 && <span className="streak" title="Дней подряд">🔥{pet.streakDays}</span>}
+              {pet.name ?? str.stage[pet.stage]}
+              {pet.streakDays >= 2 && <span className="streak" title={str.streakTitle}>🔥{pet.streakDays}</span>}
             </h1>
             <div className="header-meta">
-              {pet.name && <p className="age-line">{STAGE_TITLE[pet.stage]}</p>}
+              {pet.name && <p className="age-line">{str.stage[pet.stage]}</p>}
               <p className="age-line header-age">
-                Возраст: <span className="num">{formatAge(pet.ageMs)}</span>
+                {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
               </p>
             </div>
           </header>
@@ -184,7 +162,7 @@ export default function App() {
             <div className="toast-slot" aria-live="polite">
               {notice && <div className="toast">{notice}</div>}
             </div>
-            <div className="mood">{MOOD_TEXT[mood]}</div>
+            <div className="mood">{str.mood[mood]}</div>
           </div>
 
           {pet.stage !== 'egg' && pet.daily && (
@@ -207,12 +185,12 @@ export default function App() {
 
       {import.meta.env.DEV && (
         <div className="devtools">
-          {import.meta.env.DEV && <span className="dev-badge">⚡ время ×{config.timeScale}</span>}
+          {import.meta.env.DEV && <span className="dev-badge">{str.dev.timeBadge(config.timeScale)}</span>}
           <button type="button" onClick={() => advanceTime(60 * 60_000)}>
-            +1 час
+            {str.dev.plusHour}
           </button>
           <button type="button" onClick={() => advanceTime(24 * 60 * 60_000)}>
-            +1 день
+            {str.dev.plusDay}
           </button>
           <button
             type="button"
@@ -222,15 +200,15 @@ export default function App() {
               setSkyHour(next.hour)
             }}
           >
-            Небо: {SKY_MODES.find((m) => m.hour === skyHour)?.label ?? 'авто'}
+            {str.dev.skyButton(SKY_MODES.find((m) => m.hour === skyHour)?.label ?? str.dev.skyAuto)}
           </button>
           <button
             type="button"
             onClick={() => {
-              if (window.confirm('Начать новую игру?')) reset()
+              if (window.confirm(str.dev.resetConfirm)) reset()
             }}
           >
-            Сброс
+            {str.dev.reset}
           </button>
         </div>
       )}

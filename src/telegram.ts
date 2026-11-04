@@ -12,6 +12,8 @@ interface TgWebApp {
   platform: string
   /** подписанные данные пользователя — на них построен вход в API */
   initData: string
+  /** разобранные данные запуска; нам нужен только язык пользователя */
+  initDataUnsafe?: { user?: { language_code?: string } }
   setHeaderColor?: (color: string) => void
   setBackgroundColor?: (color: string) => void
   HapticFeedback?: {

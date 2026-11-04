@@ -4,6 +4,7 @@ import type { PetAppearance } from '../game/appearance'
 import type { DesireKind } from '../game/engine'
 import type { Mood, Stage } from '../game/types'
 import { dirtIntensity, type DirtLevel } from './dirt'
+import { getStrings } from './i18n'
 import {
   createVisualState,
   drawPet,
@@ -148,9 +149,9 @@ interface SceneHint {
 }
 
 const HINT_TEXT: Record<HintKind, string> = {
-  feed: 'Тапай по еде!',
-  wash: 'Води пальцем по питомцу',
-  play: 'Тапай по мячу!',
+  feed: getStrings().sceneHint.feed,
+  wash: getStrings().sceneHint.wash,
+  play: getStrings().sceneHint.play,
 }
 
 /* Блуждание по лугу — презентация, не баланс: на логику не влияет. */

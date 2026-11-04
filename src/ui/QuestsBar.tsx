@@ -1,5 +1,8 @@
 import type { QuestId } from '../game/quests'
 import type { DailyQuests } from '../game/quests'
+import { getStrings } from './i18n'
+
+const str = getStrings()
 
 interface QuestsBarProps {
   daily: DailyQuests
@@ -10,12 +13,6 @@ interface QuestsBarProps {
 }
 
 const QUEST_ICONS: Record<QuestId, string> = { feed: '🍔', play: '🎮', wash: '🛁', pet: '💗' }
-const QUEST_LABELS: Record<QuestId, string> = {
-  feed: 'Покормить',
-  play: 'Поиграть',
-  wash: 'Помыть',
-  pet: 'Погладить',
-}
 
 /**
  * Задания дня — одна карточка с четырьмя колонками, в языке панели статов:
@@ -30,12 +27,12 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
     const t = targets[q]
     onExplain(
       p >= t
-        ? `✅ «${QUEST_LABELS[q]}» — ${t}/${t} сегодня. Задания считают заботу, а статы падают сами.`
-        : `🎯 «${QUEST_LABELS[q]}» — ${p}/${t} сегодня.`,
+        ? str.questExplainDone(str.quest[q], t)
+        : str.questExplainProgress(str.quest[q], p, t),
     )
   }
   return (
-    <section className="quests" aria-label="Задания дня">
+    <section className="quests" aria-label={str.questsAria}>
       {daily.quests.map((q, i) => {
         const p = daily.progress[i] ?? 0
         const t = targets[q]
@@ -46,13 +43,13 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
             className={done ? 'qcell done' : 'qcell'}
             key={q}
             onClick={() => explain(q, p)}
-            aria-label={`Задание «${QUEST_LABELS[q]}»: ${p} из ${t} сегодня`}
+            aria-label={str.questCellAria(str.quest[q], p, t)}
           >
             <span className="qtop">
               <span className="qicon" aria-hidden="true">
                 {QUEST_ICONS[q]}
               </span>
-              <span className="qlabel">{QUEST_LABELS[q]}</span>
+              <span className="qlabel">{str.quest[q]}</span>
             </span>
             <span className="qcount">{p}/{t}</span>
           </button>
@@ -62,12 +59,12 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
         type="button"
         className={daily.claimed ? 'qcell claim claimed' : complete ? 'qcell claim ready' : 'qcell claim'}
         onClick={onClaim}
-        aria-label={daily.claimed ? 'Награда получена' : 'Получить награду дня'}
+        aria-label={daily.claimed ? str.questClaimedAria : str.questClaimAria}
       >
         <span className="qicon" aria-hidden="true">
           🎁
         </span>
-        <span className="qword">{daily.claimed ? 'Получено' : 'Получить'}</span>
+        <span className="qword">{daily.claimed ? str.questClaimed : str.questClaim}</span>
       </button>
     </section>
   )

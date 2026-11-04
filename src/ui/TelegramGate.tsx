@@ -9,6 +9,10 @@
  * Строка диагностики внизу — только в dev: почему гейт сработал.
  */
 
+import { getStrings } from './i18n'
+
+const str = getStrings()
+
 const webApp = window.Telegram?.WebApp
 
 /** Ссылка на бота для кнопки; задаётся VITE_BOT_URL при сборке (Settings → Variables). */
@@ -24,26 +28,20 @@ export default function TelegramGate() {
       <div className="gate-egg" aria-hidden>
         🥚
       </div>
-      <h1 className="gate-title">Eggo живёт в Telegram</h1>
+      <h1 className="gate-title">{str.gate.title}</h1>
       {IN_TELEGRAM_BROWSER ? (
-        <p className="gate-text">
-          Открой чат с ботом и запусти Eggo кнопкой меню — она слева от поля
-          ввода сообщения. По ссылке из чата игра не открывается.
-        </p>
+        <p className="gate-text">{str.gate.textInTg}</p>
       ) : (
-        <p className="gate-text">
-          Питомец привязан к Telegram — так он сохраняется на сервере и ждёт
-          тебя на любом устройстве. Открой мини-апп через бота.
-        </p>
+        <p className="gate-text">{str.gate.textOutside}</p>
       )}
       {BOT_URL !== null && (
         <a className="gate-button" href={BOT_URL} target="_blank" rel="noreferrer">
-          Войти через Telegram
+          {str.gate.button}
         </a>
       )}
       {import.meta.env.DEV && (
         <p className="gate-debug">
-          {webApp?.platform ?? 'нет SDK'} · initData: {webApp?.initData ? 'есть' : 'нет'}
+          {webApp?.platform ?? str.gate.debugNoSdk} · initData: {webApp?.initData ? str.gate.debugYes : str.gate.debugNo}
         </p>
       )}
     </main>

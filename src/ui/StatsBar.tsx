@@ -1,6 +1,9 @@
 import { useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import type { StatKey, Stats } from '../game/types'
+import { getStrings } from './i18n'
+
+const str = getStrings()
 
 interface StatsBarProps {
   stats: Stats
@@ -9,10 +12,10 @@ interface StatsBarProps {
 }
 
 const BARS: { key: StatKey; icon: string; label: string; color: string }[] = [
-  { key: 'fullness', icon: '🍔', label: 'Сытость', color: '#ffb84d' },
-  { key: 'happiness', icon: '💛', label: 'Счастье', color: '#ff7ab8' },
-  { key: 'energy', icon: '⚡', label: 'Энергия', color: '#7ec8f0' },
-  { key: 'cleanliness', icon: '🫧', label: 'Чистота', color: '#8ee6b8' },
+  { key: 'fullness', icon: '🍔', label: str.stat.fullness, color: '#ffb84d' },
+  { key: 'happiness', icon: '💛', label: str.stat.happiness, color: '#ff7ab8' },
+  { key: 'energy', icon: '⚡', label: str.stat.energy, color: '#7ec8f0' },
+  { key: 'cleanliness', icon: '🫧', label: str.stat.cleanliness, color: '#8ee6b8' },
 ]
 
 export default function StatsBar({ stats, lowBelow }: StatsBarProps) {
@@ -28,7 +31,7 @@ export default function StatsBar({ stats, lowBelow }: StatsBarProps) {
   }, [stats])
 
   return (
-    <section className="stats" aria-label="Показатели">
+    <section className="stats" aria-label={str.statsAria}>
       {BARS.map(({ key, icon, label, color }, i) => {
         const value = Math.round(stats[key])
         return (

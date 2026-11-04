@@ -1,3 +1,7 @@
+import { getStrings } from './i18n'
+
+const str = getStrings()
+
 interface ActionsBarProps {
   isEgg: boolean
   sleeping: boolean
@@ -17,22 +21,22 @@ export default function ActionsBar({
   onToggleSleep,
 }: ActionsBarProps) {
   return (
-    <nav className="actions" aria-label="Действия">
+    <nav className="actions" aria-label={str.actionsAria}>
       <button type="button" disabled={isEgg} onClick={onFeed}>
         <span className="icon">🍔</span>
-        <span>Покормить</span>
+        <span>{str.action.feed}</span>
       </button>
       <button type="button" disabled={isEgg} onClick={onPlay}>
         <span className="icon">🎮</span>
-        <span>Играть</span>
+        <span>{str.action.play}</span>
       </button>
       <button type="button" disabled={isEgg} onClick={onWash}>
         <span className="icon">🛁</span>
-        <span>Помыть</span>
+        <span>{str.action.wash}</span>
       </button>
       <button type="button" disabled={isEgg} onClick={onToggleSleep}>
         <span className="icon">{sleeping ? '⏰' : '😴'}</span>
-        <span>{sleeping ? 'Разбудить' : 'Спать'}</span>
+        <span>{sleeping ? str.action.wake : str.action.sleep}</span>
       </button>
     </nav>
   )

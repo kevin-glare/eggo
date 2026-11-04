@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchNotifyState, hapticTap, setNotifyEnabled, tg } from '../telegram'
+import { getStrings } from './i18n'
+
+const str = getStrings()
 
 /**
  * Переключатель пушей от бота. Состояние живёт на сервере (push_enabled),
@@ -39,11 +42,11 @@ export function useNotifications() {
     const result = await setNotifyEnabled(!enabled)
     if (result === 'ok') {
       setEnabled(!enabled)
-      setNotice(!enabled ? '🔔 Уведомления включены' : '🔕 Уведомления выключены')
+      setNotice(!enabled ? str.notifOn : str.notifOff)
     } else if (result === 'blocked') {
-      setNotice('✋ Открой чат с ботом и нажми «Запустить», потом попробуй снова')
+      setNotice(str.notifBlocked)
     } else {
-      setNotice('⚠️ Не получилось — попробуй ещё раз')
+      setNotice(str.notifError)
     }
     setBusy(false)
   }, [busy, enabled, known])

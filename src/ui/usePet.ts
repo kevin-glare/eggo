@@ -8,7 +8,6 @@ import {
   startSleep,
   wake,
   wash,
-  type ActionReason,
   type ActionResult,
 } from '../game/actions'
 import type { GameConfig } from '../game/config'
@@ -17,18 +16,10 @@ import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/que
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
+import { getStrings } from './i18n'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
 
-const REASON_TEXT: Record<ActionReason, string> = {
-  'not-hatched': '🥚 Питомец ещё не вылупился',
-  sleeping: '🤫 Питомец спит',
-  'too-tired': '😵 Слишком устал — пусть поспит',
-  'already-full': '😋 Уже сыт — не лопнет',
-  'already-happy': '😄 Уже счастлив по полной',
-  'already-clean': '✨ Уже сияет чистотой',
-  'already-named': '🏷️ Имя уже есть — другое не дать',
-  'invalid-name': '✏️ От 1 до 16 символов',
-}
+const str = getStrings()
 
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
@@ -39,24 +30,6 @@ const SERVER_SYNC_INTERVAL_MS = 10_000
  * 5с облако + 10с фетч, поэтому сторож срабатывает позже — на 20-й секунде.
  */
 const SYNC_WATCHDOG_MS = 20_000
-
-/** Русская плюрализация: 1 день, 3 дня, 14 дней. */
-function pluralDays(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return 'день'
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня'
-  return 'дней'
-}
-
-/** Русская плюрализация: 1 неделю, 2 недели, 5 недель. */
-function pluralWeeks(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return 'неделю'
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'недели'
-  return 'недель'
-}
 
 function initialPet(): PetState | null {
   // локальный сейв; если его нет — null: новое яйцо не создаём, пока
@@ -111,7 +84,7 @@ export function usePet(config: GameConfig) {
     if (!cancelled) {
       // «скучал»: absence считается до досчёта — lastTickAt ещё старый
       if (best !== null && missYou(best, config, Date.now())) {
-        setNotice(`💗 ${best.name ?? 'Питомец'} скучал по тебе!`)
+        setNotice(str.missYou(best.name ?? str.petFallbackName))
         setCelebrate((n) => n + 1)
       }
       // пока синк висел, сторож мог дать яйцо — не отбираем его запоздалым
@@ -183,7 +156,7 @@ useEffect(() => {
   useEffect(() => {
     if (pet !== null) {
       if (prevStageRef.current === 'egg' && pet.stage !== 'egg') {
-        setNotice(`🎉 ${pet.name ?? 'Питомец'} вылупился!`)
+        setNotice(str.hatched(pet.name ?? str.petFallbackName))
       }
       prevStageRef.current = pet.stage
     }
@@ -203,7 +176,7 @@ useEffect(() => {
     const weeks = friendshipDay(pet, Date.now())
     if (weeks === null || anniversaryRef.current === weeks) return
     anniversaryRef.current = weeks
-    setNotice(`🎂 ${weeks} ${pluralWeeks(weeks)} дружбы!`)
+    setNotice(str.weeksOfFriendship(weeks))
     setCelebrate((n) => n + 1)
   }, [pet])
 
@@ -219,7 +192,7 @@ useEffect(() => {
         next = streak.state
         setPet(next)
         if (streak.milestone !== null) {
-          setNotice(`🔥 ${streak.milestone} ${pluralDays(streak.milestone)} подряд!`)
+          setNotice(str.daysInRow(streak.milestone))
           setCelebrate((n) => n + 1)
         }
       } else {
@@ -230,7 +203,7 @@ useEffect(() => {
         setNotice(successText)
         hapticSuccess()
       } else {
-        setNotice(REASON_TEXT[result.reason ?? 'not-hatched'] ?? '')
+        setNotice(str.reason[result.reason ?? 'not-hatched'])
         hapticWarning()
       }
       return result
@@ -238,9 +211,9 @@ useEffect(() => {
     [config],
   )
 
-  const feedPet = useCallback(() => apply(feed, '🍗 Ням-ням!', 'feed'), [apply])
-  const playPet = useCallback(() => apply(play, '😄 Было весело!', 'play'), [apply])
-  const washPet = useCallback(() => apply(wash, '🛁 Чистота!', 'wash'), [apply])
+  const feedPet = useCallback(() => apply(feed, str.actionSuccess.feed, 'feed'), [apply])
+  const playPet = useCallback(() => apply(play, str.actionSuccess.play, 'play'), [apply])
+  const washPet = useCallback(() => apply(wash, str.actionSuccess.wash, 'wash'), [apply])
 
   // кулдаун поглаживания живёт в сессии: сердечки при любом тапе остаются,
   // но счастье капает не чаще config.actions.pet.cooldownMs
@@ -248,7 +221,7 @@ useEffect(() => {
   const petPet = useCallback(() => {
     const now = Date.now()
     if (now - lastPetAtRef.current < config.actions.pet.cooldownMs) return null
-    const result = apply(petAction, '💗 Мур-мур!', 'pet')
+    const result = apply(petAction, str.actionSuccess.pet, 'pet')
     if (result?.ok) lastPetAtRef.current = now
     return result
   }, [apply, config])
@@ -261,11 +234,11 @@ useEffect(() => {
     setPet(result.state)
     if (result.ok) {
       forceSyncRef.current = true
-      setNotice(`🎁 Задания дня выполнены: +${config.quests.rewardHappiness} к счастью!`)
+      setNotice(str.claimReward(config.quests.rewardHappiness))
       setCelebrate((n) => n + 1)
       hapticSuccess()
     } else {
-      setNotice(result.reason === 'already-claimed' ? '🎁 Награда уже получена' : '🎯 Сначала выполни задания дня')
+      setNotice(result.reason === 'already-claimed' ? str.claimAlready : str.claimNotReady)
       hapticWarning()
     }
     return result.ok
@@ -284,14 +257,14 @@ useEffect(() => {
       if (current === null) return false
       const result = namePet(current, rawName, config)
       if (!result.ok) {
-        setNotice(REASON_TEXT[result.reason ?? 'invalid-name'] ?? '')
+        setNotice(str.reason[result.reason ?? 'invalid-name'])
         hapticWarning()
         return false
       }
       forceSyncRef.current = true
       setPet(result.state)
       hapticSuccess()
-      setNotice(result.state.stage === 'egg' ? '🥚 Появилось яйцо!' : `🎉 ${result.state.name} — отличное имя!`)
+      setNotice(result.state.stage === 'egg' ? str.eggAppeared : str.named(result.state.name ?? str.petFallbackName))
       return true
     },
     [config],
@@ -300,7 +273,7 @@ useEffect(() => {
     const current = petRef.current
     if (current === null) return null
     const sleeping = current.sleeping
-    return sleeping ? apply(wake, '☀️ Проснулся!') : apply(startSleep, '😴 Спокойной ночи!')
+    return sleeping ? apply(wake, str.sleepWake) : apply(startSleep, str.sleepStart)
   }, [apply])
 
   /** Dev-инструмент: прокрутить игровое время вперёд. */
@@ -315,7 +288,7 @@ useEffect(() => {
     // новая игра — новая случайная внешность
     setPet(createPet(Date.now(), config, rollAppearance(Math.random)))
     lastSyncRef.current = 0
-    setNotice('🥚 Новая игра — дай имя!')
+    setNotice(str.newGame)
   }, [config])
 
   return {

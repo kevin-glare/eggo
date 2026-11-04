@@ -1,0 +1,118 @@
+/**
+ * Английские строки интерфейса. Тип Strings берётся от ru.ts —
+ * пропущенный или лишний ключ поймает tsc при сборке.
+ */
+import type { Strings } from './ru'
+
+export const en: Strings = {
+  loading: 'Loading your pet…',
+  ageLabel: 'Age:',
+  streakTitle: 'Days in a row',
+  stage: {
+    egg: '🥚 Egg',
+    baby: '🐣 Baby',
+    child: '🐤 Child',
+    teen: '🐓 Teen',
+    adult: '🐥 Adult',
+  },
+  mood: {
+    happy: '🤩 Happy',
+    content: '😌 Content',
+    sad: '😢 Sad',
+    sick: '🤒 Sick — needs care',
+    sleeping: '😴 Sleeping',
+  },
+  formatAge: (ageMs: number): string => {
+    const minutes = Math.floor(ageMs / 60_000)
+    if (minutes < 60) return `${minutes} min`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} h ${minutes % 60} min`
+    return `${Math.floor(hours / 24)} d ${hours % 24} h`
+  },
+
+  petFallbackName: 'Pet',
+  reason: {
+    'not-hatched': '🥚 The pet hasn’t hatched yet',
+    sleeping: '🤫 The pet is sleeping',
+    'too-tired': '😵 Too tired — let it sleep',
+    'already-full': '😋 Already full — it would burst',
+    'already-happy': '😄 Already happy to the brim',
+    'already-clean': '✨ Already sparkling clean',
+    'already-named': '🏷️ Already named — no renaming',
+    'invalid-name': '✏️ 1 to 16 characters',
+  },
+  actionSuccess: { feed: '🍗 Yum-yum!', play: '😄 That was fun!', wash: '🛁 Squeaky clean!', pet: '💗 Purr-purr!' },
+  sleepStart: '😴 Good night!',
+  sleepWake: '☀️ Woke up!',
+  missYou: (name: string) => `💗 ${name} missed you!`,
+  hatched: (name: string) => `🎉 ${name} hatched!`,
+  named: (name: string) => `🎉 ${name} is a great name!`,
+  eggAppeared: '🥚 An egg appeared!',
+  daysInRow: (n: number) => `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row!`,
+  weeksOfFriendship: (n: number) => `🎂 ${n} ${n === 1 ? 'week' : 'weeks'} of friendship!`,
+  claimReward: (bonus: number) => `🎁 Daily quests done: +${bonus} happiness!`,
+  claimAlready: '🎁 Reward already claimed',
+  claimNotReady: '🎯 Finish the daily quests first',
+  newGame: '🥚 New game — name your pet!',
+
+  create: {
+    headline: 'Name your pet',
+    sub: 'The pet hatches once it gets a name',
+    namePlaceholder: 'Pet name',
+    nameButton: 'Name it',
+    pitch: 'Feed, play and watch it grow',
+  },
+
+  actionsAria: 'Actions',
+  action: { feed: 'Feed', play: 'Play', wash: 'Wash', wake: 'Wake up', sleep: 'Sleep' },
+  statsAria: 'Stats',
+  stat: { fullness: 'Fullness', happiness: 'Happiness', energy: 'Energy', cleanliness: 'Cleanliness' },
+  questsAria: 'Daily quests',
+  quest: {
+    feed: 'Feed',
+    play: 'Play',
+    wash: 'Wash',
+    pet: 'Pet',
+  },
+  questExplainDone: (label: string, t: number) =>
+    `✅ “${label}” — ${t}/${t} today. Quests count your care; stats drop on their own.`,
+  questExplainProgress: (label: string, p: number, t: number) => `🎯 “${label}” — ${p}/${t} today.`,
+  questCellAria: (label: string, p: number, t: number) => `Quest “${label}”: ${p} of ${t} today`,
+  questClaim: 'Claim',
+  questClaimed: 'Claimed',
+  questClaimAria: 'Claim the daily reward',
+  questClaimedAria: 'Reward claimed',
+
+  sceneHint: { feed: 'Tap the food!', wash: 'Rub the pet with your finger', play: 'Tap the ball!' },
+
+  notifOn: '🔔 Notifications on',
+  notifOff: '🔕 Notifications off',
+  notifBlocked: '✋ Open the bot chat, tap “Start”, then try again',
+  notifError: '⚠️ Something went wrong — try again',
+
+  gate: {
+    title: 'Eggo lives in Telegram',
+    textInTg:
+      'Open the bot chat and launch Eggo via the menu button — it sits to the left of the message input. The game won’t open from a link in the chat.',
+    textOutside:
+      'Your pet is tied to Telegram — that’s how it’s saved on the server and waits for you on any device. Open the mini app via the bot.',
+    button: 'Sign in with Telegram',
+    debugNoSdk: 'no SDK',
+    debugYes: 'yes',
+    debugNo: 'no',
+  },
+
+  dev: {
+    timeBadge: (n: number) => `⚡ time ×${n}`,
+    plusHour: '+1 hour',
+    plusDay: '+1 day',
+    skyButton: (label: string) => `Sky: ${label}`,
+    skyAuto: 'auto',
+    skyMorning: '🌅 morning',
+    skyDay: '☀️ day',
+    skyEvening: '🌆 evening',
+    skyNight: '🌙 night',
+    reset: 'Reset',
+    resetConfirm: 'Start a new game?',
+  },
+}
