@@ -160,6 +160,7 @@ export const ru = {
   menuMore: 'Ещё',
   menuNotifOn: 'Уведомления включены',
   menuNotifOff: 'Уведомления выключены',
+  menuLang: 'Язык',
   menuChannel: 'Наш канал',
   menuHelp: 'Как играть',
   menuVersion: 'версия',

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PetState } from '../game/types'
-import { getStrings } from './i18n'
+import { getStrings, lang, setStoredLang } from './i18n'
 import InvitePanel from './InvitePanel'
 import HelpPanel from './HelpPanel'
 import { track } from '../metrika'
@@ -80,6 +80,13 @@ export default function MenuScreen({
 
   const back = () => setView('root')
 
+  // смена языка: выбор в localStorage и перезагрузка — все строки собраны на старте модуля
+  const switchLang = () => {
+    track('lang-switch')
+    setStoredLang(lang === 'ru' ? 'en' : 'ru')
+    window.location.reload()
+  }
+
   return (
     <div className={open ? 'menu-root open' : 'menu-root'} aria-hidden={!open}>
       <section className="menu-screen" role="dialog" aria-modal="true" aria-label={str.menuAria}>
@@ -109,6 +116,14 @@ export default function MenuScreen({
                     <span className={notifEnabled ? 'menu-row-state on' : 'menu-row-state'} aria-hidden="true" />
                   </button>
                 )}
+                <button type="button" className="menu-row" onClick={tap(switchLang)}>
+                  <span className="menu-row-icon" aria-hidden="true">
+                    🌐
+                  </span>
+                  <span className="menu-row-label">
+                    {str.menuLang}: {lang === 'ru' ? 'Русский' : 'English'}
+                  </span>
+                </button>
               </nav>
               <p className="menu-section">{str.menuMore}</p>
               <nav className="menu-rows">

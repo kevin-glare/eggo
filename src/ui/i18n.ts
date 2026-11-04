@@ -1,9 +1,9 @@
 /**
- * Мини-i18n без зависимостей. Язык определяется один раз при загрузке
- * модуля — по Telegram (language_code пользователя из initData), иначе по
- * локали браузера/устройства. Языки СНГ и пост-советского пространства —
- * русский, остальные и неизвестная локаль — английский. Переключателя в UI
- * нет: язык = локаль устройства.
+ * Мини-i18n без зависимостей. Язык фиксируется один раз при загрузке модуля:
+ * сначала выбор в меню (localStorage), затем Telegram (language_code
+ * пользователя из initData), иначе локаль браузера/устройства. Языки СНГ и
+ * пост-советского пространства — русский, остальные и неизвестная локаль —
+ * английский.
  */
 import { ru, type Strings } from './strings/ru'
 import { en } from './strings/en'
@@ -29,8 +29,30 @@ function deviceLocale(): string | null {
   return nav !== null && nav !== '' ? nav : null
 }
 
-/** Язык сессии — фиксирован на момент загрузки модуля. */
-export const lang: Lang = detectLang(deviceLocale())
+/** Хранилище выбора языка: перекрывает локаль устройства. */
+const LANG_FLAG = 'eggo.lang'
+
+/** Язык, выбранный в меню; null — выбор не сделан (или хранилище недоступно). */
+export function storedLang(): Lang | null {
+  try {
+    const raw = window.localStorage.getItem(LANG_FLAG)
+    return raw === 'ru' || raw === 'en' ? raw : null
+  } catch {
+    return null
+  }
+}
+
+/** Запомнить выбор языка; вступает в силу при перезагрузке страницы. */
+export function setStoredLang(value: Lang): void {
+  try {
+    window.localStorage.setItem(LANG_FLAG, value)
+  } catch {
+    // приватный режим: выбор не переживёт перезагрузку — не страшно
+  }
+}
+
+/** Язык сессии — фиксирован на момент загрузки модуля: выбор в меню, потом локаль. */
+export const lang: Lang = storedLang() ?? detectLang(deviceLocale())
 
 if (typeof document !== 'undefined') document.documentElement.lang = lang
 

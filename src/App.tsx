@@ -183,12 +183,6 @@ export default function App() {
               {pet.name ?? str.stage[pet.stage]}
               {pet.streakDays >= 2 && <span className="streak" title={str.streakTitle}>🔥{pet.streakDays}</span>}
             </h1>
-            <div className="header-meta">
-              {pet.name && <p className="age-line">{str.stage[pet.stage]}</p>}
-              <p className="age-line header-age">
-                {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
-              </p>
-            </div>
             <div className="header-tools">
               <button
                 type="button"

@@ -76,15 +76,7 @@ body {
   gap: 10px;
 }
 
-/* стадия и возраст — правой колонкой, прижаты к правому краю;
-   3px — оптическая поправка: правое выравнивание выглядит туже левого */
-.header-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-  padding-right: 3px;
-}
+/* шапка: имя слева, кнопка меню справа; стадия и возраст переехали в меню */
 
 .stage-title {
   font-family: var(--font-display);
@@ -94,23 +86,11 @@ body {
   margin: 0;
   letter-spacing: 0.01em;
   text-shadow: 0 2px 10px rgba(10, 4, 24, 0.55);
-  /* длинное имя не толкает правую колонку — обрезается многоточием */
+  /* длинное имя не толкает кнопку меню — обрезается многоточием */
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* возраст — в шапке, справа от имени */
-.header-age {
-  margin: 0 0 0 auto;
-  white-space: nowrap;
-}
-
-.age-line {
-  font-size: 13px;
-  color: var(--muted);
-  margin: 4px 0 0;
 }
 
 /* служебные кнопки шапки: пуши, поделиться, автору — компактный ряд справа,
@@ -142,7 +122,8 @@ body {
   transform: translateY(1px);
 }
 
-.age-line .num {
+/* число возраста в карточке-профиле меню — моноширинным, цветом текста */
+.menu-profile-meta .num {
   font-family: var(--mono);
   color: var(--ink);
 }
@@ -932,11 +913,13 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: 18px;
   font-size: 14px;
   font-weight: 600;
-  white-space: nowrap;
+  /* длинные подсказки переносятся, а не уезжают за край экрана */
   max-width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
   pointer-events: auto;
   box-shadow:
     0 12px 32px -12px rgba(10, 4, 24, 0.8),

@@ -116,6 +116,7 @@ export const en: Strings = {
   menuMore: 'More',
   menuNotifOn: 'Notifications on',
   menuNotifOff: 'Notifications off',
+  menuLang: 'Language',
   menuChannel: 'Our channel',
   menuHelp: 'How to play',
   menuVersion: 'version',
