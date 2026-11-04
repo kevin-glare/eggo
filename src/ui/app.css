@@ -8,9 +8,16 @@
   --ink: #f5edff;
   --muted: #a795c9;
   --accent: #ffb35c;
+  --accent-hi: #ffd29a;
+  --accent-lo: #f5923a;
   --accent-ink: #3a2410;
+  /* толстый нижний край конфетной кнопки — источник «объёма» */
+  --edge: #d97a26;
   --danger: #ff6b7a;
   --gold: #ffd76a;
+  /* лакированные поверхности: верх светлее низа, блику не нужен градиент текста */
+  --card-hi: rgba(78, 58, 120, 0.5);
+  --sheen: rgba(255, 255, 255, 0.14);
   --font-display: 'Comfortaa', 'Nunito', system-ui, sans-serif;
   --font-body: 'Nunito', system-ui, sans-serif;
   --mono: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -86,6 +93,7 @@ body {
   line-height: 1.15;
   margin: 0;
   letter-spacing: 0.01em;
+  text-shadow: 0 2px 10px rgba(10, 4, 24, 0.55);
   /* длинное имя не толкает правую колонку — обрезается многоточием */
   min-width: 0;
   overflow: hidden;
@@ -142,8 +150,9 @@ body {
   border-radius: 24px;
   border: 1px solid var(--stroke);
   box-shadow:
-    0 24px 48px -24px rgba(10, 4, 24, 0.8),
-    inset 0 1px 0 rgba(245, 237, 255, 0.06);
+    0 28px 56px -24px rgba(10, 4, 24, 0.85),
+    inset 0 1px 0 rgba(245, 237, 255, 0.1),
+    inset 0 0 0 1px rgba(245, 237, 255, 0.04);
 }
 
 .scene-card canvas {
@@ -211,12 +220,14 @@ body {
   position: relative;
   margin-top: -24px;
   padding: 20px 20px calc(18px + env(safe-area-inset-bottom));
-  background: var(--card-strong);
+  background: linear-gradient(180deg, var(--card-hi), var(--card-strong) 30%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--stroke);
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -12px 32px -16px rgba(10, 4, 24, 0.7);
+  box-shadow:
+    0 -12px 32px -16px rgba(10, 4, 24, 0.7),
+    inset 0 1px 0 var(--sheen);
   text-align: left;
 }
 
@@ -245,11 +256,14 @@ body {
   padding: 15px 16px;
   border-radius: 16px;
   border: 1px solid var(--stroke);
-  background: rgba(20, 12, 38, 0.6);
+  background: linear-gradient(180deg, rgba(10, 6, 22, 0.55), rgba(20, 12, 38, 0.6));
   color: var(--ink);
   font: inherit;
   /* 17px и больше — iOS не приближает поле при фокусе */
   font-size: 17px;
+  box-shadow:
+    inset 0 2px 5px rgba(6, 2, 16, 0.5),
+    inset 0 -1px 0 rgba(245, 237, 255, 0.05);
 }
 
 .create-form input::placeholder {
@@ -265,7 +279,8 @@ body {
 .create-form button {
   width: 100%;
   min-height: 54px;
-  background: var(--accent);
+  /* конфетная кнопка: свет сверху, толстый нижний край — объём игрушечного пластика */
+  background: linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-lo) 100%);
   color: var(--accent-ink);
   border: none;
   border-radius: 16px;
@@ -274,10 +289,19 @@ body {
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
+  box-shadow:
+    0 4px 0 var(--edge),
+    0 14px 24px -10px rgba(255, 179, 92, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.08s, box-shadow 0.08s;
 }
 
+/* нажатие: кнопка уходит вниз, край под пальцем сжимается */
 .create-form button:not(:disabled):active {
-  transform: scale(0.97);
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 var(--edge),
+    inset 0 2px 6px rgba(186, 96, 20, 0.45);
 }
 
 .create-form button:disabled {
@@ -308,6 +332,7 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--stroke);
+  box-shadow: inset 0 1px 0 var(--sheen);
   font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -323,10 +348,12 @@ body {
   gap: 7px;
   padding: 12px;
   border-radius: 20px;
-  background: var(--card);
+  /* лакированная карточка: свет сверху */
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
   border: 1px solid var(--stroke);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 var(--sheen);
 }
 
 .stat {
@@ -343,18 +370,37 @@ body {
   font-weight: 600;
 }
 
+/* стеклянная трубка: впадина, внутри жидкость с бликом */
 .stat-track {
   height: 12px;
-  background: rgba(20, 12, 38, 0.6);
+  background: linear-gradient(180deg, rgba(12, 7, 26, 0.72), rgba(20, 12, 38, 0.6));
   border: 1px solid rgba(167, 149, 201, 0.16);
   border-radius: 999px;
   overflow: hidden;
+  box-shadow:
+    inset 0 2px 4px rgba(6, 2, 16, 0.6),
+    inset 0 -1px 0 rgba(245, 237, 255, 0.05);
 }
 
 .stat-fill {
+  position: relative;
   height: 100%;
   border-radius: 999px;
   width: 0%;
+  overflow: hidden;
+}
+
+/* полоса света вдоль верха жидкости — главный признак «глянца» */
+.stat-fill::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 1px;
+  height: 45%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.04));
+  pointer-events: none;
 }
 
 .stat.low .stat-fill {
@@ -391,10 +437,11 @@ body {
   align-items: stretch;
   padding: 4px;
   border-radius: 20px;
-  background: var(--card);
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
   border: 1px solid var(--stroke);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 var(--sheen);
 }
 
 .qcell {
@@ -467,13 +514,24 @@ body {
 }
 
 .qcell.claim.ready {
-  background: var(--accent);
+  /* конфетная ячейка «забрать»: тот же объём, что у больших кнопок */
+  background: linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-lo) 100%);
   color: var(--accent-ink);
-  box-shadow: 0 0 14px rgba(255, 179, 92, 0.45);
+  box-shadow:
+    0 3px 0 var(--edge),
+    0 0 14px rgba(255, 179, 92, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .qcell.claim.ready:not(:active):hover {
   filter: brightness(1.06);
+}
+
+.qcell.claim.ready:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 var(--edge),
+    inset 0 2px 6px rgba(186, 96, 20, 0.45);
 }
 
 .qcell.claim.claimed {
@@ -504,7 +562,8 @@ body {
 
 .actions button {
   position: relative;
-  background: var(--card);
+  /* стеклянный пластик: свет сверху, толстый нижний край */
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
   color: var(--ink);
   border: 1px solid var(--stroke);
   border-radius: 18px;
@@ -517,7 +576,11 @@ body {
   flex-direction: column;
   gap: 5px;
   align-items: center;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow:
+    0 3px 0 rgba(20, 12, 38, 0.55),
+    0 12px 20px -12px rgba(10, 4, 24, 0.7),
+    inset 0 1px 0 var(--sheen);
+  transition: background 0.15s, border-color 0.15s, transform 0.08s, box-shadow 0.08s;
 }
 
 .actions button .icon {
@@ -530,8 +593,11 @@ body {
 }
 
 .actions button:not(:disabled):active {
-  transform: scale(0.95);
+  transform: translateY(3px);
   background: var(--card-strong);
+  box-shadow:
+    0 0 0 rgba(20, 12, 38, 0.55),
+    inset 0 2px 6px rgba(6, 2, 16, 0.45);
 }
 
 .actions button:disabled {
@@ -564,7 +630,9 @@ body {
   white-space: nowrap;
   max-width: 100%;
   pointer-events: auto;
-  box-shadow: 0 12px 32px -12px rgba(10, 4, 24, 0.8);
+  box-shadow:
+    0 12px 32px -12px rgba(10, 4, 24, 0.8),
+    inset 0 1px 0 var(--sheen);
   animation: toast-in 0.18s ease-out;
 }
 
@@ -633,17 +701,24 @@ body {
 .gate-button {
   display: inline-block;
   margin-top: 6px;
-  background: var(--accent);
+  background: linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-lo) 100%);
   color: var(--accent-ink);
   border-radius: 16px;
   padding: 14px 22px;
   font-size: 16px;
   font-weight: 800;
   text-decoration: none;
+  box-shadow:
+    0 4px 0 var(--edge),
+    0 14px 24px -10px rgba(255, 179, 92, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .gate-button:active {
-  transform: scale(0.97);
+  transform: translateY(4px);
+  box-shadow:
+    0 0 0 var(--edge),
+    inset 0 2px 6px rgba(186, 96, 20, 0.45);
 }
 
 /* диагностика гейта: почему сработала заглушка (для разбора жалоб) */
