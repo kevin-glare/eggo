@@ -108,6 +108,24 @@ export const en: Strings = {
   inviteShare: 'Share the link',
   inviteReward: (n: number) => `✨ Your pet earned ${n} friendship star${n === 1 ? '' : 's'} — thank you!`,
 
+  // --- side menu ---
+  menuAria: 'Menu',
+  menuClose: 'Close',
+  menuNotifOn: 'Notifications on',
+  menuNotifOff: 'Notifications off',
+  menuChannel: 'Our channel',
+  menuHelp: 'How to play',
+  menuVersion: 'version',
+  helpTitle: 'How to play',
+  helpLines: [
+    '🍔 Feed, play and wash — stats drop on their own, keep an eye on them',
+    '💡 Eggo is asking for something? Do it in time — the effect is doubled',
+    '🎯 Daily quests: the reward goes to the weakest stat',
+    '🔥 Visit every day — streak days and friendship celebrations',
+    '✨ Friends via your link — friendship stars for your pet',
+    '😴 Put it to sleep at night — energy returns by morning',
+  ],
+
   gate: {
     title: 'Eggo lives in Telegram',
     textInTg:

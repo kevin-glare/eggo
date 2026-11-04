@@ -457,8 +457,152 @@ body {
   white-space: nowrap;
 }
 
-/* Панель «Позови друга»: карточка в языке заданий, объясняет звёзды дружбы */
-.invite {
+/* Боковое меню: шторка справа поверх всего (тосты — z-index 10); фон-подложка
+   гасит сцену, панель выезжает transform'ом. pointer-events гасятся у корня,
+   чтобы закрытая шторка не ловила тапы */
+.menu-root {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.menu-root.open {
+  pointer-events: auto;
+}
+
+.menu-backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: none;
+  background: rgba(12, 6, 26, 0.55);
+  opacity: 0;
+  transition: opacity 240ms ease-out;
+  cursor: pointer;
+}
+
+.menu-root.open .menu-backdrop {
+  opacity: 1;
+}
+
+.menu-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: min(300px, 84vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 12px;
+  background: linear-gradient(180deg, #2c2046 0%, var(--bg-deep) 45%);
+  border-left: 1px solid var(--stroke);
+  box-shadow: -12px 0 32px rgba(10, 4, 24, 0.45);
+  transform: translateX(100%);
+  transition: transform 240ms ease-out;
+}
+
+.menu-root.open .menu-panel {
+  transform: translateX(0);
+}
+
+.menu-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.menu-profile {
+  min-width: 0;
+}
+
+.menu-profile-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-profile-meta {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.menu-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  box-shadow: inset 0 1px 0 var(--sheen);
+  color: var(--ink);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-row:active {
+  transform: translateY(1px);
+}
+
+.menu-row:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.menu-row-icon {
+  width: 22px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.menu-row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* индикатор состояния у переключателя уведомлений */
+.menu-row-state {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.menu-row-state.on {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(255, 179, 92, 0.7);
+}
+
+.menu-footer {
+  margin: auto 4px 0;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* Карточки-объяснения «Позови друга» и «Как играть» — в языке заданий */
+.invite,
+.help {
   flex-shrink: 0;
   width: 100%;
   max-width: 360px;
@@ -538,6 +682,32 @@ body {
   box-shadow:
     0 1px 0 var(--edge),
     inset 0 1px 0 var(--sheen);
+}
+
+.invite-head,
+.help-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.help-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.help-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  line-height: 1.35;
 }
 
 /* Задания дня: одна карточка, 4 колонки — в языке панели статов */

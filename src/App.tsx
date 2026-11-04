@@ -17,6 +17,9 @@ import { track } from './metrika'
 import { referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
+import AppMenu from './ui/AppMenu'
+import HelpPanel from './ui/HelpPanel'
+import { version as APP_VERSION } from '../package.json'
 import './ui/app.css'
 
 // в dev-режиме время ×60 — эволюцию видно за минуты
@@ -27,6 +30,9 @@ const str = getStrings()
 /** Кнопка «написать автору»: t.me-ссылка из VITE_AUTHOR_URL; не задана — кнопки нет. */
 const envAuthorUrl: unknown = import.meta.env.VITE_AUTHOR_URL
 const AUTHOR_URL: string | null = typeof envAuthorUrl === 'string' && envAuthorUrl !== '' ? envAuthorUrl : null
+
+/** Наш канал: бот — админ, пункт меню открывает его штатным клиентом Telegram. */
+const CHANNEL_URL = 'https://t.me/EggoTg'
 
 /** Dev-переключатель неба: авто = локальное время пользователя. */
 const SKY_MODES: { label: string; hour: number | null }[] = [
@@ -58,6 +64,7 @@ export default function App() {
   const {
     supported: notifSupported,
     enabled: notifEnabled,
+    busy: notifBusy,
     toggle: toggleNotifications,
     notice: notifNotice,
   } = useNotifications()
@@ -66,8 +73,15 @@ export default function App() {
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
-  // панель «Позови друга»: открывается кнопкой 📤 в шапке
+  // боковое меню и карточки-объяснения; открытие одной закрывает другую
+  const [menuOpen, setMenuOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const openPanel = (panel: 'invite' | 'help') => {
+    setMenuOpen(false)
+    setInviteOpen(panel === 'invite')
+    setHelpOpen(panel === 'help')
+  }
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
@@ -185,40 +199,17 @@ export default function App() {
               </p>
             </div>
             <div className="header-tools">
-              {notifSupported && (
-                <button
-                  type="button"
-                  className="tool-btn"
-                  onClick={() => void toggleNotifications()}
-                  aria-label={notifEnabled ? str.notifOn : str.notifOff}
-                >
-                  {notifEnabled ? '🔔' : '🔕'}
-                </button>
-              )}
               <button
                 type="button"
                 className="tool-btn"
                 onClick={() => {
-                  track('invite-open')
-                  setInviteOpen((o) => !o)
+                  track('menu-open')
+                  setMenuOpen(true)
                 }}
-                aria-label={str.inviteAria}
+                aria-label={str.menuAria}
               >
-                📤
+                ☰
               </button>
-              {AUTHOR_URL !== null && (
-                <button
-                  type="button"
-                  className="tool-btn"
-                  onClick={() => {
-                    track('author')
-                    openTgLink(AUTHOR_URL)
-                  }}
-                  aria-label={str.authorAria}
-                >
-                  ✉️
-                </button>
-              )}
             </div>
           </header>
 
@@ -262,8 +253,10 @@ export default function App() {
               stars={pet.appearance.refMark}
               milestones={config.referrals.milestones}
               onShare={shareEggo}
+              onClose={() => setInviteOpen(false)}
             />
           )}
+          {helpOpen && <HelpPanel onClose={() => setHelpOpen(false)} />}
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar
             isEgg={pet.stage === 'egg'}
@@ -308,6 +301,38 @@ export default function App() {
             {str.dev.reset}
           </button>
         </div>
+      )}
+
+      {/* боковое меню: фиксированный оверлей, из потока layout'а не выпадает */}
+      {!isCreating && (
+        <AppMenu
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          pet={pet}
+          notifSupported={notifSupported}
+          notifEnabled={notifEnabled}
+          notifBusy={notifBusy}
+          onToggleNotifications={() => void toggleNotifications()}
+          onInvite={() => {
+            track('invite-open')
+            openPanel('invite')
+          }}
+          onHelp={() => {
+            track('help-open')
+            openPanel('help')
+          }}
+          onChannel={() => {
+            track('channel')
+            openTgLink(CHANNEL_URL)
+          }}
+          onAuthor={() => {
+            if (AUTHOR_URL === null) return
+            track('author')
+            openTgLink(AUTHOR_URL)
+          }}
+          authorUrl={AUTHOR_URL}
+          version={APP_VERSION}
+        />
       )}
     </main>
   )
