@@ -1,9 +1,9 @@
 import type { GameConfig } from './config'
 import { normalizeAppearance, type PetAppearance } from './appearance'
-import { tick } from './engine'
+import { stageForAge, tick } from './engine'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
-import type { PetState } from './types'
+import type { PetState, Stats } from './types'
 
 const SAVE_VERSION = 1
 
@@ -54,6 +54,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       name: typeof pet.name === 'string' ? pet.name : null,
       appearance: normalizeAppearance(pet.appearance) ?? fallbackAppearance,
       daily: normalizeDaily(pet.daily),
+      // сейвы до мультидевайс-слияния: события не штамповались — считаем их старыми
+      lastEventAt: typeof pet.lastEventAt === 'number' && pet.lastEventAt >= 0 ? pet.lastEventAt : 0,
       streakDays: typeof pet.streakDays === 'number' && pet.streakDays >= 0 ? Math.floor(pet.streakDays) : 0,
       lastVisitDayKey: typeof pet.lastVisitDayKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(pet.lastVisitDayKey)
         ? pet.lastVisitDayKey
@@ -92,11 +94,60 @@ export function catchUp(state: PetState, nowMs: number, config: GameConfig): Pet
   return { ...next, lastTickAt: nowMs }
 }
 
+/** Чья сторона «событийно» свежее: по штампу события, при ничьей — по тику (старые сейвы), затем — второй аргумент. */
+function newerEvent(a: PetState, b: PetState): PetState {
+  if (a.lastEventAt !== b.lastEventAt) return a.lastEventAt > b.lastEventAt ? a : b
+  if (a.lastTickAt !== b.lastTickAt) return a.lastTickAt > b.lastTickAt ? a : b
+  return b
+}
+
+/**
+ * Поле-уровневое слияние состояний одного питомца с двух устройств.
+ * Распад и рост детерминированы (tick — чистая функция), расходятся состояния
+ * только событиями игрока, поэтому:
+ *  - обе стороны досчитываются tick'ом до общей временной шкалы;
+ *  - статы и возраст берутся по максимуму: «+30 сытости» с одного девайса
+ *    не затирается распадом с другого;
+ *  - событийные поля (имя, сон, задания, серия) — у стороны с более свежим
+ *    событием; ничья — у второго аргумента (на сервере это серверный сейв).
+ * Безымянное яйцо не тикает и событий не имеет — именованная сторона всегда главная.
+ */
+export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetState {
+  const timeline = Math.max(a.lastTickAt, b.lastTickAt)
+  if (a.name === null || b.name === null) {
+    // два яйца: обе стороны замерли, целиком берём более свежее
+    if (a.name === null && b.name === null) return newerEvent(a, b)
+    return catchUp(a.name === null ? b : a, timeline, config)
+  }
+  const newer = newerEvent(a, b)
+  const older = newer === a ? b : a
+  const caughtNewer = catchUp(newer, timeline, config)
+  const caughtOlder = catchUp(older, timeline, config)
+  const stats: Stats = {
+    fullness: Math.max(caughtNewer.stats.fullness, caughtOlder.stats.fullness),
+    happiness: Math.max(caughtNewer.stats.happiness, caughtOlder.stats.happiness),
+    energy: Math.max(caughtNewer.stats.energy, caughtOlder.stats.energy),
+    cleanliness: Math.max(caughtNewer.stats.cleanliness, caughtOlder.stats.cleanliness),
+  }
+  const ageMs = Math.max(caughtNewer.ageMs, caughtOlder.ageMs)
+  return {
+    ...caughtNewer,
+    createdAt: Math.min(a.createdAt, b.createdAt),
+    ageMs,
+    stage: stageForAge(ageMs, config),
+    stats,
+    // болезнь не снимаем задним числом: вылечит тик при достойном уходе
+    sick: caughtNewer.sick || caughtOlder.sick,
+    neglectMs: Math.max(caughtNewer.neglectMs, caughtOlder.neglectMs),
+    lastTickAt: timeline,
+  }
+}
+
 /**
  * Слияние локального и удалённого (сервер/облако) сейва. Безымянный и
  * отсутствующий локальный питомец всегда уступает удалённому: свежее яйцо
- * с нового устройства не должно побеждать настоящего питомца по lastTickAt.
- * У именованных главный тот, у кого lastTickAt новее (позже сохранялся).
+ * с нового устройства не должно побеждать настоящего питомца. Именованные
+ * стороны сливаются по полям (mergeStates).
  * Битый и несовместимый удалённый сейв игнорируется.
  * fallbackAppearance подставляется удалённым сейвам старых версий, когда
  * локальной внешности взять неоткуда.
@@ -105,11 +156,13 @@ export function mergeRemoteSave(
   remoteRaw: string | null,
   local: PetState | null,
   fallbackAppearance: PetAppearance,
+  config: GameConfig,
 ): PetState | null {
   if (!remoteRaw) return local
   const remote = deserialize(remoteRaw, local?.appearance ?? fallbackAppearance)
   if (!remote) return local
   if (local === null || local.name === null) return remote
-  if (remote.lastTickAt <= local.lastTickAt) return local
-  return remote
+  // безымянный удалённый сейв (до появления имён) не носитель событий
+  if (remote.name === null) return remote.lastTickAt <= local.lastTickAt ? local : remote
+  return mergeStates(local, remote, config)
 }

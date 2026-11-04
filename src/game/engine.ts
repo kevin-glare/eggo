@@ -16,6 +16,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     sick: false,
     neglectMs: 0,
     lastTickAt: now,
+    lastEventAt: now,
     appearance,
     daily: null,
     streakDays: 0,
@@ -32,7 +33,8 @@ export function averageStats(state: PetState): number {
   return total / STAT_KEYS.length
 }
 
-function stageForAge(ageMs: number, config: GameConfig): Stage {
+/** Стадия для возраста в игровом времени; нужен и слиянию сейвов в storage. */
+export function stageForAge(ageMs: number, config: GameConfig): Stage {
   const { eggMs, babyMs, childMs, teenMs } = config.evolution
   if (ageMs < eggMs) return 'egg'
   if (ageMs < eggMs + babyMs) return 'baby'
