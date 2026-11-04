@@ -1,10 +1,14 @@
 /**
- * Мини-i18n без зависимостей. Язык фиксируется один раз при загрузке модуля:
- * сначала выбор в меню (localStorage), затем Telegram (language_code
- * пользователя из initData), иначе локаль браузера/устройства. Языки СНГ и
- * пост-советского пространства — русский, остальные и неизвестная локаль —
- * английский.
+ * Мини-i18n без зависимостей. Язык фиксируется при загрузке модуля: сначала
+ * выбор в меню (localStorage), затем Telegram (language_code пользователя из
+ * initData), иначе локаль браузера/устройства. Языки СНГ и пост-советского
+ * пространства — русский, остальные и неизвестная локаль — английский.
+ *
+ * setLang меняет язык на живую: компоненты с useStrings/useLang
+ * перерисовываются сами, канвасный слой читает getStrings() каждый кадр.
+ * Перезагрузка страницы не нужна.
  */
+import { useSyncExternalStore } from 'react'
 import { ru, type Strings } from './strings/ru'
 import { en } from './strings/en'
 
@@ -33,7 +37,7 @@ function deviceLocale(): string | null {
 const LANG_FLAG = 'eggo.lang'
 
 /** Язык, выбранный в меню; null — выбор не сделан (или хранилище недоступно). */
-export function storedLang(): Lang | null {
+function storedLang(): Lang | null {
   try {
     const raw = window.localStorage.getItem(LANG_FLAG)
     return raw === 'ru' || raw === 'en' ? raw : null
@@ -42,21 +46,51 @@ export function storedLang(): Lang | null {
   }
 }
 
-/** Запомнить выбор языка; вступает в силу при перезагрузке страницы. */
-export function setStoredLang(value: Lang): void {
+let active: Lang = storedLang() ?? detectLang(deviceLocale())
+
+if (typeof document !== 'undefined') document.documentElement.lang = active
+
+const listeners = new Set<() => void>()
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+/** Текущий язык сессии. */
+export function getLang(): Lang {
+  return active
+}
+
+/**
+ * Сменить язык на живую: строки перерисуются через useStrings/useLang,
+ * выбор запоминается в localStorage. Перезагрузка страницы не нужна.
+ */
+export function setLang(value: Lang): void {
+  if (value === active) return
+  active = value
+  if (typeof document !== 'undefined') document.documentElement.lang = value
   try {
     window.localStorage.setItem(LANG_FLAG, value)
   } catch {
     // приватный режим: выбор не переживёт перезагрузку — не страшно
   }
+  listeners.forEach((listener) => listener())
 }
 
-/** Язык сессии — фиксирован на момент загрузки модуля: выбор в меню, потом локаль. */
-export const lang: Lang = storedLang() ?? detectLang(deviceLocale())
-
-if (typeof document !== 'undefined') document.documentElement.lang = lang
-
-/** Строки текущего языка. */
+/** Строки текущего языка. Для канваса: читает актуальные строки каждый кадр. */
 export function getStrings(): Strings {
-  return lang === 'ru' ? ru : en
+  return active === 'ru' ? ru : en
+}
+
+/** Строки как реактивное значение: компонент перерисовывается при смене языка. */
+export function useStrings(): Strings {
+  return useSyncExternalStore(subscribe, getStrings, getStrings)
+}
+
+/** Язык как реактивное значение — для подписей вроде «Язык: Русский». */
+export function useLang(): Lang {
+  return useSyncExternalStore(subscribe, getLang, getLang)
 }

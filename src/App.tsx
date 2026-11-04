@@ -7,7 +7,7 @@ import { desire, getMood } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
-import { getStrings } from './ui/i18n'
+import { useStrings } from './ui/i18n'
 import { isRequestHintDone } from './ui/hints'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
@@ -23,8 +23,6 @@ import './ui/app.css'
 // в dev-режиме время ×60 — эволюцию видно за минуты
 const config: GameConfig = import.meta.env.DEV ? DEV_CONFIG : DEFAULT_CONFIG
 
-const str = getStrings()
-
 /** Кнопка «написать автору»: t.me-ссылка из VITE_AUTHOR_URL; не задана — кнопки нет. */
 const envAuthorUrl: unknown = import.meta.env.VITE_AUTHOR_URL
 const AUTHOR_URL: string | null = typeof envAuthorUrl === 'string' && envAuthorUrl !== '' ? envAuthorUrl : null
@@ -32,16 +30,16 @@ const AUTHOR_URL: string | null = typeof envAuthorUrl === 'string' && envAuthorU
 /** Наш канал: бот — админ, пункт меню открывает его штатным клиентом Telegram. */
 const CHANNEL_URL = 'https://t.me/EggoTg'
 
-/** Dev-переключатель неба: авто = локальное время пользователя. */
-const SKY_MODES: { label: string; hour: number | null }[] = [
-  { label: str.dev.skyAuto, hour: null },
-  { label: str.dev.skyMorning, hour: 6.5 },
-  { label: str.dev.skyDay, hour: 13 },
-  { label: str.dev.skyEvening, hour: 19 },
-  { label: str.dev.skyNight, hour: 23.5 },
-]
-
 export default function App() {
+  const str = useStrings()
+  // dev-переключатель неба: авто = локальное время пользователя
+  const skyModes: { label: string; hour: number | null }[] = [
+    { label: str.dev.skyAuto, hour: null },
+    { label: str.dev.skyMorning, hour: 6.5 },
+    { label: str.dev.skyDay, hour: 13 },
+    { label: str.dev.skyEvening, hour: 19 },
+    { label: str.dev.skyNight, hour: 23.5 },
+  ]
   const {
     pet,
     notice,
@@ -261,12 +259,12 @@ export default function App() {
           <button
             type="button"
             onClick={() => {
-              const i = SKY_MODES.findIndex((m) => m.hour === skyHour)
-              const next = SKY_MODES[(i + 1) % SKY_MODES.length]!
+              const i = skyModes.findIndex((m) => m.hour === skyHour)
+              const next = skyModes[(i + 1) % skyModes.length]!
               setSkyHour(next.hour)
             }}
           >
-            {str.dev.skyButton(SKY_MODES.find((m) => m.hour === skyHour)?.label ?? str.dev.skyAuto)}
+            {str.dev.skyButton(skyModes.find((m) => m.hour === skyHour)?.label ?? str.dev.skyAuto)}
           </button>
           <button
             type="button"

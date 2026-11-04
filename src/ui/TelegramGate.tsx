@@ -10,9 +10,7 @@
  */
 
 import { BOT_URL } from '../telegram'
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 const webApp = window.Telegram?.WebApp
 
@@ -20,6 +18,7 @@ const webApp = window.Telegram?.WebApp
 const IN_TELEGRAM_BROWSER = typeof webApp?.platform === 'string' && webApp.platform !== 'unknown'
 
 export default function TelegramGate() {
+  const str = useStrings()
   return (
     <main className="gate">
       <div className="gate-egg" aria-hidden>

@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchNotifyState, hapticTap, setNotifyEnabled, tg } from '../telegram'
 import { track } from '../metrika'
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 /**
  * Переключатель пушей от бота. Состояние живёт на сервере (push_enabled),
  * клиент только спрашивает его и переключает. Вне Telegram не показывается.
  */
 export function useNotifications() {
+  const str = useStrings()
   const supported = tg() !== null
   const [enabled, setEnabled] = useState(false)
   const [known, setKnown] = useState(false)
@@ -51,7 +50,7 @@ export function useNotifications() {
       setNotice(str.notifError)
     }
     setBusy(false)
-  }, [busy, enabled, known])
+  }, [busy, enabled, known, str])
 
   return { supported: supported && known, enabled, busy, toggle, notice }
 }

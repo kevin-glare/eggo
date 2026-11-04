@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PetState } from '../game/types'
 import type { Mood } from '../game/types'
-import { getStrings, lang, setStoredLang } from './i18n'
+import { setLang, useLang, useStrings } from './i18n'
 import InvitePanel from './InvitePanel'
 import HelpPanel from './HelpPanel'
 import { createVisualState, drawPet, GROUND_Y, SCENE_W } from './petArt'
 import { track } from '../metrika'
 import { hapticTap, tg } from '../telegram'
-
-const str = getStrings()
 
 /** Подэкраны меню: корень с рядами и карточки-объяснения поверх главного экрана. */
 type MenuView = 'root' | 'invite' | 'help'
@@ -65,6 +63,8 @@ export default function MenuScreen({
   milestones,
   version,
 }: MenuScreenProps) {
+  const str = useStrings()
+  const lang = useLang()
   const [view, setView] = useState<MenuView>('root')
   const panelRef = useRef<HTMLElement>(null)
   const artRef = useRef<HTMLCanvasElement>(null)
@@ -144,11 +144,10 @@ export default function MenuScreen({
 
   const back = () => setView('root')
 
-  // смена языка: выбор в localStorage и перезагрузка — все строки собраны на старте модуля
+  // смена языка на живую: useStrings/useLang перерисовывают меню сами, без перезагрузки
   const switchLang = () => {
     track('lang-switch')
-    setStoredLang(lang === 'ru' ? 'en' : 'ru')
-    window.location.reload()
+    setLang(lang === 'ru' ? 'en' : 'ru')
   }
 
   return (

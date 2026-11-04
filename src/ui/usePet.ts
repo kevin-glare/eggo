@@ -18,11 +18,9 @@ import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storag
 import type { PetState } from '../game/types'
 import { updateRequest } from '../game/requests'
 import { applyReferralReward } from '../game/referrals'
-import { getStrings } from './i18n'
+import { useStrings } from './i18n'
 import { markRequestHintDone } from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
-
-const str = getStrings()
 
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
@@ -47,6 +45,7 @@ function initialPet(): PetState | null {
  * тик раз в секунду, действия с обратной связью и хаптикой.
  */
 export function usePet(config: GameConfig) {
+  const str = useStrings()
   const [pet, setPet] = useState<PetState | null>(() => initialPet())
   const [notice, setNotice] = useState<string | null>(null)
   /** счётчик праздников (конфетти в канвасе): награда дня, порог серии, «скучал» */
@@ -253,7 +252,7 @@ useEffect(() => {
       hapticSuccess()
       return { ...result, state: next }
     },
-    [config],
+    [config, str],
   )
 
   const feedPet = useCallback(() => apply(feed, str.actionSuccess.feed, 'feed'), [apply])
@@ -289,7 +288,7 @@ useEffect(() => {
       hapticWarning()
     }
     return result.ok
-  }, [config])
+  }, [config, str])
 
   /** Показать разовое сообщение (подсказки интерфейса). */
   const showNotice = useCallback((text: string) => setNotice(text), [])
@@ -315,7 +314,7 @@ useEffect(() => {
       setNotice(result.state.stage === 'egg' ? str.eggAppeared : str.named(result.state.name ?? str.petFallbackName))
       return true
     },
-    [config],
+    [config, str],
   )
   const toggleSleep = useCallback(() => {
     const current = petRef.current

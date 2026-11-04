@@ -1,8 +1,6 @@
 import type { QuestId } from '../game/quests'
 import type { DailyQuests } from '../game/quests'
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 interface QuestsBarProps {
   daily: DailyQuests
@@ -22,6 +20,7 @@ const QUEST_ICONS: Record<QuestId, string> = { feed: '🍔', play: '🎮', wash:
  * с подсказкой (как и остальные действия).
  */
 export default function QuestsBar({ daily, targets, onClaim, onExplain }: QuestsBarProps) {
+  const str = useStrings()
   const complete = daily.quests.every((q, i) => (daily.progress[i] ?? 0) >= targets[q])
   const explain = (q: QuestId, p: number) => {
     const t = targets[q]

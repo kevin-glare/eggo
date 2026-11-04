@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import type { PetAppearance } from '../game/appearance'
 import type { Mood } from '../game/types'
-import { getStrings } from './i18n'
+import { useStrings } from './i18n'
 import PetCanvas from './PetCanvas'
-
-const str = getStrings()
 
 interface CreatePetScreenProps {
   maxLength: number
@@ -18,6 +16,7 @@ interface CreatePetScreenProps {
 
 /** Главный экран Eggo: живая поляна с яйцом ждёт имени. */
 export default function CreatePetScreen({ maxLength, appearance, skyHourOverride, onCreate }: CreatePetScreenProps) {
+  const str = useStrings()
   const [draft, setDraft] = useState('')
   // имя согревает яйцо: заметнее покачивается и теплее свет.
   // выше 0.3 не поднимаем — трещины появляются с 0.35, а вылупление не сейчас

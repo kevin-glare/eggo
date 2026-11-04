@@ -1,9 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import type { StatKey, Stats } from '../game/types'
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 interface StatsBarProps {
   stats: Stats
@@ -11,15 +9,16 @@ interface StatsBarProps {
   lowBelow: number
 }
 
-const BARS: { key: StatKey; icon: string; label: string; color: string }[] = [
-  { key: 'fullness', icon: '🍔', label: str.stat.fullness, color: '#ffb84d' },
-  { key: 'happiness', icon: '💛', label: str.stat.happiness, color: '#ff7ab8' },
-  { key: 'energy', icon: '⚡', label: str.stat.energy, color: '#7ec8f0' },
-  { key: 'cleanliness', icon: '🫧', label: str.stat.cleanliness, color: '#8ee6b8' },
-]
-
 export default function StatsBar({ stats, lowBelow }: StatsBarProps) {
+  const str = useStrings()
   const fillRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  const BARS: { key: StatKey; icon: string; label: string; color: string }[] = [
+    { key: 'fullness', icon: '🍔', label: str.stat.fullness, color: '#ffb84d' },
+    { key: 'happiness', icon: '💛', label: str.stat.happiness, color: '#ff7ab8' },
+    { key: 'energy', icon: '⚡', label: str.stat.energy, color: '#7ec8f0' },
+    { key: 'cleanliness', icon: '🫧', label: str.stat.cleanliness, color: '#8ee6b8' },
+  ]
 
   // GSAP плавно доводит полоски до нового значения
   useLayoutEffect(() => {

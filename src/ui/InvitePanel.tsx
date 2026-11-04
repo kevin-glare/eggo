@@ -1,6 +1,4 @@
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 interface InvitePanelProps {
   /** сколько друзей пришло (с сервера); null — счётчик ещё не приходил */
@@ -18,6 +16,7 @@ interface InvitePanelProps {
  * выход — «← Назад» и системная кнопка Telegram.
  */
 export default function InvitePanel({ invited, stars, milestones, onShare }: InvitePanelProps) {
+  const str = useStrings()
   return (
     <section className="invite" aria-label={str.inviteAria}>
       <div className="invite-head">

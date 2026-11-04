@@ -1,6 +1,4 @@
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 interface ActionsBarProps {
   isEgg: boolean
@@ -20,6 +18,7 @@ export default function ActionsBar({
   onWash,
   onToggleSleep,
 }: ActionsBarProps) {
+  const str = useStrings()
   return (
     <nav className="actions" aria-label={str.actionsAria}>
       <button type="button" disabled={isEgg} onClick={onFeed}>

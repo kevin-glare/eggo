@@ -150,10 +150,9 @@ interface SceneHint {
   alpha: number
 }
 
-const HINT_TEXT: Record<HintKind, string> = {
-  feed: getStrings().sceneHint.feed,
-  wash: getStrings().sceneHint.wash,
-  play: getStrings().sceneHint.play,
+/** Текст подсказки читается на каждом кадре: смена языка доезжает без перерисовки React. */
+function hintText(kind: HintKind): string {
+  return getStrings().sceneHint[kind]
 }
 
 /* Блуждание по лугу — презентация, не баланс: на логику не влияет. */
@@ -937,13 +936,13 @@ function drawHintOverlay(
   ctx.font = '700 15px Nunito, system-ui, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  const w = ctx.measureText(HINT_TEXT[hint.kind]).width + 26
+  const w = ctx.measureText(hintText(hint.kind)).width + 26
   ctx.fillStyle = 'rgba(26, 16, 46, 0.78)'
   ctx.beginPath()
   roundRect(ctx, SCENE_W / 2 - w / 2, 48, w, 32, 16)
   ctx.fill()
   ctx.fillStyle = '#fffdf6'
-  ctx.fillText(HINT_TEXT[hint.kind], SCENE_W / 2, 65)
+  ctx.fillText(hintText(hint.kind), SCENE_W / 2, 65)
   // пульсирующее кольцо вокруг цели
   if (ring) {
     const r = 30 + Math.sin(now / 280) * 4

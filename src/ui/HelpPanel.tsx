@@ -1,6 +1,4 @@
-import { getStrings } from './i18n'
-
-const str = getStrings()
+import { useStrings } from './i18n'
 
 /**
  * Карточка «Как играть»: короткие правила — забота, просьбы, квесты, стрик,
@@ -8,6 +6,7 @@ const str = getStrings()
  * системная кнопка Telegram.
  */
 export default function HelpPanel() {
+  const str = useStrings()
   return (
     <section className="help" aria-label={str.menuHelp}>
       <div className="help-head">

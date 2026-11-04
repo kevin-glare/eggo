@@ -645,15 +645,15 @@ body {
 
 /* индикатор состояния у переключателя уведомлений */
 .menu-row-state {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .menu-row-state.on {
   background: var(--accent);
-  box-shadow: 0 0 6px rgba(255, 179, 92, 0.7);
+  box-shadow: 0 0 8px rgba(255, 179, 92, 0.85);
 }
 
 .menu-footer {
