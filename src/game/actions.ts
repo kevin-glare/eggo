@@ -15,6 +15,8 @@ export interface ActionResult {
   state: PetState
   ok: boolean
   reason?: ActionReason
+  /** действие закрыло активную просьбу питомца — эффект двойной */
+  requestBonus?: boolean
 }
 
 function clampStat(value: number): number {
@@ -40,13 +42,18 @@ export function feed(state: PetState, config: GameConfig): ActionResult {
   const blocked = guardAwake(state)
   if (blocked) return blocked
   if (state.stats.fullness >= 100) return fail(state, 'already-full')
-  return ok({
+  const matched = state.request?.kind === 'feed'
+  const gain = config.actions.feed.fullness * (matched ? config.requests.bonusMultiplier : 1)
+  const result = ok({
     ...state,
     stats: {
       ...state.stats,
-      fullness: clampStat(state.stats.fullness + config.actions.feed.fullness),
+      fullness: clampStat(state.stats.fullness + gain),
     },
   })
+  // просьбу закрывает только «своё» действие; паузу до следующей ставит usePet
+  if (!matched) return result
+  return { ...result, state: { ...result.state, request: null }, requestBonus: true }
 }
 
 export function play(state: PetState, config: GameConfig): ActionResult {
@@ -54,27 +61,36 @@ export function play(state: PetState, config: GameConfig): ActionResult {
   if (blocked) return blocked
   if (state.stats.happiness >= 100) return fail(state, 'already-happy')
   if (state.stats.energy < config.actions.play.energy) return fail(state, 'too-tired')
-  return ok({
+  // просьба удваивает радость, но не усталость
+  const matched = state.request?.kind === 'play'
+  const joy = config.actions.play.happiness * (matched ? config.requests.bonusMultiplier : 1)
+  const result = ok({
     ...state,
     stats: {
       ...state.stats,
-      happiness: clampStat(state.stats.happiness + config.actions.play.happiness),
+      happiness: clampStat(state.stats.happiness + joy),
       energy: clampStat(state.stats.energy - config.actions.play.energy),
     },
   })
+  if (!matched) return result
+  return { ...result, state: { ...result.state, request: null }, requestBonus: true }
 }
 
 export function wash(state: PetState, config: GameConfig): ActionResult {
   const blocked = guardAwake(state)
   if (blocked) return blocked
   if (state.stats.cleanliness >= 100) return fail(state, 'already-clean')
-  return ok({
+  const matched = state.request?.kind === 'wash'
+  const gain = config.actions.wash.cleanliness * (matched ? config.requests.bonusMultiplier : 1)
+  const result = ok({
     ...state,
     stats: {
       ...state.stats,
-      cleanliness: clampStat(state.stats.cleanliness + config.actions.wash.cleanliness),
+      cleanliness: clampStat(state.stats.cleanliness + gain),
     },
   })
+  if (!matched) return result
+  return { ...result, state: { ...result.state, request: null }, requestBonus: true }
 }
 
 /**

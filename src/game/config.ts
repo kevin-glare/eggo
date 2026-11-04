@@ -44,9 +44,20 @@ export interface GameConfig {
   /** ежедневные задания: сколько в день, награда и цели */
   quests: {
     count: number
-    /** +счастья за полный набор дня */
-    rewardHappiness: number
+    /** + к самому слабому стату за полный набор дня */
+    reward: number
     targets: Record<QuestId, number>
+  }
+  /** просьбы питомца: активная просьба указывает действие с двойным эффектом */
+  requests: {
+    /** множитель положительного эффекта действия, закрывшего просьбу */
+    bonusMultiplier: number
+    /** сколько реального времени живёт просьба */
+    windowMs: number
+    /** пауза после закрытой (действием или просрочкой) просьбы до следующей */
+    cooldownMs: number
+    /** пауза от рождения питомца до первой просьбы */
+    firstDelayMs: number
   }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
@@ -77,10 +88,11 @@ export const MINUTE = 60_000
 export const HOUR = 3_600_000
 export const DAY = 24 * HOUR
 
-/** Реальный темп игры: от 100 до 0 примерно за 8–16 часов. */
+/** Реальный темп: забота нужна каждые ~3–4 часа; одно действие не доводит
+ *  стат до предела — повторная забота вскоре снова имеет смысл. */
 export const DEFAULT_CONFIG: GameConfig = {
   initialStats: { fullness: 80, happiness: 80, energy: 80, cleanliness: 80 },
-  decayPerHour: { fullness: 12, happiness: 10, energy: 8, cleanliness: 6 },
+  decayPerHour: { fullness: 14, happiness: 12, energy: 8, cleanliness: 8 },
   sleepDecayFactor: 0.5,
   sleepEnergyPerHour: 25,
   criticalThreshold: 25,
@@ -90,9 +102,9 @@ export const DEFAULT_CONFIG: GameConfig = {
   contentThreshold: 45,
   evolution: { eggMs: 5_000, babyMs: 36 * HOUR, childMs: 72 * HOUR, teenMs: 96 * HOUR },
   actions: {
-    feed: { fullness: 30 },
-    play: { happiness: 25, energy: 15 },
-    wash: { cleanliness: 40 },
+    feed: { fullness: 25 },
+    play: { happiness: 20, energy: 15 },
+    wash: { cleanliness: 30 },
     // кулдаун не хранится в сейве — мягкий лимит на сессию
     pet: { happiness: 3, cooldownMs: 8_000 },
   },
@@ -102,8 +114,15 @@ export const DEFAULT_CONFIG: GameConfig = {
   nameMaxLength: 16,
   quests: {
     count: 3,
-    rewardHappiness: 15,
+    reward: 15,
     targets: { feed: 3, play: 2, wash: 2, pet: 3 },
+  },
+  // просьба живёт в реальном времени: окно 2 часа, потом пауза 3 часа
+  requests: {
+    bonusMultiplier: 2,
+    windowMs: 2 * HOUR,
+    cooldownMs: 3 * HOUR,
+    firstDelayMs: 1 * HOUR,
   },
   streak: { milestones: [3, 7, 14] },
   // Хэллоуин: с 24 октября по 2 ноября
@@ -131,4 +150,7 @@ export const DEV_CONFIG: GameConfig = {
   timeScale: 60,
   // яйцо должно висеть 5 реальных секунд и здесь: 5 с × 60
   evolution: { ...DEFAULT_CONFIG.evolution, eggMs: 5_000 * 60 },
+  // просьбы живут в реальном времени — timeScale на них не влияет,
+  // поэтому в dev они короткие, чтобы механику было видно за сессию
+  requests: { bonusMultiplier: 2, windowMs: 2 * MINUTE, cooldownMs: MINUTE, firstDelayMs: 15_000 },
 }

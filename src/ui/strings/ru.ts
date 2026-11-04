@@ -72,7 +72,7 @@ export const ru = {
   eggAppeared: '🥚 Появилось яйцо!',
   daysInRow: (n: number) => `🔥 ${n} ${pluralDays(n)} подряд!`,
   weeksOfFriendship: (n: number) => `🎂 ${n} ${pluralWeeks(n)} дружбы!`,
-  claimReward: (bonus: number) => `🎁 Задания дня выполнены: +${bonus} к счастью!`,
+  claimReward: (bonus: number) => `🎁 Задания дня выполнены: +${bonus} к самому слабому показателю!`,
   claimAlready: '🎁 Награда уже получена',
   claimNotReady: '🎯 Сначала выполни задания дня',
   newGame: '🥚 Новая игра — дай имя!',
@@ -109,6 +109,10 @@ export const ru = {
 
   // --- подсказки сценок (PetCanvas) ---
   sceneHint: { feed: 'Тапай по еде!', wash: 'Води пальцем по питомцу', play: 'Тапай по мячу!' },
+
+  // --- просьбы питомца ---
+  requestHint: '💡 Эгго что-то просит! Успей — эффект будет двойным',
+  requestBonus: (name: string) => `✨ Просьба выполнена — ${name} в восторге!`,
 
   // --- переключатель пушей (useNotifications) ---
   notifOn: '🔔 Уведомления включены',

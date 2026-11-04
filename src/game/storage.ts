@@ -3,11 +3,13 @@ import { normalizeAppearance, type PetAppearance } from './appearance'
 import { stageForAge, tick } from './engine'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
-import type { PetState, Stats } from './types'
+import type { PetRequest, PetState, RequestKind, Stats } from './types'
 
 const SAVE_VERSION = 1
 
 const QUEST_IDS: QuestId[] = ['feed', 'play', 'wash', 'pet']
+
+const REQUEST_KINDS: RequestKind[] = ['feed', 'play', 'wash']
 
 /**
  * Ежедневные задания появились позже сейва v1: их отсутствие или поломка
@@ -25,6 +27,18 @@ function normalizeDaily(raw: unknown): DailyQuests | null {
     progress: d.progress.map((p) => (typeof p === 'number' && p >= 0 ? Math.floor(p) : 0)),
     claimed: d.claimed === true,
   }
+}
+
+/**
+ * Просьбы появились позже сейва v1: их отсутствие или поломка нормализуется
+ * в null — питомец просто попросит в следующий раз.
+ */
+function normalizeRequest(raw: unknown): PetRequest | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Partial<PetRequest>
+  if (typeof r.kind !== 'string' || !REQUEST_KINDS.includes(r.kind as RequestKind)) return null
+  if (typeof r.expiresAt !== 'number' || r.expiresAt < 0) return null
+  return { kind: r.kind as RequestKind, expiresAt: r.expiresAt }
 }
 
 interface SaveData {
@@ -60,6 +74,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       lastVisitDayKey: typeof pet.lastVisitDayKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(pet.lastVisitDayKey)
         ? pet.lastVisitDayKey
         : null,
+      request: normalizeRequest(pet.request),
+      nextRequestAt: typeof pet.nextRequestAt === 'number' && pet.nextRequestAt >= 0 ? pet.nextRequestAt : 0,
     }
   } catch {
     return null

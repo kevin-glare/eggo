@@ -36,6 +36,24 @@ describe('serialize / deserialize', () => {
     expect(restored?.daily).toBeNull()
   })
 
+  it('старый сейв без просьб → request: null, nextRequestAt: 0', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG)
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.request
+    delete data.pet.nextRequestAt
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.request).toBeNull()
+    expect(restored?.nextRequestAt).toBe(0)
+  })
+
+  it('битая просьба (неизвестное действие) → null', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, { request: { kind: 'feed', expiresAt: 123 } })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    data.pet.request = { kind: 'рыба', expiresAt: 123 }
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.request).toBeNull()
+  })
+
   it('битый daily в сейве → null: неизвестные задания и кривой прогресс отбрасываются', () => {
     const pet = hatchedPet(DEFAULT_CONFIG)
     for (const daily of [

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import type { PetAppearance } from '../game/appearance'
 import type { DesireKind } from '../game/engine'
-import type { Mood, Stage } from '../game/types'
+import type { Mood, PetRequest, Stage } from '../game/types'
 import { dirtIntensity, type DirtLevel } from './dirt'
 import { getStrings } from './i18n'
 import {
@@ -33,6 +33,8 @@ interface PetCanvasProps {
   dirtLevel?: DirtLevel
   /** чего питомец хочет прямо сейчас — пузырёк над головой; null = скрыт */
   desire?: DesireKind | null
+  /** активная просьба — пузырёк показывает её вместо пассивного желания */
+  request?: PetRequest | null
   /** dev: подменный час неба; null = локальное время пользователя */
   skyHourOverride?: number | null
   onTap?: () => void
@@ -246,6 +248,7 @@ export default function PetCanvas({
   eggProgress,
   dirtLevel = 0,
   desire,
+  request,
   skyHourOverride,
   onTap,
   onPetTap,
@@ -303,9 +306,11 @@ export default function PetCanvas({
   const bubbleRef = useRef<{ alpha: number; kind: DesireKind }>({ alpha: 0, kind: 'feed' })
 
   useEffect(() => {
-    if (desire) bubbleRef.current.kind = desire
-    gsap.to(bubbleRef.current, { alpha: desire ? 1 : 0, duration: 0.3, ease: 'power1.out', overwrite: 'auto' })
-  }, [desire])
+    // активная просьба важнее пассивного желания: пузырёк зовёт к действию с бонусом
+    const kind = request?.kind ?? desire
+    if (kind) bubbleRef.current.kind = kind
+    gsap.to(bubbleRef.current, { alpha: kind ? 1 : 0, duration: 0.3, ease: 'power1.out', overwrite: 'auto' })
+  }, [desire, request])
 
   // канвас, рендер-цикл и вечные GSAP-циклы (дыхание, покачивание, моргание)
   useEffect(() => {

@@ -25,10 +25,10 @@ describe('tick — затухание статов', () => {
   it('за час бодрствования статы падают на decayPerHour', () => {
     const pet = hatchedPet(DEFAULT_CONFIG)
     const next = tick(pet, HOUR, DEFAULT_CONFIG)
-    expect(next.stats.fullness).toBeCloseTo(80 - 12)
-    expect(next.stats.happiness).toBeCloseTo(80 - 10)
+    expect(next.stats.fullness).toBeCloseTo(80 - 14)
+    expect(next.stats.happiness).toBeCloseTo(80 - 12)
     expect(next.stats.energy).toBeCloseTo(80 - 8)
-    expect(next.stats.cleanliness).toBeCloseTo(80 - 6)
+    expect(next.stats.cleanliness).toBeCloseTo(80 - 8)
   })
 
   it('не опускает статы ниже 0', () => {
@@ -53,7 +53,7 @@ describe('tick — затухание статов', () => {
     const pet = hatchedPet(DEFAULT_CONFIG, { sleeping: true }, { energy: 20 })
     const next = tick(pet, 2 * HOUR, DEFAULT_CONFIG)
     expect(next.stats.energy).toBeCloseTo(20 + 25 * 2)
-    expect(next.stats.fullness).toBeCloseTo(80 - 12 * 0.5 * 2)
+    expect(next.stats.fullness).toBeCloseTo(80 - 14 * 0.5 * 2)
   })
 
   it('не мутирует исходное состояние', () => {

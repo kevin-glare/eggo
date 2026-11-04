@@ -78,7 +78,7 @@ describe('wash', () => {
     const pet = hatchedPet(DEFAULT_CONFIG, {}, { cleanliness: 30 })
     const result = wash(pet, DEFAULT_CONFIG)
     expect(result.ok).toBe(true)
-    expect(result.state.stats.cleanliness).toBe(70)
+    expect(result.state.stats.cleanliness).toBe(30 + DEFAULT_CONFIG.actions.wash.cleanliness)
   })
 
   it('отклоняется при полной чистоте', () => {

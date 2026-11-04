@@ -8,6 +8,7 @@ import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
 import { getStrings } from './ui/i18n'
+import { isRequestHintDone } from './ui/hints'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
@@ -99,6 +100,12 @@ export default function App() {
   }
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
   const ready = pet !== null
+
+  // механика просьб должна самообъясняться: тост, пока игрок ни разу не закрыл просьбу
+  useEffect(() => {
+    if (pet?.request == null || isRequestHintDone()) return
+    showNotice(str.requestHint)
+  }, [pet?.request?.kind, pet?.request?.expiresAt, showNotice])
 
   // t.me-ссылки внутри Telegram открывает сам клиент, снаружи — новая вкладка
   const openTgLink = (url: string) => {
@@ -211,6 +218,7 @@ export default function App() {
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
               desire={desireKind}
+              request={pet.request}
               skyHourOverride={skyHour}
               onPetTap={() => {
                 track('pet')

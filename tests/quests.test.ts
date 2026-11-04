@@ -137,13 +137,27 @@ describe('claimReward', () => {
     expect(result.state.stats.happiness).toBe(pet.stats.happiness)
   })
 
-  it('все задания полные — награда счастьем с клэмпом и claimed', () => {
+  it('все задания полные — награда слабейшему стату и claimed', () => {
+    // счастье выше остальных: награда уйдёт сытости (при ничьей приоритет — сытость)
     let pet = ensureDaily(hatchedPet(DEFAULT_CONFIG, {}, { happiness: 90 }), DEFAULT_CONFIG, NOW)
     pet = completeQuests(pet, DEFAULT_CONFIG)
     const result = claimReward(pet, DEFAULT_CONFIG)
     expect(result.ok).toBe(true)
-    expect(result.state.stats.happiness).toBe(100)
+    expect(result.state.stats.happiness).toBe(90)
+    expect(result.state.stats.fullness).toBe(80 + DEFAULT_CONFIG.quests.reward)
     expect(result.state.daily?.claimed).toBe(true)
+  })
+
+  it('награда клэмпится на 100, даже если слабейший стат и так высок', () => {
+    let pet = ensureDaily(
+      hatchedPet(DEFAULT_CONFIG, {}, { fullness: 90, happiness: 95, energy: 95, cleanliness: 95 }),
+      DEFAULT_CONFIG,
+      NOW,
+    )
+    pet = completeQuests(pet, DEFAULT_CONFIG)
+    const result = claimReward(pet, DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state.stats.fullness).toBe(100)
   })
 
   it('повторная награда в тот же день — отказ already-claimed', () => {

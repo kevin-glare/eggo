@@ -23,3 +23,25 @@ export function markHintDone(kind: HintKind): void {
     // без хранилища подсказка будет показываться снова — не страшно
   }
 }
+
+/**
+ * Подсказка просьб — не сценка, а тост, поэтому живёт отдельным флагом.
+ * Показывается, пока игрок ни разу не закрыл просьбу питомца.
+ */
+const REQUEST_FLAG = PREFIX + 'request'
+
+export function isRequestHintDone(): boolean {
+  try {
+    return window.localStorage.getItem(REQUEST_FLAG) === 'done'
+  } catch {
+    return true
+  }
+}
+
+export function markRequestHintDone(): void {
+  try {
+    window.localStorage.setItem(REQUEST_FLAG, 'done')
+  } catch {
+    // без хранилища подсказка будет показываться снова — не страшно
+  }
+}

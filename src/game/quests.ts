@@ -1,5 +1,6 @@
 import type { GameConfig } from './config'
-import type { PetState } from './types'
+import { STAT_KEYS } from './engine'
+import type { PetState, Stats } from './types'
 
 /**
  * Ежедневные задания («ритуал дня»): раз в день детерминированно от даты
@@ -101,19 +102,25 @@ export interface ClaimResult {
   reason?: ClaimReason
 }
 
-/** Забрать награду дня: все задания полные и награда ещё не забрана. */
+/**
+ * Забрать награду дня: все задания полные и награда ещё не забрана.
+ * Награда уходит самому слабому стату — при полном счастье она раньше
+ * сгорала в клэмпе впустую. При ничьей приоритет как в desire(): сытость.
+ */
 export function claimReward(state: PetState, config: GameConfig): ClaimResult {
   const daily = state.daily
   if (daily === null) return { state, ok: false, reason: 'not-ready' }
   const complete = daily.quests.every((q, i) => (daily.progress[i] ?? 0) >= config.quests.targets[q])
   if (!complete) return { state, ok: false, reason: 'not-ready' }
   if (daily.claimed) return { state, ok: false, reason: 'already-claimed' }
-  const happiness = Math.min(100, state.stats.happiness + config.quests.rewardHappiness)
+  const lowest = STAT_KEYS.reduce((min, k) => (state.stats[k] < state.stats[min] ? k : min), STAT_KEYS[0])
+  const stats: Stats = { ...state.stats }
+  stats[lowest] = Math.min(100, stats[lowest] + config.quests.reward)
   return {
     ok: true,
     state: {
       ...state,
-      stats: { ...state.stats, happiness },
+      stats,
       daily: { ...daily, claimed: true },
     },
   }

@@ -50,7 +50,7 @@ export const en: Strings = {
   eggAppeared: '🥚 An egg appeared!',
   daysInRow: (n: number) => `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row!`,
   weeksOfFriendship: (n: number) => `🎂 ${n} ${n === 1 ? 'week' : 'weeks'} of friendship!`,
-  claimReward: (bonus: number) => `🎁 Daily quests done: +${bonus} happiness!`,
+  claimReward: (bonus: number) => `🎁 Daily quests done: +${bonus} to the weakest stat!`,
   claimAlready: '🎁 Reward already claimed',
   claimNotReady: '🎯 Finish the daily quests first',
   newGame: '🥚 New game — name your pet!',
@@ -84,6 +84,10 @@ export const en: Strings = {
   questClaimedAria: 'Reward claimed',
 
   sceneHint: { feed: 'Tap the food!', wash: 'Rub the pet with your finger', play: 'Tap the ball!' },
+
+  // --- pet requests ---
+  requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
+  requestBonus: (name: string) => `✨ Request fulfilled — ${name} is delighted!`,
 
   notifOn: '🔔 Notifications on',
   notifOff: '🔕 Notifications off',

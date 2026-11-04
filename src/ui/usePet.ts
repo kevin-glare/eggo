@@ -16,7 +16,9 @@ import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/que
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
+import { updateRequest } from '../game/requests'
 import { getStrings } from './i18n'
+import { markRequestHintDone } from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
 
 const str = getStrings()
@@ -111,14 +113,21 @@ useEffect(() => {
 }, [config])
 
   // при запуске досчитываем всё время, пока приложение было закрыто,
-  // и разыгрываем задания сегодняшнего дня — они видны сразу после входа
+  // разыгрываем задания сегодняшнего дня и просрочиваем просьбу — всё видно сразу после входа
   useEffect(() => {
-    setPet((p) => (p === null ? p : ensureDaily(catchUp(p, Date.now(), config), config, Date.now())))
+    setPet((p) =>
+      p === null ? p : updateRequest(ensureDaily(catchUp(p, Date.now(), config), config, Date.now()), config, Date.now()),
+    )
   }, [config])
 
   useEffect(() => {
     const id = window.setInterval(
-      () => setPet((p) => (p === null ? p : ensureDaily(catchUp(p, Date.now(), config), config, Date.now()))),
+      () =>
+        setPet((p) =>
+          p === null
+            ? p
+            : updateRequest(ensureDaily(catchUp(p, Date.now(), config), config, Date.now()), config, Date.now()),
+        ),
       1000,
     )
     return () => window.clearInterval(id)
@@ -203,6 +212,11 @@ useEffect(() => {
       // событие игрока: штамп для мультидевайс-слияния — по нему сервер поймёт,
       // что это событие свежее распада с другого девайса
       let next: PetState = { ...result.state, lastEventAt: Date.now() }
+      // просьба закрыта этим действием: пауза до следующей — от текущего момента
+      if (result.requestBonus === true) {
+        next = { ...next, nextRequestAt: Date.now() + config.requests.cooldownMs }
+        markRequestHintDone()
+      }
       // успешное действие отмечается в заданиях дня и в серии дней
       if (questId) {
         next = recordQuest(next, questId, config, Date.now())
@@ -215,7 +229,7 @@ useEffect(() => {
       }
       setPet(next)
       forceSyncRef.current = true
-      setNotice(successText)
+      setNotice(result.requestBonus === true ? str.requestBonus(current.name ?? str.petFallbackName) : successText)
       hapticSuccess()
       return { ...result, state: next }
     },
@@ -246,7 +260,7 @@ useEffect(() => {
       // награда — событие игрока: штамп для мультидевайс-слияния
       setPet({ ...result.state, lastEventAt: Date.now() })
       forceSyncRef.current = true
-      setNotice(str.claimReward(config.quests.rewardHappiness))
+      setNotice(str.claimReward(config.quests.reward))
       setCelebrate((n) => n + 1)
       hapticSuccess()
     } else {

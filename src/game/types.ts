@@ -18,6 +18,16 @@ export interface Stats {
 
 export type StatKey = keyof Stats
 
+/** Что питомец может попросить: только действия с положительным эффектом. */
+export type RequestKind = 'feed' | 'play' | 'wash'
+
+/** Активная просьба питомца: закрывшее её действие даёт двойной эффект. */
+export interface PetRequest {
+  kind: RequestKind
+  /** до какого реального момента просьба актуальна (мс, epoch) */
+  expiresAt: number
+}
+
 /** Полное состояние питомца. Все значения — чистые данные, без методов. */
 export interface PetState {
   /** реальный момент создания (мс, epoch) */
@@ -46,4 +56,8 @@ export interface PetState {
   streakDays: number
   /** день последней активности ('YYYY-MM-DD'); null — активностей ещё не было */
   lastVisitDayKey: string | null
+  /** активная просьба: «исполню сейчас — эффект двойной»; null — просьбы нет */
+  request: PetRequest | null
+  /** реальный момент, когда питомец снова может попросить (мс, epoch) */
+  nextRequestAt: number
 }

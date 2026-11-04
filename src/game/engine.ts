@@ -2,7 +2,7 @@ import type { GameConfig } from './config'
 import type { PetAppearance } from './appearance'
 import type { Mood, PetState, Stage, StatKey, Stats } from './types'
 
-const STAT_KEYS = ['fullness', 'happiness', 'energy', 'cleanliness'] as const
+export const STAT_KEYS = ['fullness', 'happiness', 'energy', 'cleanliness'] as const
 const HOUR = 3_600_000
 
 export function createPet(now: number, config: GameConfig, appearance: PetAppearance): PetState {
@@ -21,6 +21,8 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     daily: null,
     streakDays: 0,
     lastVisitDayKey: null,
+    request: null,
+    nextRequestAt: now + config.requests.firstDelayMs,
   }
 }
 
