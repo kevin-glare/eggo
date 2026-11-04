@@ -58,17 +58,13 @@ describe('resolveSync — слияние сейвов по полям (стат�
   it('кормление клиента выживает, хотя серверный сейв тикал до более позднего момента', () => {
     const base = hatchedPet(config, { lastTickAt: 0, lastEventAt: 0 }, { fullness: 70 })
     // клиент в момент HOUR кормит (→ 100) и уходит в оффлайн
-    const clientRaw = serialize({
-      ...base,
-      lastTickAt: HOUR,
-      lastEventAt: HOUR,
-      stats: { ...base.stats, fullness: 100 },
-    })
+    const client = { ...base, lastTickAt: HOUR, lastEventAt: HOUR, stats: { ...base.stats, fullness: 100 } }
+    const clientRaw = serialize(client)
     // сервер без событий, но его lastTickAt «новее» — старое правило затёрло бы кормление
     const serverRaw = serialize(catchUp(base, 5 * HOUR, config))
     const decision = resolveSync(clientRaw, serverRaw)
     const merged = decision.raw === null ? null : deserialize(decision.raw, TEST_APPEARANCE)
-    expect(merged?.stats.fullness).toBe(catchUp(deserialize(clientRaw, TEST_APPEARANCE), 5 * HOUR, config)?.stats.fullness)
+    expect(merged?.stats.fullness).toBe(catchUp(client, 5 * HOUR, config).stats.fullness)
     expect(merged?.stats.fullness).toBeGreaterThan(70 - 12 * 5) // не распавшаяся серверная сытость
     expect(merged?.lastTickAt).toBe(5 * HOUR)
   })
