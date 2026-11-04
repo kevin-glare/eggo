@@ -16,7 +16,11 @@
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Вендорим локально: telegram.org недоступен из РФ без VPN, запрос зависал
+         до загрузки всего приложения. Обновлять (нужен VPN):
+         curl -o public/telegram-web-app.js https://telegram.org/js/telegram-web-app.js
+         Скачано 2026-11-04, sha256 124bdff7ba3f…e3b5908 -->
+    <script src="./telegram-web-app.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
