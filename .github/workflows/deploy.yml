@@ -1,8 +1,9 @@
 name: Публикация на GitHub Pages
 
 # Пуш в main собирает фронт и публикует его на Pages.
-# Адрес API и ссылка на бота (для заглушки вне Telegram) берутся из
-# переменных VITE_API_URL и VITE_BOT_URL:
+# Адрес API, ссылка на бота (для заглушки вне Telegram) и ссылка на автора
+# (кнопка «написать автору» в шапке) берутся из переменных VITE_API_URL,
+# VITE_BOT_URL и VITE_AUTHOR_URL:
 # Settings → Secrets and variables → Actions → Variables.
 on:
   push:
@@ -33,6 +34,7 @@ jobs:
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           VITE_BOT_URL: ${{ vars.VITE_BOT_URL }}
+          VITE_AUTHOR_URL: ${{ vars.VITE_AUTHOR_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
