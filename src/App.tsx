@@ -285,10 +285,12 @@ export default function App() {
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
           pet={pet}
+          mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}
           notifBusy={notifBusy}
           onToggleNotifications={() => void toggleNotifications()}
+          notifNotice={notifNotice}
           onShare={shareEggo}
           onChannel={() => {
             track('channel')

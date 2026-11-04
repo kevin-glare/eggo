@@ -26,6 +26,13 @@ interface TgWebApp {
   }
   /** открыть ссылку t.me/… штатным клиентом Telegram (шер, канал, чат автора) */
   openTelegramLink?: (url: string) => void
+  /** системная кнопка «Назад» в шапке Telegram: показываем в меню */
+  BackButton?: {
+    show: () => void
+    hide: () => void
+    onClick: (cb: () => void) => void
+    offClick: (cb: () => void) => void
+  }
 }
 
 declare global {

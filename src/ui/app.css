@@ -101,8 +101,10 @@ body {
   gap: 6px;
 }
 
-/* круглая стеклянная кнопка в языке лакированных карточек */
+/* круглая стеклянная кнопка в языке лакированных карточек; визуально 30px,
+   тап-зона расширена до 44px невидимым ::after */
 .tool-btn {
+  position: relative;
   width: 30px;
   height: 30px;
   padding: 0;
@@ -116,6 +118,13 @@ body {
   place-items: center;
   color: var(--ink);
   cursor: pointer;
+}
+
+.tool-btn::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: inherit;
 }
 
 .tool-btn:active {
@@ -467,6 +476,28 @@ body {
   transition: transform 240ms ease-out;
 }
 
+/* тост тумблера пушей: внутри меню, поверх рядов, в языке тостов сцены */
+.menu-toast {
+  position: absolute;
+  top: 52px;
+  left: 14px;
+  right: 14px;
+  z-index: 2;
+  background: var(--card-strong);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  box-shadow:
+    0 12px 32px -12px rgba(10, 4, 24, 0.8),
+    inset 0 1px 0 var(--sheen);
+}
+
 .menu-root.open .menu-screen {
   transform: translateY(0);
 }
@@ -488,11 +519,25 @@ body {
 
 .menu-profile {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 12px 14px;
   border: 1px solid var(--stroke);
   border-radius: 16px;
   background: linear-gradient(180deg, var(--card-hi), var(--card));
   box-shadow: inset 0 1px 0 var(--sheen);
+}
+
+/* мини-арт питомца: статичный кадр движка petArt */
+.menu-avatar {
+  width: 60px;
+  height: 55px;
+  flex: none;
+}
+
+.menu-profile-text {
+  min-width: 0;
 }
 
 .menu-profile-name {
@@ -554,6 +599,7 @@ body {
   align-items: center;
   gap: 10px;
   width: 100%;
+  min-height: 44px;
   padding: 9px 12px;
   border: 1px solid var(--stroke);
   border-radius: 14px;
@@ -586,6 +632,15 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* шеврон: ряд открывает что-то (подэкран или внешний переход);
+   его отсутствие — действие на месте (тумблер, смена языка) */
+.menu-row-chevron {
+  flex: none;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
 }
 
 /* индикатор состояния у переключателя уведомлений */
@@ -670,6 +725,7 @@ body {
 }
 
 .invite-share {
+  min-height: 44px;
   padding: 9px 12px;
   border: none;
   border-radius: 14px;
@@ -1034,5 +1090,16 @@ button:focus-visible,
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* меню вместо слайда — простой fade (правило после глобального, перекрывает его) */
+  .menu-root .menu-screen {
+    transform: none !important;
+    opacity: 0;
+    transition: opacity 0.2s ease-out !important;
+  }
+
+  .menu-root.open .menu-screen {
+    opacity: 1;
   }
 }

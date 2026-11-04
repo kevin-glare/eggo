@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PetState } from '../game/types'
+import type { Mood } from '../game/types'
 import { getStrings, lang, setStoredLang } from './i18n'
 import InvitePanel from './InvitePanel'
 import HelpPanel from './HelpPanel'
+import { createVisualState, drawPet, GROUND_Y, SCENE_W } from './petArt'
 import { track } from '../metrika'
-import { hapticTap } from '../telegram'
+import { hapticTap, tg } from '../telegram'
 
 const str = getStrings()
 
@@ -14,13 +16,17 @@ type MenuView = 'root' | 'invite' | 'help'
 interface MenuScreenProps {
   open: boolean
   onClose: () => void
-  /** питомец для карточки-профиля */
+  /** питомец для карточки-профиля и мини-арта */
   pet: PetState
+  /** настроение питомца — рисуется в мини-арте */
+  mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
   notifSupported: boolean
   notifEnabled: boolean
   notifBusy: boolean
   onToggleNotifications: () => void
+  /** нотис тумблера пушей: показываем внутри меню, где он виден */
+  notifNotice: string | null
   /** «Позови друга»: штатный шер Telegram со ссылкой-приглашением */
   onShare: () => void
   /** «Наш канал»: открыть штатным клиентом Telegram */
@@ -45,10 +51,12 @@ export default function MenuScreen({
   open,
   onClose,
   pet,
+  mood,
   notifSupported,
   notifEnabled,
   notifBusy,
   onToggleNotifications,
+  notifNotice,
   onShare,
   onChannel,
   onAuthor,
@@ -58,19 +66,75 @@ export default function MenuScreen({
   version,
 }: MenuScreenProps) {
   const [view, setView] = useState<MenuView>('root')
+  const panelRef = useRef<HTMLElement>(null)
+  const artRef = useRef<HTMLCanvasElement>(null)
   // экран закрыт — подэкран сбрасывается, следующее открытие начинается с корня
   useEffect(() => {
     if (!open) setView('root')
   }, [open])
-  // Escape закрывает экран, пока он открыт
+  // фокус-менеджмент диалога: фокус в панель на открытии, Tab не выпускает,
+  // на закрытии фокус возвращается на кнопку, открывшую меню
   useEffect(() => {
     if (!open) return
+    const prevFocus = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab' || !panelRef.current) return
+      const focusables = panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled])')
+      if (focusables.length === 0) {
+        e.preventDefault()
+        return
+      }
+      const first = focusables[0]!
+      const last = focusables[focusables.length - 1]!
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      prevFocus?.focus()
+    }
   }, [open, onClose])
+  // Telegram BackButton: из корня закрывает меню, из подэкрана ведёт назад
+  useEffect(() => {
+    if (!open) return
+    const btn = tg()?.BackButton
+    if (!btn) return
+    btn.show()
+    const onBack = () => {
+      if (view === 'root') onClose()
+      else setView('root')
+    }
+    btn.onClick(onBack)
+    return () => {
+      btn.offClick(onBack)
+      btn.hide()
+    }
+  }, [open, view, onClose])
+  // мини-арт питомца: один статичный кадр движка petArt в карточке профиля
+  useEffect(() => {
+    const canvas = artRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const s = 0.42
+    ctx.setTransform(2, 0, 0, 2, 0, 0)
+    ctx.clearRect(0, 0, 120, 110)
+    ctx.translate(60 - (SCENE_W / 2) * s, 100 - (GROUND_Y + 6) * s)
+    ctx.scale(s, s)
+    drawPet(ctx, pet.stage, mood, pet.appearance, createVisualState(), 0, 0)
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+  }, [pet.appearance, pet.stage, mood])
 
   // каждый ряд экрана отвечает на тап хаптикой
   const tap = (fn: () => void) => () => {
@@ -89,21 +153,33 @@ export default function MenuScreen({
 
   return (
     <div className={open ? 'menu-root open' : 'menu-root'} aria-hidden={!open}>
-      <section className="menu-screen" role="dialog" aria-modal="true" aria-label={str.menuAria}>
+      <section
+        className="menu-screen"
+        role="dialog"
+        aria-modal="true"
+        aria-label={str.menuAria}
+        ref={panelRef}
+        tabIndex={-1}
+      >
         <div className="menu-head">
           <p className="menu-title">{str.menuAria}</p>
           <button type="button" className="tool-btn" onClick={tap(onClose)} aria-label={str.menuClose}>
             ✕
           </button>
         </div>
+        {/* тост тумблера пушей: внутри меню, где его не накрывает оверлей */}
+        {notifNotice && <div className="menu-toast">{notifNotice}</div>}
         <div className="menu-body">
           {view === 'root' ? (
             <>
               <div className="menu-profile">
-                <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
-                <p className="menu-profile-meta">
-                  {str.stage[pet.stage]} · {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
-                </p>
+                <canvas ref={artRef} className="menu-avatar" width={240} height={220} aria-hidden="true" />
+                <div className="menu-profile-text">
+                  <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                  <p className="menu-profile-meta">
+                    {str.stage[pet.stage]} · {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
+                  </p>
+                </div>
               </div>
               <p className="menu-section">{str.menuSettings}</p>
               <nav className="menu-rows">
@@ -139,12 +215,18 @@ export default function MenuScreen({
                     ✨
                   </span>
                   <span className="menu-row-label">{str.inviteAria}</span>
+                  <span className="menu-row-chevron" aria-hidden="true">
+                    ›
+                  </span>
                 </button>
                 <button type="button" className="menu-row" onClick={tap(onChannel)}>
                   <span className="menu-row-icon" aria-hidden="true">
                     📢
                   </span>
                   <span className="menu-row-label">{str.menuChannel}</span>
+                  <span className="menu-row-chevron" aria-hidden="true">
+                    ›
+                  </span>
                 </button>
                 {authorUrl !== null && (
                   <button type="button" className="menu-row" onClick={tap(onAuthor)}>
@@ -152,6 +234,9 @@ export default function MenuScreen({
                       ✉️
                     </span>
                     <span className="menu-row-label">{str.authorAria}</span>
+                    <span className="menu-row-chevron" aria-hidden="true">
+                      ›
+                    </span>
                   </button>
                 )}
                 <button
@@ -166,6 +251,9 @@ export default function MenuScreen({
                     ❓
                   </span>
                   <span className="menu-row-label">{str.menuHelp}</span>
+                  <span className="menu-row-chevron" aria-hidden="true">
+                    ›
+                  </span>
                 </button>
               </nav>
               <p className="menu-footer">
@@ -181,15 +269,9 @@ export default function MenuScreen({
                 <span className="menu-row-label">{str.menuBack}</span>
               </button>
               {view === 'invite' ? (
-                <InvitePanel
-                  invited={invited}
-                  stars={pet.appearance.refMark}
-                  milestones={milestones}
-                  onShare={onShare}
-                  onClose={back}
-                />
+                <InvitePanel invited={invited} stars={pet.appearance.refMark} milestones={milestones} onShare={onShare} />
               ) : (
-                <HelpPanel onClose={back} />
+                <HelpPanel />
               )}
             </div>
           )}

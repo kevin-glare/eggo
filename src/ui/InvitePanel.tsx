@@ -10,15 +10,14 @@ interface InvitePanelProps {
   /** пороги приглашённых из config.referrals.milestones */
   milestones: number[]
   onShare: () => void
-  onClose: () => void
 }
 
 /**
  * Панель «Позови друга»: объясняет звёзды дружбы, показывает пороги
  * и большую кнопку шеря со ссылкой-приглашением. Подэкран экрана меню;
- * стиль — карточка заданий.
+ * выход — «← Назад» и системная кнопка Telegram.
  */
-export default function InvitePanel({ invited, stars, milestones, onShare, onClose }: InvitePanelProps) {
+export default function InvitePanel({ invited, stars, milestones, onShare }: InvitePanelProps) {
   return (
     <section className="invite" aria-label={str.inviteAria}>
       <div className="invite-head">
@@ -26,9 +25,6 @@ export default function InvitePanel({ invited, stars, milestones, onShare, onClo
           <p className="invite-title">{str.inviteTitle}</p>
           <p className="invite-sub">{str.inviteSub}</p>
         </div>
-        <button type="button" className="tool-btn" onClick={onClose} aria-label={str.menuClose}>
-          ✕
-        </button>
       </div>
       <div className="invite-stars">
         {milestones.map((m, i) => (
