@@ -58,7 +58,7 @@ export function usePet(config: GameConfig) {
   const startSyncSettledRef = useRef(false)
 
   // старт: Telegram-инициализация, разовая миграция старого облака Telegram
-  // и сервер-синк. Сравнение сейвов честное — по lastTickAt до досчёта времени.
+  // и сервер-синк. Слияние честное — по полям, через mergeRemoteSave.
   // Своего питомца нет или он ещё без имени — серверу ничего не предлагаем:
   // новый девайс сначала узнаёт, есть ли питомец в базе, а не плодит яйцо
   useEffect(() => {
@@ -71,10 +71,10 @@ export function usePet(config: GameConfig) {
       // подстраховка: непредвиденный бросок не должен оставлять экран загрузки навсегда
       try {
         const legacyRaw = await petStore.legacyCloudLoad()
-        if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance) ?? best
+        if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance, config) ?? best
         const payload = best?.name != null ? serialize(best) : null
         const response = await petStore.serverSync(payload)
-        if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance) ?? best
+        if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance, config) ?? best
     } catch {
       // живём на локальном сейве (или новом яйце ниже)
     }
@@ -139,8 +139,18 @@ useEffect(() => {
     forceSyncRef.current = false
     if (!forced && now - lastSyncRef.current < SERVER_SYNC_INTERVAL_MS) return
     lastSyncRef.current = now
-    void petStore.serverSync(raw)
-  }, [pet])
+    void petStore.serverSync(raw).then((response) => {
+      // с каждым синком забираем чужие изменения: сервер вернул слитый сейв.
+      // Свой свежее (событие случилось, пока запрос летел) — слияние оставит его
+      if (response === null) return
+      setPet((current) => {
+        if (current === null) return current
+        const merged = mergeRemoteSave(response.save, current, current.appearance, config)
+        if (merged === current || merged === null) return current
+        return catchUp(merged, Date.now(), config)
+      })
+    })
+  }, [pet, config])
 
   // при уходе со страницы — залить актуальный сейв на сервер
   useEffect(() => {
@@ -185,28 +195,29 @@ useEffect(() => {
       const current = petRef.current
       if (current === null) return null
       const result = action(current, config)
+      if (!result.ok) {
+        setNotice(str.reason[result.reason ?? 'not-hatched'])
+        hapticWarning()
+        return result
+      }
+      // событие игрока: штамп для мультидевайс-слияния — по нему сервер поймёт,
+      // что это событие свежее распада с другого девайса
+      let next: PetState = { ...result.state, lastEventAt: Date.now() }
       // успешное действие отмечается в заданиях дня и в серии дней
-      if (result.ok && questId) {
-        let next = recordQuest(result.state, questId, config, Date.now())
+      if (questId) {
+        next = recordQuest(next, questId, config, Date.now())
         const streak = touchStreak(next, config, Date.now())
         next = streak.state
-        setPet(next)
         if (streak.milestone !== null) {
           setNotice(str.daysInRow(streak.milestone))
           setCelebrate((n) => n + 1)
         }
-      } else {
-        setPet(result.state)
       }
-      if (result.ok) {
-        forceSyncRef.current = true
-        setNotice(successText)
-        hapticSuccess()
-      } else {
-        setNotice(str.reason[result.reason ?? 'not-hatched'])
-        hapticWarning()
-      }
-      return result
+      setPet(next)
+      forceSyncRef.current = true
+      setNotice(successText)
+      hapticSuccess()
+      return { ...result, state: next }
     },
     [config],
   )
@@ -231,13 +242,15 @@ useEffect(() => {
     const current = petRef.current
     if (current === null) return false
     const result = claimReward(current, config)
-    setPet(result.state)
     if (result.ok) {
+      // награда — событие игрока: штамп для мультидевайс-слияния
+      setPet({ ...result.state, lastEventAt: Date.now() })
       forceSyncRef.current = true
       setNotice(str.claimReward(config.quests.rewardHappiness))
       setCelebrate((n) => n + 1)
       hapticSuccess()
     } else {
+      setPet(result.state)
       setNotice(result.reason === 'already-claimed' ? str.claimAlready : str.claimNotReady)
       hapticWarning()
     }
@@ -262,7 +275,8 @@ useEffect(() => {
         return false
       }
       forceSyncRef.current = true
-      setPet(result.state)
+      // имя — первое событие питомца: штамп для мультидевайс-слияния
+      setPet({ ...result.state, lastEventAt: Date.now() })
       hapticSuccess()
       setNotice(result.state.stage === 'egg' ? str.eggAppeared : str.named(result.state.name ?? str.petFallbackName))
       return true
