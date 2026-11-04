@@ -12,11 +12,11 @@ describe('petStore.serverSync', () => {
   it('шлёт initData и сейв, возвращает сейв сервера', async () => {
     vi.stubGlobal('window', { Telegram: { WebApp: tg } })
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit): Promise<Response> =>
-      new Response(JSON.stringify({ save: 'серверный' }), { status: 200 }),
+      new Response(JSON.stringify({ save: 'серверный', invited: 2 }), { status: 200 }),
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    expect(await petStore.serverSync('клиентский')).toEqual({ save: 'серверный' })
+    expect(await petStore.serverSync('клиентский')).toEqual({ save: 'серверный', invited: 2 })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0]?.[0]).toBe('http://localhost:8787/sync')

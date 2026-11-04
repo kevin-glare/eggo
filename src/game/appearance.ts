@@ -23,6 +23,8 @@ export interface PetAppearance {
   legs: LegKind
   palette: PaletteKind
   spots: SpotKind
+  /** звёзды дружбы: сколько заработано приглашениями (0–3); не бросается — выдаётся за друзей */
+  refMark: number
 }
 
 /** Каталоги вариантов — источник правды для броска генов и проверки сейвов. */
@@ -57,6 +59,7 @@ export function rollAppearance(rand: () => number): PetAppearance {
     legs: pick(LEG_KINDS, rand()),
     palette: pick(PALETTE_KINDS, rand()),
     spots: pick(SPOT_KINDS, rand()),
+    refMark: 0,
   }
 }
 
@@ -97,5 +100,10 @@ export function normalizeAppearance(value: unknown): PetAppearance | null {
     legs: v.legs,
     palette: v.palette,
     spots: isOneOf(v.spots, SPOT_KINDS) ? v.spots : 'none',
+    // сейвы до звёзд дружбы (и с битым числом) — питомец просто ещё не приглашал
+    refMark:
+      typeof v.refMark === 'number' && Number.isFinite(v.refMark)
+        ? Math.min(3, Math.max(0, Math.floor(v.refMark)))
+        : 0,
   }
 }

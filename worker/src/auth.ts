@@ -10,6 +10,12 @@ export interface TgUser {
   username: string | null
 }
 
+export interface TgAuth {
+  user: TgUser
+  /** параметр запуска мини-аппа (startapp), например 'ref_123'; подписан вместе со всем initData */
+  startParam: string | null
+}
+
 /** initData старше суток считаем протухшим */
 const AUTH_MAX_AGE_SEC = 24 * 60 * 60
 
@@ -45,7 +51,7 @@ function parseUser(raw: string | null): TgUser | null {
 }
 
 /** null = не Telegram, подделка или протухшая подпись. */
-export async function validateInitData(initData: string, botToken: string, nowSec: number): Promise<TgUser | null> {
+export async function validateInitData(initData: string, botToken: string, nowSec: number): Promise<TgAuth | null> {
   const params = new URLSearchParams(initData)
   const hash = params.get('hash')
   if (!hash) return null
@@ -65,5 +71,5 @@ export async function validateInitData(initData: string, botToken: string, nowSe
 
   const secretKey = await hmacRaw('WebAppData', botToken)
   const computed = await hmacHex(secretKey, dataCheckString)
-  return computed === hash ? user : null
+  return computed === hash ? { user, startParam: params.get('start_param') } : null
 }

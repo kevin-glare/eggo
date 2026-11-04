@@ -29,6 +29,8 @@ export interface UserRow {
   last_seen_at: number
   updated_at: number
   created_at: number
+  /** кто пригласил: telegram_id пригласившего; 0 — никто */
+  referrer_tg_id: number
 }
 
 export interface SyncUserUpdate {
@@ -39,6 +41,8 @@ export interface SyncUserUpdate {
   stage: string | null
   utcOffsetMin: number
   lastSeenAt: number
+  /** из start_param=ref_<id>; null — не задан (поле не заполняется) */
+  referrerTgId: number | null
 }
 
 export async function fetchUser(db: D1Database, telegramId: number): Promise<UserRow | null> {
@@ -52,8 +56,8 @@ export async function fetchUser(db: D1Database, telegramId: number): Promise<Use
 export async function upsertSyncUser(db: D1Database, u: SyncUserUpdate): Promise<void> {
   await db
     .prepare(
-      `INSERT INTO users (telegram_id, username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO users (telegram_id, username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at, created_at, referrer_tg_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(telegram_id) DO UPDATE SET
          username = excluded.username,
          first_name = excluded.first_name,
@@ -61,11 +65,27 @@ export async function upsertSyncUser(db: D1Database, u: SyncUserUpdate): Promise
          stage = excluded.stage,
          utc_offset = excluded.utc_offset,
          last_seen_at = excluded.last_seen_at,
-         updated_at = excluded.updated_at`,
-      // created_at в DO UPDATE нет сознательно: это дата первой встречи,
-      // приток по дням в worker/metrics.sql опирается на её неизменность.
+         updated_at = excluded.updated_at,
+         referrer_tg_id = CASE
+           WHEN users.referrer_tg_id = 0 AND excluded.referrer_tg_id > 0 THEN excluded.referrer_tg_id
+           ELSE users.referrer_tg_id
+         END`,
+      // created_at и referrer_tg_id меняются только «заполняющим» правилом:
+      // дата знакомства (приток в worker/metrics.sql) и первый пригласивший
+      // фиксируются навсегда
     )
-    .bind(u.telegramId, u.username, u.firstName, u.saveJson, u.stage, u.utcOffsetMin, u.lastSeenAt, u.lastSeenAt, u.lastSeenAt)
+    .bind(
+      u.telegramId,
+      u.username,
+      u.firstName,
+      u.saveJson,
+      u.stage,
+      u.utcOffsetMin,
+      u.lastSeenAt,
+      u.lastSeenAt,
+      u.lastSeenAt,
+      u.referrerTgId ?? 0,
+    )
     .run()
 }
 
@@ -83,6 +103,12 @@ export async function ensureUser(
     )
     .bind(u.telegramId, u.username, u.firstName, nowMs, nowMs, nowMs)
     .run()
+}
+
+/** Сколько игроков пришли по ссылке этого игрока (для звёзд дружбы). */
+export async function countInvited(db: D1Database, telegramId: number): Promise<number> {
+  const row = await db.prepare('SELECT COUNT(*) AS n FROM users WHERE referrer_tg_id = ?').bind(telegramId).first<{ n: number }>()
+  return row?.n ?? 0
 }
 
 /** Подписчики крона: пуши включены и бот не заблокирован. */

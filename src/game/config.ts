@@ -59,6 +59,10 @@ export interface GameConfig {
     /** пауза от рождения питомца до первой просьбы */
     firstDelayMs: number
   }
+  /** рефералка: пороги приглашённых — каждая звезда дружбы питомцу */
+  referrals: {
+    milestones: number[]
+  }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
   /** праздничные темы оформления: окна по (месяц, день) включительно; откат темы — enabled: false */
@@ -123,6 +127,10 @@ export const DEFAULT_CONFIG: GameConfig = {
     windowMs: 2 * HOUR,
     cooldownMs: 3 * HOUR,
     firstDelayMs: 1 * HOUR,
+  },
+  // рефералка: пересечённый порог приглашённых = +звезда дружбы питомцу
+  referrals: {
+    milestones: [1, 3, 10],
   },
   streak: { milestones: [3, 7, 14] },
   // Хэллоуин: с 24 октября по 2 ноября

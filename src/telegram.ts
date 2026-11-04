@@ -12,8 +12,8 @@ interface TgWebApp {
   platform: string
   /** подписанные данные пользователя — на них построен вход в API */
   initData: string
-  /** разобранные данные запуска; нам нужен только язык пользователя */
-  initDataUnsafe?: { user?: { language_code?: string } }
+  /** разобранные данные запуска; нужны язык пользователя и его id (ссылка-приглашение) */
+  initDataUnsafe?: { user?: { id?: number; language_code?: string } }
   setHeaderColor?: (color: string) => void
   setBackgroundColor?: (color: string) => void
   HapticFeedback?: {
@@ -60,6 +60,13 @@ export function tg(): TgWebApp | null {
   const app = window.Telegram?.WebApp
   if (!app || app.platform === 'unknown') return null
   return app
+}
+
+/** Ссылка «позови друга»: t.me/<бот>?startapp=ref_<мой id>. null — вне Telegram или нет ссылки на бота. */
+export function referralLink(): string | null {
+  if (BOT_URL === null) return null
+  const id = tg()?.initDataUnsafe?.user?.id
+  return typeof id === 'number' ? `${BOT_URL}?startapp=ref_${id}` : null
 }
 
 /**
@@ -147,11 +154,15 @@ async function legacyCloudLoadRaw(): Promise<string | null> {
 }
 
 /**
- * Синк с сервером: шлём свой сейв, получаем главный (у кого lastTickAt новее).
- * null — сети нет или мы не в Telegram: живём на localStorage, повторим позже.
+ * Синк с сервером: шлём свой сейв, получаем главный (у кого lastTickAt новее)
+ * и счётчик приглашённых (для звёзд дружбы). null — сети нет или мы не в
+ * Telegram: живём на localStorage, повторим позже.
  * keepalive — для финального сохранения при уходе со страницы.
  */
-async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promise<{ save: string | null } | null> {
+async function serverSyncRaw(
+  clientRaw: string | null,
+  keepalive = false,
+): Promise<{ save: string | null; invited: number | null } | null> {
   const initData = tg()?.initData
   if (!initData) return null
   // AbortController руками, а не AbortSignal.timeout: старые WebView его не умеют
@@ -168,9 +179,10 @@ async function serverSyncRaw(clientRaw: string | null, keepalive = false): Promi
       signal: controller.signal,
     })
     if (!response.ok) return null
-    const data = JSON.parse(await response.text()) as { save?: unknown }
+    const data = JSON.parse(await response.text()) as { save?: unknown; invited?: unknown }
     const saveRaw = typeof data.save === 'string' ? data.save : null
-    return { save: saveRaw }
+    const invited = typeof data.invited === 'number' && data.invited >= 0 ? data.invited : null
+    return { save: saveRaw, invited }
   } catch {
     return null
   } finally {

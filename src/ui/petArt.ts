@@ -291,6 +291,7 @@ function drawCreature(
   ctx.fill()
 
   drawSpots(ctx, look, rx, ry, cy, p)
+  drawFriendStar(ctx, look.refMark, rx, ry, cy)
   drawDirt(ctx, look, rx, ry, cy, dirtLevel, dirtAlpha)
 
   // лицо
@@ -571,6 +572,33 @@ function drawSpots(
       ctx.fill()
     }
   }
+  ctx.restore()
+}
+
+/**
+ * Звёзды дружбы — заработанные приглашениями (ген refMark), не часть палитры:
+ * золотая звезда на боку питомца, крупнее с каждым уровнем.
+ */
+function drawFriendStar(ctx: CanvasRenderingContext2D, tier: number, rx: number, ry: number, cy: number): void {
+  if (tier <= 0) return
+  const r = 3.5 + tier * 1.5
+  const x = rx * 0.52
+  const y = cy - ry * 0.42
+  ctx.save()
+  ctx.shadowColor = 'rgba(255, 215, 106, 0.9)'
+  ctx.shadowBlur = 6
+  ctx.fillStyle = '#ffd76a'
+  ctx.beginPath()
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.45
+    const angle = -Math.PI / 2 + (i * Math.PI) / 5
+    const px = x + Math.cos(angle) * rad
+    const py = y + Math.sin(angle) * rad
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+  ctx.fill()
   ctx.restore()
 }
 

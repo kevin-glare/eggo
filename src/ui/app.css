@@ -457,6 +457,89 @@ body {
   white-space: nowrap;
 }
 
+/* Панель «Позови друга»: карточка в языке заданий, объясняет звёзды дружбы */
+.invite {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  box-shadow: inset 0 1px 0 var(--sheen);
+  border: 1px solid var(--stroke);
+}
+
+.invite-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.invite-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.invite-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* пороги звёзд: достигнутые — золотые конфетные чипы */
+.invite-stars {
+  display: flex;
+  gap: 6px;
+}
+
+.invite-star {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--stroke);
+}
+
+.invite-star.got {
+  color: var(--accent-ink);
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent-lo));
+  border-color: var(--edge);
+}
+
+.invite-count {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.invite-share {
+  padding: 9px 12px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--accent-hi) 0%, var(--accent) 48%, var(--accent-lo) 100%);
+  box-shadow:
+    0 3px 0 var(--edge),
+    inset 0 1px 0 var(--sheen);
+  color: var(--accent-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.invite-share:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 var(--edge),
+    inset 0 1px 0 var(--sheen);
+}
+
 /* Задания дня: одна карточка, 4 колонки — в языке панели статов */
 .quests {
   flex-shrink: 0;

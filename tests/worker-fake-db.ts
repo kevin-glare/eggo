@@ -21,6 +21,7 @@ export class FakeDb implements D1Database {
       last_seen_at: 0,
       updated_at: 0,
       created_at: 0,
+      referrer_tg_id: 0,
       ...row,
     }))
   }
@@ -36,6 +37,11 @@ export class FakeDb implements D1Database {
         if (query.startsWith('SELECT * FROM users')) {
           const id = vals[0] as number
           return (this.users.find((u) => u.telegram_id === id) ?? null) as T | null
+        }
+        if (query.startsWith('SELECT COUNT(*) AS n FROM users WHERE referrer_tg_id')) {
+          const id = vals[0] as number
+          const n = this.users.filter((u) => u.referrer_tg_id === id).length
+          return { n } as T | null
         }
         return null
       },
@@ -67,14 +73,18 @@ export class FakeDb implements D1Database {
               this.users.push({
                 telegram_id, username, first_name, save_json: null, stage: null,
                 push_enabled: 0, bot_blocked: 0, utc_offset: 180, last_seen_at, updated_at, created_at,
+                referrer_tg_id: 0,
               })
             }
           } else {
             // upsertSyncUser: обновить профиль, сейв и таймзону
-            const [telegram_id, username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at, created_at] =
-              vals as [number, string | null, string | null, string | null, string | null, number, number, number, number]
+            const [telegram_id, username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at, created_at, referrer_tg_id] =
+              vals as [number, string | null, string | null, string | null, string | null, number, number, number, number, number]
             const user = this.users.find((u) => u.telegram_id === telegram_id)
             if (user) {
+              // правило заполнения как в SQL: пустого пригласившего (0) можно
+              // записать один раз, дальше поле не меняется
+              if (user.referrer_tg_id === 0 && referrer_tg_id > 0) user.referrer_tg_id = referrer_tg_id
               Object.assign(user, {
                 username, first_name, save_json, stage, utc_offset, last_seen_at, updated_at,
               })
@@ -82,6 +92,7 @@ export class FakeDb implements D1Database {
               this.users.push({
                 telegram_id, username, first_name, save_json, stage,
                 push_enabled: 0, bot_blocked: 0, utc_offset, last_seen_at, updated_at, created_at,
+                referrer_tg_id,
               })
             }
           }

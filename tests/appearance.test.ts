@@ -42,6 +42,7 @@ describe('rollAppearance', () => {
       legs: 'round',
       palette: 'sunny',
       spots: 'none',
+      refMark: 0,
     })
     expect(rollAppearance(() => 0.9999)).toEqual({
       body: 'tall',
@@ -52,6 +53,7 @@ describe('rollAppearance', () => {
       legs: 'tiny',
       palette: 'kiwi',
       spots: 'socks',
+      refMark: 0,
     })
   })
 
@@ -69,7 +71,7 @@ describe('rollAppearance', () => {
       seed = (seed * 48271) % 2147483647
       return seed / 2147483647
     }
-    const seen: Record<keyof PetAppearance, Set<string>> = {
+    const seen: Record<Exclude<keyof PetAppearance, 'refMark'>, Set<string>> = {
       body: new Set(),
       ears: new Set(),
       eyes: new Set(),

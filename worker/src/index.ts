@@ -1,6 +1,7 @@
 import { validateInitData } from './auth'
 import { runPushCron } from './pushes'
 import {
+  countInvited,
   ensureUser,
   fetchUser,
   markNotificationSent,
@@ -74,32 +75,39 @@ export default {
       const body = readBody(parsed)
       if (!body) return json({ error: 'bad request' }, 400, cors)
 
-      const user = await validateInitData(body.initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
-      if (!user) return json({ error: 'unauthorized' }, 401, cors)
+      const auth = await validateInitData(body.initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
+      if (!auth) return json({ error: 'unauthorized' }, 401, cors)
 
       const nowMs = Date.now()
-      const row = await fetchUser(env.DB, user.id)
+      const row = await fetchUser(env.DB, auth.user.id)
       const decision = resolveSync(body.save, row?.save_json ?? null)
+      // рефералка: подписанный Telegram start_param «ref_<id>» — кто пригласил.
+      // Сам себя приглашать бессмысленно; заполнение — раз и навсегда (repo)
+      const refMatch = /^ref_(\d+)$/.exec(auth.startParam ?? '')
+      const referrerTgId = refMatch !== null && Number(refMatch[1]!) !== auth.user.id ? Number(refMatch[1]) : null
       await upsertSyncUser(env.DB, {
-        telegramId: user.id,
-        username: user.username,
-        firstName: user.first_name,
+        telegramId: auth.user.id,
+        username: auth.user.username,
+        firstName: auth.user.first_name,
         // сервер хранит слитый сейв — его же вернёт следующему синку
         saveJson: decision.raw,
         stage: decision.stage,
         utcOffsetMin: body.tzOffset ?? row?.utc_offset ?? FALLBACK_UTC_OFFSET_MIN,
         lastSeenAt: nowMs,
+        referrerTgId,
       })
-      return json({ save: decision.raw }, 200, cors)
+      // счётчик приглашённых клиенту: по нему выдаются звёзды дружбы
+      const invited = await countInvited(env.DB, auth.user.id)
+      return json({ save: decision.raw, invited }, 200, cors)
     }
 
     if (url.pathname === '/notify') {
       if (request.method === 'GET') {
         const initData = url.searchParams.get('initData')
         if (!initData) return json({ error: 'bad request' }, 400, cors)
-        const user = await validateInitData(initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
-        if (!user) return json({ error: 'unauthorized' }, 401, cors)
-        const row = await fetchUser(env.DB, user.id)
+        const auth = await validateInitData(initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
+        if (!auth) return json({ error: 'unauthorized' }, 401, cors)
+        const row = await fetchUser(env.DB, auth.user.id)
         return json({ enabled: row?.push_enabled === 1 }, 200, cors)
       }
 
@@ -113,34 +121,34 @@ export default {
         if (typeof parsed.initData !== 'string' || parsed.initData === '' || typeof parsed.enabled !== 'boolean') {
           return json({ error: 'bad request' }, 400, cors)
         }
-        const user = await validateInitData(parsed.initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
-        if (!user) return json({ error: 'unauthorized' }, 401, cors)
+        const auth = await validateInitData(parsed.initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
+        if (!auth) return json({ error: 'unauthorized' }, 401, cors)
 
         const nowMs = Date.now()
-        await ensureUser(env.DB, { telegramId: user.id, username: user.username, firstName: user.first_name }, nowMs)
+        await ensureUser(env.DB, { telegramId: auth.user.id, username: auth.user.username, firstName: auth.user.first_name }, nowMs)
 
         if (parsed.enabled) {
           // тестовое сообщение гарантирует, что юзер стартовал бота
           const test = await sendBotMessage(
             env.BOT_TOKEN,
-            user.id,
+            auth.user.id,
             '🔔 Уведомления включены: напишу, если питомец в беде, вырастет или заскучает.',
           )
           if (test === 'blocked') {
-            await setPushEnabled(env.DB, user.id, false, nowMs)
-            await setBotBlocked(env.DB, user.id, nowMs)
+            await setPushEnabled(env.DB, auth.user.id, false, nowMs)
+            await setBotBlocked(env.DB, auth.user.id, nowMs)
             return json({ ok: false, error: 'blocked' }, 200, cors)
           }
           // текущую стадию не поздравляем задним числом
-          const row = await fetchUser(env.DB, user.id)
+          const row = await fetchUser(env.DB, auth.user.id)
           if (row?.stage && row.stage !== 'egg') {
-            await markNotificationSent(env.DB, user.id, `grown:${row.stage}`, nowMs)
+            await markNotificationSent(env.DB, auth.user.id, `grown:${row.stage}`, nowMs)
           }
-          await setPushEnabled(env.DB, user.id, true, nowMs)
+          await setPushEnabled(env.DB, auth.user.id, true, nowMs)
           return json({ ok: true }, 200, cors)
         }
 
-        await setPushEnabled(env.DB, user.id, false, nowMs)
+        await setPushEnabled(env.DB, auth.user.id, false, nowMs)
         return json({ ok: true }, 200, cors)
       }
     }

@@ -97,8 +97,16 @@ export const en: Strings = {
   // --- header: share and contact the author ---
   shareText: (stage: string, days: number) =>
     `My Eggo has been with me for ${days} ${days === 1 ? 'day' : 'days'}! Stage: ${stage}. Get your own 🥚`,
-  shareAria: 'Share your pet',
   authorAria: 'Message the author',
+
+  // --- invite panel ---
+  inviteAria: 'Invite a friend',
+  inviteTitle: 'Invite a friend!',
+  inviteSub: 'A friend launches Eggo via your link — your pet gets a friendship star ✨',
+  inviteMilestone: (n: number) => `Star for ${n} ${n === 1 ? 'friend' : 'friends'}`,
+  inviteCount: (n: number) => `Friends joined: ${n}`,
+  inviteShare: 'Share the link',
+  inviteReward: (n: number) => `✨ Your pet earned ${n} friendship star${n === 1 ? '' : 's'} — thank you!`,
 
   gate: {
     title: 'Eggo lives in Telegram',

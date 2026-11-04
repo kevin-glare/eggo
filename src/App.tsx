@@ -7,13 +7,14 @@ import { desire, getMood } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
+import InvitePanel from './ui/InvitePanel'
 import { getStrings } from './ui/i18n'
 import { isRequestHintDone } from './ui/hints'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
 import { track } from './metrika'
-import { BOT_URL, tg } from './telegram'
+import { referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
 import './ui/app.css'
@@ -41,6 +42,7 @@ export default function App() {
     pet,
     notice,
     celebrate,
+    invited,
     feedPet,
     playPet,
     washPet,
@@ -64,6 +66,8 @@ export default function App() {
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
+  // панель «Позови друга»: открывается кнопкой 📤 в шапке
+  const [inviteOpen, setInviteOpen] = useState(false)
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
@@ -114,13 +118,13 @@ export default function App() {
     else window.open(url, '_blank', 'noopener')
   }
 
-  // поделиться питомцем: штатный шер Telegram со ссылкой на бота
+  // поделиться питомцем: штатный шер Telegram со ссылкой-приглашением
   const shareEggo = () => {
     if (pet === null) return
     track('share')
+    const url = referralLink() ?? window.location.origin
     const text = str.shareText(str.stage[pet.stage], Math.floor(pet.ageMs / 86_400_000))
-    const link = `https://t.me/share/url?url=${encodeURIComponent(BOT_URL ?? window.location.origin)}&text=${encodeURIComponent(text)}`
-    openTgLink(link)
+    openTgLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`)
   }
 
   // забрать награду дня; успех — конфетти в сцене (usePet сам поднимает celebrate)
@@ -191,7 +195,15 @@ export default function App() {
                   {notifEnabled ? '🔔' : '🔕'}
                 </button>
               )}
-              <button type="button" className="tool-btn" onClick={shareEggo} aria-label={str.shareAria}>
+              <button
+                type="button"
+                className="tool-btn"
+                onClick={() => {
+                  track('invite-open')
+                  setInviteOpen((o) => !o)
+                }}
+                aria-label={str.inviteAria}
+              >
                 📤
               </button>
               {AUTHOR_URL !== null && (
@@ -243,6 +255,14 @@ export default function App() {
 
           {pet.stage !== 'egg' && pet.daily && (
             <QuestsBar daily={pet.daily} targets={config.quests.targets} onClaim={onClaim} onExplain={showNotice} />
+          )}
+          {inviteOpen && (
+            <InvitePanel
+              invited={invited}
+              stars={pet.appearance.refMark}
+              milestones={config.referrals.milestones}
+              onShare={shareEggo}
+            />
           )}
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar

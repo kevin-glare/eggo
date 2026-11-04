@@ -38,8 +38,14 @@ const baseParams = () => ({
 
 describe('validateInitData', () => {
   it('корректно подписанные данные → пользователь', async () => {
-    const user = await validateInitData(await sign(baseParams()), BOT_TOKEN, NOW_SEC)
-    expect(user).toEqual({ id: 42, first_name: 'Кевин', username: 'kevin' })
+    const auth = await validateInitData(await sign(baseParams()), BOT_TOKEN, NOW_SEC)
+    expect(auth?.user).toEqual({ id: 42, first_name: 'Кевин', username: 'kevin' })
+    expect(auth?.startParam).toBeNull()
+  })
+
+  it('start_param проходит проверку подписи вместе со всем initData', async () => {
+    const auth = await validateInitData(await sign({ ...baseParams(), start_param: 'ref_7' }), BOT_TOKEN, NOW_SEC)
+    expect(auth?.startParam).toBe('ref_7')
   })
 
   it('поле signature из реального initData участвует в подписи', async () => {
@@ -48,7 +54,7 @@ describe('validateInitData', () => {
       signature: 'Ed25519-signature-from-telegram',
     })
     const user = await validateInitData(withSignature, BOT_TOKEN, NOW_SEC)
-    expect(user?.id).toBe(42)
+    expect(user?.user.id).toBe(42)
   })
 
   it('подделанное поле ломает подпись', async () => {

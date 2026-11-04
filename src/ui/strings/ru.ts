@@ -24,6 +24,24 @@ function pluralWeeks(n: number): string {
   return 'недель'
 }
 
+/** Русская плюрализация: 1 друга, 3 друга, 5 друзей. */
+function pluralFriends(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'друга'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'друга'
+  return 'друзей'
+}
+
+/** Русская плюрализация: 1 звезда, 2 звезды, 5 звёзд. */
+function pluralStars(n: number): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return 'звезда'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'звезды'
+  return 'звёзд'
+}
+
 export const ru = {
   // --- главный экран ---
   loading: 'Загружаем питомца…',
@@ -123,8 +141,16 @@ export const ru = {
   // --- шапка: поделиться и написать автору ---
   shareText: (stage: string, days: number) =>
     `Мой Eggo с нами уже ${days} ${pluralDays(days)}! Стадия: ${stage}. Заведи своего 🥚`,
-  shareAria: 'Поделиться питомцем',
   authorAria: 'Написать автору',
+
+  // --- панель «Позови друга» ---
+  inviteAria: 'Позови друга',
+  inviteTitle: 'Позови друга!',
+  inviteSub: 'Друг запустит Eggo по твоей ссылке — питомцу звезда дружбы ✨',
+  inviteMilestone: (n: number) => `Звезда за ${n} ${pluralFriends(n)}`,
+  inviteCount: (n: number) => `Уже позвал: ${n}`,
+  inviteShare: 'Поделиться ссылкой',
+  inviteReward: (n: number) => `✨ У питомца ${n} ${pluralStars(n)} дружбы — спасибо!`,
 
   // --- заглушка вне Telegram ---
   gate: {

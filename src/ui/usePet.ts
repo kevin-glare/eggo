@@ -17,6 +17,7 @@ import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import { updateRequest } from '../game/requests'
+import { applyReferralReward } from '../game/referrals'
 import { getStrings } from './i18n'
 import { markRequestHintDone } from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
@@ -50,6 +51,8 @@ export function usePet(config: GameConfig) {
   const [notice, setNotice] = useState<string | null>(null)
   /** счётчик праздников (конфетти в канвасе): награда дня, порог серии, «скучал» */
   const [celebrate, setCelebrate] = useState(0)
+  /** сколько друзей пришло по ссылке — с сервера при каждом синке (звёзды дружбы) */
+  const [invited, setInvited] = useState<number | null>(null)
   const petRef = useRef(pet)
   petRef.current = pet
   const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
@@ -76,7 +79,10 @@ export function usePet(config: GameConfig) {
         if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance, config) ?? best
         const payload = best?.name != null ? serialize(best) : null
         const response = await petStore.serverSync(payload)
-        if (response !== null) best = mergeRemoteSave(response.save, best, fallbackAppearance, config) ?? best
+        if (response !== null) {
+          setInvited(response.invited)
+          best = mergeRemoteSave(response.save, best, fallbackAppearance, config) ?? best
+        }
     } catch {
       // живём на локальном сейве (или новом яйце ниже)
     }
@@ -149,9 +155,10 @@ useEffect(() => {
     if (!forced && now - lastSyncRef.current < SERVER_SYNC_INTERVAL_MS) return
     lastSyncRef.current = now
     void petStore.serverSync(raw).then((response) => {
+      if (response === null) return
+      setInvited(response.invited)
       // с каждым синком забираем чужие изменения: сервер вернул слитый сейв.
       // Свой свежее (событие случилось, пока запрос летел) — слияние оставит его
-      if (response === null) return
       setPet((current) => {
         if (current === null) return current
         const merged = mergeRemoteSave(response.save, current, current.appearance, config)
@@ -187,6 +194,19 @@ useEffect(() => {
     const id = window.setTimeout(() => setNotice(null), 2600)
     return () => window.clearTimeout(id)
   }, [notice])
+
+  // звёзды дружбы: счётчик приглашённых дорос до порога — питомцу +звезда.
+  // Награда выводится из счётчика, поэтому идемпотентна и не теряется при слиянии
+  useEffect(() => {
+    if (pet === null || invited === null) return
+    const reward = applyReferralReward(pet, invited, config)
+    if (reward.tier <= pet.appearance.refMark) return
+    setPet({ ...reward.state, lastEventAt: Date.now() })
+    forceSyncRef.current = true
+    setNotice(str.inviteReward(reward.tier))
+    setCelebrate((n) => n + 1)
+    hapticSuccess()
+  }, [invited, pet, config])
 
   // праздник дружбы: тост и конфетти один раз на юбилейный день
   const anniversaryRef = useRef<number | null>(null)
@@ -323,6 +343,7 @@ useEffect(() => {
     pet,
     notice,
     celebrate,
+    invited,
     feedPet,
     playPet,
     washPet,
