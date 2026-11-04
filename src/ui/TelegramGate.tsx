@@ -6,7 +6,7 @@
  * Два случая: страница открыта совсем вне Telegram или в браузере Telegram,
  * но по прямой ссылке (мини-апп не запускался, initData пустой). В обоих
  * выход один — запустить мини-апп через бота; различается только текст.
- * Строка диагностики внизу помогает разобраться, почему гейт сработал.
+ * Строка диагностики внизу — только в dev: почему гейт сработал.
  */
 
 const webApp = window.Telegram?.WebApp
@@ -38,12 +38,14 @@ export default function TelegramGate() {
       )}
       {BOT_URL !== null && (
         <a className="gate-button" href={BOT_URL} target="_blank" rel="noreferrer">
-          Открыть в Telegram
+          Войти через Telegram
         </a>
       )}
-      <p className="gate-debug">
-        {webApp?.platform ?? 'нет SDK'} · initData: {webApp?.initData ? 'есть' : 'нет'}
-      </p>
+      {import.meta.env.DEV && (
+        <p className="gate-debug">
+          {webApp?.platform ?? 'нет SDK'} · initData: {webApp?.initData ? 'есть' : 'нет'}
+        </p>
+      )}
     </main>
   )
 }
