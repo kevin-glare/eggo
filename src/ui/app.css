@@ -457,54 +457,37 @@ body {
   white-space: nowrap;
 }
 
-/* Боковое меню: шторка справа поверх всего (тосты — z-index 10); фон-подложка
-   гасит сцену, панель выезжает transform'ом. pointer-events гасятся у корня,
-   чтобы закрытая шторка не ловила тапы */
+/* Экран меню: полноэкранный оверлей поверх всего (тосты — z-index 10),
+   выезжает снизу transform'ом. pointer-events и visibility гасятся у корня,
+   чтобы закрытый экран не ловил тапы и не попадал в tab-порядок */
 .menu-root {
   position: fixed;
   inset: 0;
   z-index: 30;
   pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear 240ms;
 }
 
 .menu-root.open {
   pointer-events: auto;
+  visibility: visible;
+  transition: none;
 }
 
-.menu-backdrop {
+.menu-screen {
   position: absolute;
   inset: 0;
-  padding: 0;
-  border: none;
-  background: rgba(12, 6, 26, 0.55);
-  opacity: 0;
-  transition: opacity 240ms ease-out;
-  cursor: pointer;
-}
-
-.menu-root.open .menu-backdrop {
-  opacity: 1;
-}
-
-.menu-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100dvh;
-  width: min(300px, 84vw);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 14px 12px;
+  padding: 14px 14px 12px;
   background: linear-gradient(180deg, #2c2046 0%, var(--bg-deep) 45%);
-  border-left: 1px solid var(--stroke);
-  box-shadow: -12px 0 32px rgba(10, 4, 24, 0.45);
-  transform: translateX(100%);
+  transform: translateY(100%);
   transition: transform 240ms ease-out;
 }
 
-.menu-root.open .menu-panel {
-  transform: translateX(0);
+.menu-root.open .menu-screen {
+  transform: translateY(0);
 }
 
 .menu-head {
@@ -515,8 +498,20 @@ body {
   min-width: 0;
 }
 
+.menu-title {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
 .menu-profile {
   min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--stroke);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  box-shadow: inset 0 1px 0 var(--sheen);
 }
 
 .menu-profile-name {
@@ -533,6 +528,37 @@ body {
   margin: 2px 0 0;
   font-size: 12.5px;
   color: var(--muted);
+}
+
+/* прокручиваемое тело экрана — запас на рост списка пунктов */
+.menu-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.menu-section {
+  margin: 6px 4px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* подэкран: ряд «Назад» + карточка на всю ширину меню */
+.menu-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-sub .invite,
+.menu-sub .help {
+  max-width: none;
 }
 
 .menu-rows {

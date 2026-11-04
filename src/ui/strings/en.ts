@@ -108,9 +108,12 @@ export const en: Strings = {
   inviteShare: 'Share the link',
   inviteReward: (n: number) => `✨ Your pet earned ${n} friendship star${n === 1 ? '' : 's'} — thank you!`,
 
-  // --- side menu ---
+  // --- menu screen ---
   menuAria: 'Menu',
   menuClose: 'Close',
+  menuBack: 'Back',
+  menuSettings: 'Settings',
+  menuMore: 'More',
   menuNotifOn: 'Notifications on',
   menuNotifOff: 'Notifications off',
   menuChannel: 'Our channel',

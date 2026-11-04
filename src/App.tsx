@@ -7,18 +7,16 @@ import { desire, getMood } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
-import InvitePanel from './ui/InvitePanel'
 import { getStrings } from './ui/i18n'
 import { isRequestHintDone } from './ui/hints'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
 import { track } from './metrika'
-import { referralLink, tg } from './telegram'
+import { hapticTap, referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
-import AppMenu from './ui/AppMenu'
-import HelpPanel from './ui/HelpPanel'
+import MenuScreen from './ui/MenuScreen'
 import { version as APP_VERSION } from '../package.json'
 import './ui/app.css'
 
@@ -73,15 +71,8 @@ export default function App() {
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
-  // боковое меню и карточки-объяснения; открытие одной закрывает другую
+  // полноэкранный экран меню; «Позови друга» и «Как играть» — подэкраны внутри
   const [menuOpen, setMenuOpen] = useState(false)
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
-  const openPanel = (panel: 'invite' | 'help') => {
-    setMenuOpen(false)
-    setInviteOpen(panel === 'invite')
-    setHelpOpen(panel === 'help')
-  }
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
@@ -204,6 +195,7 @@ export default function App() {
                 className="tool-btn"
                 onClick={() => {
                   track('menu-open')
+                  hapticTap()
                   setMenuOpen(true)
                 }}
                 aria-label={str.menuAria}
@@ -247,16 +239,6 @@ export default function App() {
           {pet.stage !== 'egg' && pet.daily && (
             <QuestsBar daily={pet.daily} targets={config.quests.targets} onClaim={onClaim} onExplain={showNotice} />
           )}
-          {inviteOpen && (
-            <InvitePanel
-              invited={invited}
-              stars={pet.appearance.refMark}
-              milestones={config.referrals.milestones}
-              onShare={shareEggo}
-              onClose={() => setInviteOpen(false)}
-            />
-          )}
-          {helpOpen && <HelpPanel onClose={() => setHelpOpen(false)} />}
           <StatsBar stats={pet.stats} lowBelow={config.criticalThreshold} />
           <ActionsBar
             isEgg={pet.stage === 'egg'}
@@ -303,9 +285,9 @@ export default function App() {
         </div>
       )}
 
-      {/* боковое меню: фиксированный оверлей, из потока layout'а не выпадает */}
+      {/* экран меню: фиксированный оверлей, из потока layout'а не выпадает */}
       {!isCreating && (
-        <AppMenu
+        <MenuScreen
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
           pet={pet}
@@ -313,24 +295,20 @@ export default function App() {
           notifEnabled={notifEnabled}
           notifBusy={notifBusy}
           onToggleNotifications={() => void toggleNotifications()}
-          onInvite={() => {
-            track('invite-open')
-            openPanel('invite')
-          }}
-          onHelp={() => {
-            track('help-open')
-            openPanel('help')
-          }}
+          onShare={shareEggo}
           onChannel={() => {
             track('channel')
             openTgLink(CHANNEL_URL)
           }}
           onAuthor={() => {
-            if (AUTHOR_URL === null) return
-            track('author')
-            openTgLink(AUTHOR_URL)
+            if (AUTHOR_URL !== null) {
+              track('author')
+              openTgLink(AUTHOR_URL)
+            }
           }}
           authorUrl={AUTHOR_URL}
+          invited={invited}
+          milestones={config.referrals.milestones}
           version={APP_VERSION}
         />
       )}

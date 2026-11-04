@@ -152,9 +152,12 @@ export const ru = {
   inviteShare: 'Поделиться ссылкой',
   inviteReward: (n: number) => `✨ У питомца ${n} ${pluralStars(n)} дружбы — спасибо!`,
 
-  // --- боковое меню ---
+  // --- экран меню ---
   menuAria: 'Меню',
   menuClose: 'Закрыть',
+  menuBack: 'Назад',
+  menuSettings: 'Настройки',
+  menuMore: 'Ещё',
   menuNotifOn: 'Уведомления включены',
   menuNotifOff: 'Уведомления выключены',
   menuChannel: 'Наш канал',
