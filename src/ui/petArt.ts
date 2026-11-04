@@ -183,12 +183,20 @@ export function drawPet(
   const bob = v.bob + v.jumpY
   const palette = PET_PALETTES[look.palette]
 
-  // тень на земле: в прыжке уменьшается
+  // мягкая тень контакта: плотный центр, растушёванный край; в прыжке уменьшается
   const shadowScale = Math.max(0.45, 1 + v.jumpY / 120)
+  const sw = 52 * shadowScale * v.hatchPop
+  const shh = 10 * shadowScale
   ctx.save()
-  ctx.fillStyle = 'rgba(12, 6, 24, 0.45)'
+  ctx.translate(cx, GROUND_Y + 6)
+  ctx.scale(1, shh / sw)
+  const shadow = ctx.createRadialGradient(0, 0, 0, 0, 0, sw)
+  shadow.addColorStop(0, 'rgba(12, 6, 24, 0.42)')
+  shadow.addColorStop(0.65, 'rgba(12, 6, 24, 0.3)')
+  shadow.addColorStop(1, 'rgba(12, 6, 24, 0)')
+  ctx.fillStyle = shadow
   ctx.beginPath()
-  ctx.ellipse(cx, GROUND_Y + 6, 48 * shadowScale * v.hatchPop, 9 * shadowScale, 0, 0, Math.PI * 2)
+  ctx.arc(0, 0, sw, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 
@@ -239,10 +247,13 @@ function drawCreature(
   // «носочки» — тёмные стопы — красятся при отрисовке ног
   drawLegs(ctx, d, faceScale, look.legs, p, look.spots === 'socks')
 
-  // тело с вертикальным градиентом объёма
-  const body = ctx.createLinearGradient(0, cy - ry, 0, cy + ry)
+  // тело: радиальный свет из верхне-левого источника — объём «виниловой игрушки»
+  const body = ctx.createRadialGradient(
+    -rx * 0.35, cy - ry * 0.45, Math.max(rx, ry) * 0.12,
+    0, cy + ry * 0.12, Math.max(rx, ry) * 1.3,
+  )
   body.addColorStop(0, p.bodyLight)
-  body.addColorStop(0.5, p.bodyMid)
+  body.addColorStop(0.55, p.bodyMid)
   body.addColorStop(1, p.bodyShade)
   ctx.beginPath()
   ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
@@ -252,7 +263,20 @@ function drawCreature(
   ctx.lineWidth = 3
   ctx.stroke()
 
-  // животик и блик
+  // rim light: свет сцены оборачивается по нижне-правому краю тела
+  ctx.save()
+  ctx.beginPath()
+  ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.globalAlpha = 0.38
+  ctx.strokeStyle = p.bodyLight
+  ctx.lineWidth = 6
+  ctx.beginPath()
+  ctx.ellipse(rx * 0.1, cy + ry * 0.12, rx, ry, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+
+  // животик и блики: широкое пятно + маленький «глазок» яркого отражения
   ctx.fillStyle = 'rgba(255, 248, 235, 0.55)'
   ctx.beginPath()
   ctx.ellipse(0, cy + ry * 0.28, rx * 0.52 * shape.belly, ry * 0.38 * shape.belly, 0, 0, Math.PI * 2)
@@ -260,6 +284,10 @@ function drawCreature(
   ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
   ctx.beginPath()
   ctx.ellipse(-rx * 0.34, cy - ry * 0.55, rx * 0.3, ry * 0.16, -0.4, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+  ctx.beginPath()
+  ctx.ellipse(-rx * 0.46, cy - ry * 0.66, rx * 0.09, ry * 0.055, -0.5, 0, Math.PI * 2)
   ctx.fill()
 
   drawSpots(ctx, look, rx, ry, cy, p)
@@ -733,8 +761,13 @@ function drawEgg(ctx: CanvasRenderingContext2D, progress: number, p: PetPalette)
   const rx = 40
   const ry = 52
   const cy = -ry
-  const grad = ctx.createLinearGradient(0, cy - ry, 0, cy + ry)
+  // радиальный свет из верхне-левого источника — глянец виниловой игрушки
+  const grad = ctx.createRadialGradient(
+    -rx * 0.35, cy - ry * 0.45, rx * 0.12,
+    0, cy + ry * 0.12, Math.max(rx, ry) * 1.3,
+  )
   grad.addColorStop(0, p.bodyLight)
+  grad.addColorStop(0.55, p.bodyMid)
   grad.addColorStop(1, p.bodyShade)
   ctx.beginPath()
   ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
@@ -743,6 +776,33 @@ function drawEgg(ctx: CanvasRenderingContext2D, progress: number, p: PetPalette)
   ctx.strokeStyle = p.outline
   ctx.lineWidth = 3
   ctx.stroke()
+
+  // rim light по нижне-правому краю скорлупы
+  ctx.save()
+  ctx.beginPath()
+  ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.globalAlpha = 0.4
+  ctx.strokeStyle = p.bodyLight
+  ctx.lineWidth = 6
+  ctx.beginPath()
+  ctx.ellipse(rx * 0.1, cy + ry * 0.12, rx, ry, 0, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.restore()
+
+  // вертикальная полоса спекуляра — отражение неба на глянцевой скорлупе
+  ctx.save()
+  ctx.translate(-rx * 0.3, cy - ry * 0.12)
+  ctx.rotate(-0.28)
+  const spec = ctx.createLinearGradient(0, -ry * 0.45, 0, ry * 0.25)
+  spec.addColorStop(0, 'rgba(255, 255, 255, 0)')
+  spec.addColorStop(0.45, 'rgba(255, 255, 255, 0.55)')
+  spec.addColorStop(1, 'rgba(255, 255, 255, 0)')
+  ctx.fillStyle = spec
+  ctx.beginPath()
+  ctx.ellipse(0, 0, rx * 0.2, ry * 0.42, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
 
   ctx.fillStyle = p.bodyShade
   ctx.globalAlpha = 0.55
