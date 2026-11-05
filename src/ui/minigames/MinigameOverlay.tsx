@@ -136,7 +136,18 @@ export default function MinigameOverlay({
         <header className="mg-head">
           <p className="mg-title">{str.game[id].title}</p>
           {playing && (
-            <button type="button" className="tool-btn" onClick={resume} aria-label={str.mgPause}>
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => {
+                if (paused) resume()
+                else {
+                  hapticTap()
+                  setPaused(true)
+                }
+              }}
+              aria-label={paused ? str.mgResume : str.mgPause}
+            >
               {paused ? '▶️' : '⏸'}
             </button>
           )}

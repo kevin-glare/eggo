@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
-import { feed, feedCatch, play, wash } from './game/actions'
+import { feed, play, wash } from './game/actions'
 import { AVAILABLE_MINIGAMES, pickMinigame } from './game/minigames'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
@@ -15,7 +15,7 @@ import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
 import { track } from './metrika'
-import { hapticTap, referralLink, tg } from './telegram'
+import { hapticTap, hapticWarning, referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
 import MenuScreen from './ui/MenuScreen'
@@ -83,8 +83,8 @@ export default function App() {
     if (scene !== null || pet === null) return
     // перекорм: питомец отдыхает после объедения — мягкий отказ вместо сессии
     if (pet.overfedUntil > Date.now()) {
-      feedCatch(pet, 0, config, Date.now())
-      feedPet()
+      showNotice(str.reason.overfed)
+      hapticWarning()
       return
     }
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
