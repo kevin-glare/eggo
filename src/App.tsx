@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
-import { feed, play, wash } from './game/actions'
+import { feed, feedCatch, play, wash } from './game/actions'
 import { AVAILABLE_MINIGAMES, pickMinigame } from './game/minigames'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
@@ -52,6 +52,7 @@ export default function App() {
     playPet,
     washPet,
     finishMinigame,
+    finishFeeding,
     petPet,
     claimDaily,
     showNotice,
@@ -80,6 +81,12 @@ export default function App() {
   const [minigameResult, setMinigameResult] = useState<MinigameResultView | null>(null)
   const onFeed = () => {
     if (scene !== null || pet === null) return
+    // перекорм: питомец отдыхает после объедения — мягкий отказ вместо сессии
+    if (pet.overfedUntil > Date.now()) {
+      feedCatch(pet, 0, config, Date.now())
+      feedPet()
+      return
+    }
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
     if (!feed(pet, config).ok) {
       feedPet()
@@ -88,10 +95,10 @@ export default function App() {
     setScene('feed')
   }
   // сценка доиграла: действие применяется один раз, здесь
-  const onSceneComplete = (kind: PetActionKind) => {
+  const onSceneComplete = (kind: PetActionKind, data?: { caught?: number }) => {
     setScene(null)
     track(kind)
-    if (kind === 'feed') feedPet()
+    if (kind === 'feed') finishFeeding(data?.caught ?? 0)
     else if (kind === 'wash') washPet()
   }
   const onPlay = () => {
@@ -228,6 +235,8 @@ export default function App() {
               }}
               scene={scene}
               onSceneComplete={onSceneComplete}
+              feeding={config.feeding}
+              fullness={pet.stats.fullness}
               celebrate={celebrate}
               cake={anniversary}
             />

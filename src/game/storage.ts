@@ -95,6 +95,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       request: normalizeRequest(pet.request),
       nextRequestAt: typeof pet.nextRequestAt === 'number' && pet.nextRequestAt >= 0 ? pet.nextRequestAt : 0,
       minigameBest: normalizeMinigameBest(pet.minigameBest),
+      // перекорм появился позже сейва v1: отсутствие — питомец не объедался
+      overfedUntil: typeof pet.overfedUntil === 'number' && pet.overfedUntil >= 0 ? pet.overfedUntil : 0,
     }
   } catch {
     return null
@@ -177,6 +179,8 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     // рекорды, как статы, — детерминированное поле: берём по максимуму,
     // чтобы лучший счёт с любого девайса не затирался
     minigameBest: mergeMinigameBest(caughtNewer.minigameBest, caughtOlder.minigameBest),
+    // перерыв после объедения тоже по максимуму: отсиденный на другом девайсе
+    overfedUntil: Math.max(caughtNewer.overfedUntil, caughtOlder.overfedUntil),
     lastTickAt: timeline,
   }
 }

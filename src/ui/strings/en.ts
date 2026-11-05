@@ -40,6 +40,7 @@ export const en: Strings = {
     'already-clean': '✨ Already sparkling clean',
     'already-named': '🏷️ Already named — no renaming',
     'invalid-name': '✏️ 1 to 16 characters',
+    overfed: '😴 Too full — resting, feed later',
   },
   actionSuccess: { feed: '🍗 Yum-yum!', play: '😄 That was fun!', wash: '🛁 Squeaky clean!', pet: '💗 Purr-purr!' },
   sleepStart: '😴 Good night!',
@@ -83,7 +84,7 @@ export const en: Strings = {
   questClaimAria: 'Claim the daily reward',
   questClaimedAria: 'Reward claimed',
 
-  sceneHint: { feed: 'Tap the food!', wash: 'Rub the pet with your finger' },
+  sceneHint: { feedCatch: 'Tap — Eggo will run for the food!', wash: 'Rub the pet with your finger' },
 
   // --- minigames (the “Play” button) ---
   mgPause: 'Pause',
@@ -112,6 +113,9 @@ export const en: Strings = {
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
   requestBonus: (name: string) => `✨ Request fulfilled — ${name} is delighted!`,
+
+  // --- catch-the-food feeding ---
+  overfed: '🤢 Eggo overate! It will rest a bit now',
 
   notifOn: '🔔 Notifications on',
   notifOff: '🔕 Notifications off',

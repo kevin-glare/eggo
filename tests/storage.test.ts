@@ -118,6 +118,14 @@ describe('serialize / deserialize', () => {
     const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.minigameBest).toEqual({ memory: 42 })
   })
+
+  it('старый сейв без перекорма → overfedUntil: 0', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, { overfedUntil: 123 })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.overfedUntil
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.overfedUntil).toBe(0)
+  })
 })
 
 describe('catchUp — оффлайн-время', () => {
@@ -227,6 +235,13 @@ describe('mergeStates — слияние состояний одного пит�
     const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, minigameBest: { memory: 30, snake: 9 } })
     expect(mergeStates(a, b, DEFAULT_CONFIG).minigameBest).toEqual({ memory: 70, runner: 5, snake: 9 })
     expect(mergeStates(b, a, DEFAULT_CONFIG).minigameBest).toEqual({ memory: 70, runner: 5, snake: 9 })
+  })
+
+  it('перерыв после объедения живёт по максимуму: отсиденный на другом девайсе не сокращается', () => {
+    const a = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, overfedUntil: 9 * HOUR })
+    const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, overfedUntil: 5 * HOUR })
+    expect(mergeStates(a, b, DEFAULT_CONFIG).overfedUntil).toBe(9 * HOUR)
+    expect(mergeStates(b, a, DEFAULT_CONFIG).overfedUntil).toBe(9 * HOUR)
   })
 })
 

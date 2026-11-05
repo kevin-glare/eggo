@@ -97,6 +97,29 @@ export interface GameConfig {
     /** награда сверх базовой радости play(): за победу и за новый рекорд */
     reward: { winBonus: number; recordBonus: number }
   }
+  /** кормление-ловля: темп падения еды, поимка, серии, перекорм */
+  feeding: {
+    /** +сытости за пойманную еду */
+    perFood: number
+    /** предметов за одну сессию */
+    spawnCount: number
+    /** мс между предметами */
+    spawnIntervalMs: number
+    /** скорость падения, px/с */
+    fallSpeed: number
+    /** половина ширины зоны поимки, px */
+    catchHalfWidth: number
+    /** скорость бега к тапу, px/с */
+    runSpeed: number
+    /** доля несъедобного (0..1) — дезориентирует питомца */
+    junkChance: number
+    /** серия пойманных подряд для усиленной радости */
+    streakN: number
+    /** ступор от несъедобного, мс */
+    stunMs: number
+    /** перекорм: перерыв после объедения (реальное время) */
+    overfedMs: number
+  }
   /** праздничные темы оформления: окна по (месяц, день) включительно; откат темы — enabled: false */
   holidays: HolidayWindows
   /** пуши от бота: пороги и кулдауны (логика — game/notifications.ts) */
@@ -180,6 +203,20 @@ export const DEFAULT_CONFIG: GameConfig = {
     bubbles: { winScore: 300, riseMs: 6_500, colors: 4, minGroup: 3, cols: 8, rows: 10 },
     reward: { winBonus: 6, recordBonus: 4 },
   },
+  // кормление-ловля: 8 еды × ~5-6 пойманных ≈ прежняя сытость +25..40 за сессию
+  // в ~15 секунд; несъедобного четверть, ступор 1.2 с; перекорм — 10 минут отдыха
+  feeding: {
+    perFood: 8,
+    spawnCount: 6,
+    spawnIntervalMs: 1_500,
+    fallSpeed: 95,
+    catchHalfWidth: 42,
+    runSpeed: 150,
+    junkChance: 0.25,
+    streakN: 3,
+    stunMs: 1_200,
+    overfedMs: 10 * MINUTE,
+  },
   // Хэллоуин: с 24 октября по 2 ноября
   holidays: {
     halloween: { enabled: true, from: [10, 24], to: [11, 2] },
@@ -208,4 +245,6 @@ export const DEV_CONFIG: GameConfig = {
   // просьбы живут в реальном времени — timeScale на них не влияет,
   // поэтому в dev они короткие, чтобы механику было видно за сессию
   requests: { bonusMultiplier: 2, windowMs: 2 * MINUTE, cooldownMs: MINUTE, firstDelayMs: 15_000 },
+  // перерыв после объедения тоже реальный: в dev — 20 секунд, чтобы увидеть механику
+  feeding: { ...DEFAULT_CONFIG.feeding, overfedMs: 20_000 },
 }

@@ -10,6 +10,7 @@ export type ActionReason =
   | 'already-clean'
   | 'already-named'
   | 'invalid-name'
+  | 'overfed'
 
 export interface ActionResult {
   state: PetState
@@ -54,6 +55,33 @@ export function feed(state: PetState, config: GameConfig): ActionResult {
   // просьбу закрывает только «своё» действие; паузу до следующей ставит usePet
   if (!matched) return result
   return { ...result, state: { ...result.state, request: null }, requestBonus: true }
+}
+
+/**
+ * Итог сессии кормления-ловли: сытость капает за каждую пойманную еду.
+ * Добил сытость до сотни — объелся: питомец получает перерыв (overfedUntil),
+ * кнопка «Покормить» в это время отвечает мягким отказом.
+ */
+export function feedCatch(state: PetState, caught: number, config: GameConfig, nowMs: number): ActionResult {
+  const blocked = guardAwake(state)
+  if (blocked) return blocked
+  if (state.overfedUntil > nowMs) return fail(state, 'overfed')
+  if (caught <= 0) return ok(state)
+  const matched = state.request?.kind === 'feed'
+  const gain = caught * config.feeding.perFood * (matched ? config.requests.bonusMultiplier : 1)
+  const target = state.stats.fullness + gain
+  const fullness = clampStat(target)
+  // объелся только если сотня была пробита изнутри, а не стояла с порога
+  const overfed = target > 100 && state.stats.fullness < 100
+  let next: PetState = {
+    ...state,
+    stats: { ...state.stats, fullness },
+    overfedUntil: overfed ? nowMs + config.feeding.overfedMs : state.overfedUntil,
+  }
+  // просьбу закрывает только «своё» действие; паузу до следующей ставит usePet
+  if (!matched) return ok(next)
+  next = { ...next, request: null }
+  return { state: next, ok: true, requestBonus: true }
 }
 
 export function play(state: PetState, config: GameConfig): ActionResult {

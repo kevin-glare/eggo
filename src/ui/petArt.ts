@@ -86,6 +86,14 @@ export interface PetVisualState {
   dirtAlpha: number
   /** смещение по лугу от центра (px); твинит машина блуждания в PetCanvas */
   wanderX: number
+  /** 0..1 — открытый рот (ловит еду в кормлении-ловле) */
+  mouthOpen: number
+  /** 0..1 — уши прижаты (грусть, вялость после объедения) */
+  earDroop: number
+  /** румянец: 1 — обычный, выше — восторг */
+  blushAlpha: number
+  /** 0..1 — головокружение: звёзды над головой (ловил несъедобное) */
+  dizzy: number
 }
 
 export function createVisualState(): PetVisualState {
@@ -103,6 +111,10 @@ export function createVisualState(): PetVisualState {
     wiggle: 0,
     dirtAlpha: 0,
     wanderX: 0,
+    mouthOpen: 0,
+    earDroop: 0,
+    blushAlpha: 1,
+    dizzy: 0,
   }
 }
 
@@ -219,7 +231,7 @@ export function drawPet(
   if (stage === 'egg') {
     drawEgg(ctx, eggProgress, EGG_PALETTE)
   } else {
-    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v.blink, tMs, dirtLevel, v.dirtAlpha)
+    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v, tMs, dirtLevel)
   }
   ctx.restore()
 }
@@ -230,11 +242,12 @@ function drawCreature(
   look: PetAppearance,
   p: PetPalette,
   mood: Mood,
-  blink: number,
+  v: PetVisualState,
   tMs: number,
   dirtLevel: DirtLevel,
-  dirtAlpha: number,
 ): void {
+  const blink = v.blink
+  const dirtAlpha = v.dirtAlpha
   const shape = BODY_SHAPE_SCALE[look.body]
   const rx = d.rx * shape.rx
   const ry = d.ry * shape.ry
@@ -242,7 +255,7 @@ function drawCreature(
   // черты лица и лапы расползаются вместе с шириной тела
   const faceScale = rx / d.rx
 
-  drawEars(ctx, d, rx, ry, cy, look.ears, p)
+  drawEars(ctx, d, rx, ry, cy, look.ears, p, v.earDroop)
   drawArms(ctx, d, rx, ry, cy, look.arms, p)
   // «носочки» — тёмные стопы — красятся при отрисовке ног
   drawLegs(ctx, d, faceScale, look.legs, p, look.spots === 'socks')
@@ -299,7 +312,7 @@ function drawCreature(
   drawEye(ctx, -eyeDX, cy + d.eyeDY, d.eyeR, mood, blink, look.eyes, p)
   drawEye(ctx, eyeDX, cy + d.eyeDY, d.eyeR, mood, blink, look.eyes, p)
   ctx.fillStyle = p.blush
-  ctx.globalAlpha = 0.5
+  ctx.globalAlpha = Math.min(1, 0.5 * v.blushAlpha)
   for (const side of [-1, 1]) {
     ctx.beginPath()
     ctx.ellipse(side * d.blushDX * faceScale, cy + d.blushY, 8, 5, 0, 0, Math.PI * 2)
@@ -319,9 +332,10 @@ function drawCreature(
     }
   }
   drawNose(ctx, cy + d.eyeDY + d.eyeR * 0.9, look.nose)
-  drawMouth(ctx, cy + d.mouthY, mood, p)
+  drawMouth(ctx, cy + d.mouthY, mood, p, v.mouthOpen)
 
   if (mood === 'sick') drawSweat(ctx, rx * 0.6, cy - ry * 0.85, tMs)
+  if (v.dizzy > 0.02) drawDizzyStars(ctx, cy, ry, tMs, v.dizzy)
   drawFlies(ctx, cy, ry, dirtLevel, dirtAlpha, tMs)
 }
 
@@ -409,6 +423,7 @@ function drawEars(
   cy: number,
   kind: EarKind,
   p: PetPalette,
+  droop: number,
 ): void {
   ctx.lineJoin = 'round'
   if (kind === 'tuft') {
@@ -420,14 +435,15 @@ function drawEars(
   ctx.lineWidth = 2.5
   for (const side of [-1, 1]) {
     if (kind === 'round') {
+      // прижатые уши съезжают вниз и в стороны
       ctx.beginPath()
-      ctx.arc(side * rx * 0.5, cy - ry + 10, d.earW * 1.6, 0, Math.PI * 2)
+      ctx.arc(side * (rx * 0.5 + droop * 6), cy - ry + 10 + droop * 9, d.earW * 1.6, 0, Math.PI * 2)
       ctx.fill()
       ctx.stroke()
     } else if (kind === 'long') {
       ctx.save()
-      ctx.translate(side * rx * 0.45, cy - ry + 8)
-      ctx.rotate(side * 0.35)
+      ctx.translate(side * rx * 0.45, cy - ry + 8 + droop * 8)
+      ctx.rotate(side * (0.35 + droop * 0.85))
       roundedRectPath(ctx, -d.earW / 2, -d.earLen * 1.4, d.earW, d.earLen * 1.4, d.earW / 2)
       ctx.fill()
       ctx.stroke()
@@ -435,8 +451,8 @@ function drawEars(
     } else {
       // droopy: висячие уши по бокам макушки
       ctx.save()
-      ctx.translate(side * rx * 0.72, cy - ry * 0.55)
-      ctx.rotate(side * 0.55)
+      ctx.translate(side * rx * 0.72, cy - ry * 0.55 + droop * 7)
+      ctx.rotate(side * (0.55 + droop * 0.7))
       ctx.beginPath()
       ctx.ellipse(0, d.earLen * 0.45, d.earW * 0.8, d.earLen * 0.75, 0, 0, Math.PI * 2)
       ctx.fill()
@@ -724,10 +740,26 @@ function drawEye(
   ctx.restore()
 }
 
-function drawMouth(ctx: CanvasRenderingContext2D, my: number, mood: Mood, p: PetPalette): void {
+function drawMouth(ctx: CanvasRenderingContext2D, my: number, mood: Mood, p: PetPalette, mouthOpen: number): void {
   ctx.save()
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
+  // открытый рот — ловит еду: важнее настроения
+  if (mouthOpen > 0.05) {
+    ctx.beginPath()
+    ctx.ellipse(0, my + 2, 10 + mouthOpen * 4, 4 + mouthOpen * 9, 0, 0, Math.PI * 2)
+    ctx.fillStyle = INK.mouth
+    ctx.fill()
+    if (mouthOpen > 0.4) {
+      // язычок в открытом рту
+      ctx.beginPath()
+      ctx.ellipse(0, my + 4 + mouthOpen * 4, 5, 3 * mouthOpen, 0, 0, Math.PI * 2)
+      ctx.fillStyle = INK.tongue
+      ctx.fill()
+    }
+    ctx.restore()
+    return
+  }
   if (mood === 'happy') {
     ctx.beginPath()
     ctx.arc(0, my - 6, 13, 0.15 * Math.PI, 0.85 * Math.PI)
@@ -782,6 +814,37 @@ function drawSweat(ctx: CanvasRenderingContext2D, x: number, y: number, tMs: num
   ctx.quadraticCurveTo(x - 6, y + dy + 1, x, y + dy - 9)
   ctx.fill()
   ctx.restore()
+}
+
+/** Звёзды-головокружение: кружат над головой, пока питомец оглушён. */
+function drawDizzyStars(ctx: CanvasRenderingContext2D, cy: number, ry: number, tMs: number, dizzy: number): void {
+  ctx.save()
+  ctx.globalAlpha = Math.min(1, dizzy)
+  ctx.fillStyle = '#ffd76a'
+  ctx.strokeStyle = '#c9931f'
+  ctx.lineWidth = 1
+  for (let i = 0; i < 3; i++) {
+    const angle = tMs / 300 + (i * Math.PI * 2) / 3
+    const x = Math.cos(angle) * 26
+    const y = cy - ry - 16 + Math.sin(angle) * 7
+    drawStar(ctx, x, y, 5)
+  }
+  ctx.restore()
+}
+
+function drawStar(ctx: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+  ctx.beginPath()
+  for (let i = 0; i < 10; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.45
+    const a = -Math.PI / 2 + (i * Math.PI) / 5
+    const px = x + Math.cos(a) * rad
+    const py = y + Math.sin(a) * rad
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
 }
 
 /** Яйцо окрашено палитрой будущего питомца — цвет виден ещё до вылупления. */

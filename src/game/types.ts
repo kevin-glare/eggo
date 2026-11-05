@@ -63,4 +63,6 @@ export interface PetState {
   nextRequestAt: number
   /** рекорды мини-игр: лучший счёт каждой; у старых сейвов пусто (нормализуется) */
   minigameBest: Partial<Record<MinigameId, number>>
+  /** до какого реального момента питомец отдыхает после объедения (мс, epoch); 0 — не объедался */
+  overfedUntil: number
 }

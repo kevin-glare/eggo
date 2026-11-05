@@ -18,6 +18,7 @@ import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storag
 import type { PetState } from '../game/types'
 import type { MinigameId, MinigameOutcome } from '../game/minigames/types'
 import { applyMinigameBonus, minigameBonus, recordMinigameScore } from '../game/minigames/reward'
+import { feedCatch } from '../game/actions'
 import { updateRequest } from '../game/requests'
 import { applyReferralReward } from '../game/referrals'
 import { useStrings } from './i18n'
@@ -331,6 +332,19 @@ useEffect(() => {
   const showNotice = useCallback((text: string) => setNotice(text), [])
 
   /**
+   * Сессия кормления-ловли доиграла: сытость капает за пойманное (просьба ×2,
+   * квест, серия — как у обычного кормления). Добил сытость до сотни —
+   * питомец объелся: перерыв в сейве и мягкий тост.
+   */
+  const finishFeeding = useCallback(
+    (caught: number) => {
+      const result = apply((p, c) => feedCatch(p, caught, c, Date.now()), str.actionSuccess.feed, 'feed')
+      if (result?.ok && result.state.overfedUntil > Date.now()) setNotice(str.overfed)
+    },
+    [apply, str],
+  )
+
+  /**
    * Дать имя питомцу: без имени игра не начинается.
    * Работает и для свежего яйца, и для старого безымянного сейва.
    */
@@ -384,6 +398,7 @@ useEffect(() => {
     playPet,
     washPet,
     finishMinigame,
+    finishFeeding,
     petPet,
     claimDaily,
     showNotice,
