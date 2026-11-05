@@ -139,14 +139,13 @@ export default function MenuScreen({
             <>
               <div className="menu-profile">
                 <PetBadge stage={pet.stage} mood={mood} appearance={pet.appearance} className="menu-avatar" />
-                <div className="menu-profile-text">
-                  <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
-                  <p className="menu-profile-meta">
+                <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                <div className="menu-profile-right">
+                  <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
+                  <p className="menu-profile-age">
                     {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
                   </p>
                 </div>
-                {/* стадия — у правого края карточки */}
-                <span className="menu-profile-stage">{str.stage[pet.stage]}</span>
               </div>
               <p className="menu-section">{str.menuSettings}</p>
               <nav className="menu-rows">
