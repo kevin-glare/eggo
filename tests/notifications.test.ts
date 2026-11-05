@@ -10,6 +10,42 @@ const DAY_HOUR = 14 // день: тихие часы не вмешиваются
 /** Отметка «взросление уже поздравляли» — воркер ставит её при включении пушей. */
 const GROWN_SEEN: SentNotifications = { 'grown:baby': 1 }
 
+describe('pendingNotifications — инструкция «что делать»', () => {
+  /** Собрать по одному пушу каждого вида и проверить, что все несут инструкцию. */
+  it('каждый пуш объясняет, что делать игроку', () => {
+    const texts: string[] = []
+    // беда по шкалам и болезнь
+    texts.push(...pendingNotifications(hatchedPet(config, {}, { fullness: 20 }), NOW, config, NOW - HOUR, {}, DAY_HOUR).map((n) => n.text))
+    texts.push(...pendingNotifications(hatchedPet(config, { sick: true }), NOW, config, NOW - 7 * HOUR, { critical: NOW - 7 * HOUR }, DAY_HOUR).map((n) => n.text))
+    // взросление, выспался, пора спать, скучаем
+    texts.push(...pendingNotifications(hatchedPet(config, { stage: 'teen' }), NOW, config, NOW - HOUR, {}, DAY_HOUR).map((n) => n.text))
+    texts.push(...pendingNotifications(hatchedPet(config, { sleeping: true }, { energy: 100 }), NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR).map((n) => n.text))
+    texts.push(...pendingNotifications(hatchedPet(config, {}, { energy: 30 }), NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR).map((n) => n.text))
+    texts.push(...pendingNotifications(hatchedPet(config), NOW, config, NOW - 30 * HOUR, GROWN_SEEN, DAY_HOUR).map((n) => n.text))
+    expect(texts.length).toBeGreaterThanOrEqual(6)
+    for (const text of texts) {
+      expect(text).toContain('Что делать:')
+      // инструкция стоит во второй строке, после пустой строки
+      expect(text.split('\n\n').length).toBeGreaterThanOrEqual(2)
+    }
+  })
+
+  it('беде по шкалам соответствуют действия тех же кнопок', () => {
+    const pet = hatchedPet(config, {}, { fullness: 20, happiness: 20, cleanliness: 20 })
+    const text = pendingNotifications(pet, NOW, config, NOW - HOUR, {}, DAY_HOUR)[0]?.text ?? ''
+    expect(text).toContain('покорми')
+    expect(text).toContain('поиграй')
+    expect(text).toContain('помой')
+  })
+
+  it('выспавшемуся подсказана кнопка «Разбудить», сонному — «Спать»', () => {
+    const slept = pendingNotifications(hatchedPet(config, { sleeping: true }, { energy: 100 }), NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)[0]?.text ?? ''
+    expect(slept).toContain('«Разбудить»')
+    const sleepy = pendingNotifications(hatchedPet(config, {}, { energy: 30 }), NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)[0]?.text ?? ''
+    expect(sleepy).toContain('«Спать»')
+  })
+})
+
 describe('pendingNotifications — «питомец в беде»', () => {
   it('критическая шкала → пуш с причиной', () => {
     const pet = hatchedPet(config, {}, { fullness: 20 })
