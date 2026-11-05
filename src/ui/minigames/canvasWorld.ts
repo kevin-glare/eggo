@@ -139,3 +139,27 @@ export function drawScoreChip(ctx: CanvasRenderingContext2D, score: string, x: n
   ctx.fillText(score, x + w / 2, y + 16)
   ctx.restore()
 }
+
+/**
+ * Подсказка-плашка по центру: стеклянная пилюля с инструкцией действия.
+ * Тает сама — рисуй, пока alpha > 0.
+ */
+export function drawPill(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number, alpha: number): void {
+  if (alpha <= 0.02) return
+  ctx.save()
+  ctx.globalAlpha = Math.min(1, alpha)
+  ctx.font = '700 16px Nunito, system-ui, sans-serif'
+  const w = ctx.measureText(text).width + 30
+  ctx.fillStyle = 'rgba(26, 16, 46, 0.66)'
+  ctx.beginPath()
+  roundRectPath(ctx, cx - w / 2, cy - 17, w, 34, 17)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(255, 215, 106, 0.5)'
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+  ctx.fillStyle = '#fffdf6'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, cx, cy + 1)
+  ctx.restore()
+}

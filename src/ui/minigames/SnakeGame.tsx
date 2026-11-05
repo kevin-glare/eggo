@@ -3,10 +3,11 @@ import type { GameConfig } from '../../game/config'
 import { createSnake, snakeScore, stepSnake, turnSnake, type SnakeDir, type SnakeState } from '../../game/minigames/snake'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { getStrings } from '../i18n'
 import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import type { PetAppearance } from '../../game/appearance'
-import { applyWorld, canvasWorldSize, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
+import { applyWorld, canvasWorldSize, drawPill, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
 import { useGameLoop } from './useGameLoop'
 
 interface SnakeGameProps {
@@ -30,6 +31,8 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
   const swipeRef = useRef<{ x: number; y: number } | null>(null)
+  // подсказка тает после первого поворота или через 3.5 с
+  const hintRef = useRef({ at: 0, alpha: 0, used: false })
 
   const ensureState = (): SnakeState => {
     if (stateRef.current === null) {
@@ -49,6 +52,10 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
     if (!canvas || !ctx) return
     const s = stepSnake(ensureState(), dtMs, balance, Math.random)
     stateRef.current = s
+    const h = hintRef.current
+    if (h.at === 0) h.at = performance.now()
+    const k = Math.min(1, dtMs / 250)
+    h.alpha += ((h.used || performance.now() - h.at > 3500 ? 0 : 1) - h.alpha) * k
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
@@ -125,6 +132,7 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
       }
     }
 
+    drawPill(ctx, getStrings().mgHint.snake, boardX + boardW / 2, boardY + 40, hintRef.current.alpha)
     drawScoreChip(ctx, String(snakeScore(s)), 12, 12)
   }
 
@@ -132,6 +140,7 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
     if (!running) return
     hapticTap()
     playSound('tap')
+    hintRef.current.used = true
     stateRef.current = turnSnake(ensureState(), dir)
   }
 

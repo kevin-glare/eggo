@@ -3,8 +3,9 @@ import type { GameConfig } from '../../game/config'
 import { bubblesScore, createBubbles, stepBubbles, tapBubble, type BubblesState } from '../../game/minigames/bubbles'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { getStrings } from '../i18n'
 import { playSound } from '../sound'
-import { applyWorld, canvasWorldSize, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
+import { applyWorld, canvasWorldSize, drawPill, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
 import { useGameLoop } from './useGameLoop'
 
 interface BubblesGameProps {
@@ -38,6 +39,8 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
+  // подсказка тает после первого хлопка или через 3.5 с
+  const hintRef = useRef({ at: 0, alpha: 0, used: false })
 
   const ensureState = (): BubblesState => {
     if (stateRef.current === null) {
@@ -60,6 +63,9 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     const dt = dtMs / 1000
     for (const r of ringsRef.current) r.life += dt
     ringsRef.current = ringsRef.current.filter((r) => r.life < 0.45)
+    const h = hintRef.current
+    if (h.at === 0) h.at = performance.now()
+    h.alpha += ((h.used || performance.now() - h.at > 3500 ? 0 : 1) - h.alpha) * Math.min(1, dtMs / 250)
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
@@ -120,6 +126,7 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
       ctx.globalAlpha = 1
     }
 
+    drawPill(ctx, getStrings().mgHint.bubbles, boardX + boardW / 2, boardY + 42, hintRef.current.alpha)
     // счёт — тот же чип, что у соседей
     drawScoreChip(ctx, String(bubblesScore(s)), 12, 12)
   }
@@ -137,6 +144,7 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     if (popped === 0) return
     hapticTap()
     playSound('pop')
+    hintRef.current.used = true
     const color = BUBBLE_COLORS[state.grid[row * state.size.cols + col] ?? 0] ?? '#ffb35c'
     ringsRef.current.push({
       x: boardX + col * CELL + CELL / 2,

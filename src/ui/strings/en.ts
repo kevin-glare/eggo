@@ -104,10 +104,18 @@ export const en: Strings = {
   mgPairsLeft: (n: number) => `Pairs left: ${n}`,
   game: {
     memory: { title: '🧠 Memory', hint: 'Flip the cards and match every pair before time runs out' },
-    runner: { title: '🏃 Runner', hint: 'Tap to jump, swipe down to duck' },
-    flappy: { title: '🎈 Flight', hint: 'Tap to stay airborne' },
-    snake: { title: '🐍 Snake', hint: 'Swipe or arrow keys — collect the food' },
+    runner: { title: '🏃 Runner', hint: 'Tap above — jump. Hold the bottom — duck' },
+    flappy: { title: '🎈 Flight', hint: 'Tap anywhere — the pet flaps' },
+    snake: { title: '🐍 Snake', hint: 'Swipe or arrows — eat and don’t bite yourself' },
     bubbles: { title: '🫧 Bubbles', hint: 'Pop groups of three or more alike' },
+  },
+  // on-canvas hints shown during the first seconds of a round
+  mgHint: {
+    runnerJump: '👆 Tap — jump',
+    runnerDuck: '👇 Hold the bottom — duck',
+    flappy: '👆 Tap — flap',
+    snake: '👉 Swipe or arrows — turn',
+    bubbles: '👆 Pop groups of three',
   },
 
   // --- pet requests ---

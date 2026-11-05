@@ -5,9 +5,10 @@ import { createFlappy, FLAPPY_PET_R, flap, flappyPetX, stepFlappy, type FlappySt
 import { canvasWorldSize } from './canvasWorld'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { getStrings } from '../i18n'
 import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
-import { applyWorld, drawMinigameSky, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
+import { applyWorld, drawMinigameSky, drawPill, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
 import { drawMiniPet } from './miniPet'
 import { useGameLoop } from './useGameLoop'
 
@@ -30,6 +31,8 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
+  // подсказка тает после первого взмаха или через 3.5 с
+  const hintRef = useRef({ at: 0, alpha: 0, used: false })
 
   const ensureState = (): FlappyState => {
     if (stateRef.current === null) stateRef.current = createFlappy(balance, canvasWorldSize(canvasRef.current!))
@@ -42,6 +45,10 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
     if (!canvas || !ctx) return
     const s = stepFlappy(ensureState(), dtMs, balance, Math.random)
     stateRef.current = s
+    const h = hintRef.current
+    if (h.at === 0) h.at = performance.now()
+    const k = Math.min(1, dtMs / 250)
+    h.alpha += ((h.used || performance.now() - h.at > 3500 ? 0 : 1) - h.alpha) * k
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
@@ -95,6 +102,7 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
       mouthOpen: 0.4,
     })
 
+    drawPill(ctx, getStrings().mgHint.flappy, w / 2, 70, hintRef.current.alpha)
     drawScoreChip(ctx, String(s.score), 12, 12)
   }
 
@@ -102,6 +110,7 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
     if (!running) return
     hapticTap()
     playSound('flap')
+    hintRef.current.used = true
     stateRef.current = flap(ensureState(), balance)
   }
 

@@ -12,9 +12,10 @@ import {
   stepRunner,
   type RunnerState,
 } from '../../game/minigames/runner'
-import { canvasWorldSize } from './canvasWorld'
+import { canvasWorldSize, drawPill } from './canvasWorld'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { getStrings } from '../i18n'
 import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import { applyWorld, drawMinigameSky, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
@@ -29,10 +30,12 @@ interface RunnerGameProps {
 }
 
 const SETTLE_MS = 700
-/** Свайп вниз на столько px — присед. */
-const SWIPE_DOWN_PX = 26
+/** Нижняя треть экрана — зона приседания, всё что выше — прыжок. */
+const DUCK_ZONE = 2 / 3
+/** Подсказки-плашки тают после первого использования действия или через 6 с. */
+const HINT_TTL_MS = 6_000
 
-/** «Побег»: тап — прыжок, свайп вниз или нижняя зона — присед. */
+/** «Побег»: тап сверху — прыжок, удержание низа — присед. Зоны подписаны на канвасе. */
 export default function RunnerGame({ config, appearance, running, onOver }: RunnerGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const balance = config.minigames.runner
@@ -42,7 +45,10 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
-  const pointerRef = useRef<{ y: number; ducking: boolean } | null>(null)
+  // удержание зоны приседания: палец держит — питомец пригибается
+  const holdingRef = useRef(false)
+  // подсказки-зоны: тают после первого прыжка/приседа
+  const hintRef = useRef({ shownAt: 0, jumpAlpha: 0, duckAlpha: 0, jumped: false, ducked: false })
 
   const ensureState = (): RunnerState => {
     if (stateRef.current === null) stateRef.current = createRunner(balance, canvasWorldSize(canvasRef.current!))
@@ -53,8 +59,12 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    const s = stepRunner(ensureState(), dtMs, balance, Math.random)
+    let s = stepRunner(ensureState(), dtMs, balance, Math.random)
+    // палец держит низ — присед держится: ядро снимает его по таймеру
+    // свайпа, поэтому каждый кадр переприседаем, пока удержание не отпущено
+    if (holdingRef.current && !s.over) s = duckRunner(s, true, balance)
     stateRef.current = s
+    updateHints(dtMs)
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
@@ -62,6 +72,16 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
       window.setTimeout(() => onOverRef.current(outcome), SETTLE_MS)
     }
   }, running)
+
+  /** Альфы подсказок: проявляются на старте, тают после использования или 6 с. */
+  function updateHints(dtMs: number): void {
+    const h = hintRef.current
+    if (h.shownAt === 0) h.shownAt = performance.now()
+    const expired = performance.now() - h.shownAt > HINT_TTL_MS
+    const k = Math.min(1, dtMs / 250)
+    h.jumpAlpha += ((h.jumped || expired ? 0 : 1) - h.jumpAlpha) * k
+    h.duckAlpha += ((h.ducked || expired ? 0 : 1) - h.duckAlpha) * k
+  }
 
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, s: RunnerState) => {
     const view = fitWorld(canvas, s.world.w, s.world.h)
@@ -118,6 +138,11 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
       tilt: s.py > 0 ? -0.12 : Math.sin(performance.now() / 120) * 0.03,
     })
 
+    // зоны управления подписаны, пока игрок ими не воспользовался
+    const hint = getStrings().mgHint
+    drawPill(ctx, hint.runnerJump, w / 2, h * 0.16, hintRef.current.jumpAlpha)
+    drawPill(ctx, hint.runnerDuck, w / 2, h * 0.86, hintRef.current.duckAlpha)
+
     drawScoreChip(ctx, `${runnerScore(s)} м`, 12, 12)
   }
 
@@ -151,35 +176,27 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
     if (!running) return
     const canvas = canvasRef.current
     if (!canvas) return
+    const world = ensureState().world
     const p = worldPoint(canvas, viewRef.current, e.clientX, e.clientY)
-    pointerRef.current = { y: p.y, ducking: false }
-    const world = stateRef.current?.world
-    if (world && p.y > world.h * 0.74) {
-      // тап по нижней зоне — сразу присед
-      pointerRef.current.ducking = true
+    if (p.y > world.h * DUCK_ZONE) {
+      // нижняя зона: держишь палец — пригнулся, отпустил — встал
+      holdingRef.current = true
+      hintRef.current.ducked = true
+      hapticTap()
       stateRef.current = duckRunner(ensureState(), true, balance)
       return
     }
+    hintRef.current.jumped = true
     hapticTap()
     playSound('jump')
     stateRef.current = jumpRunner(ensureState(), balance)
   }
 
-  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const held = pointerRef.current
-    if (!held || held.ducking) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const p = worldPoint(canvas, viewRef.current, e.clientX, e.clientY)
-    if (p.y - held.y > SWIPE_DOWN_PX) {
-      held.ducking = true
-      stateRef.current = duckRunner(ensureState(), true, balance)
-    }
-  }
-
   const onPointerUp = () => {
-    if (pointerRef.current?.ducking) stateRef.current = duckRunner(ensureState(), false, balance)
-    pointerRef.current = null
+    if (holdingRef.current) {
+      holdingRef.current = false
+      stateRef.current = duckRunner(ensureState(), false, balance)
+    }
   }
 
   return (
@@ -187,7 +204,6 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
       ref={canvasRef}
       className="mg-canvas"
       onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       aria-label="Побег"
