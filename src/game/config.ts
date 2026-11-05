@@ -69,6 +69,27 @@ export interface GameConfig {
   minigames: {
     /** «Память»: пары карточек и время на всю партию; победа — собрать всё до нуля */
     memory: { pairs: number; timeLimitMs: number }
+    /** «Побег»: метров до победы и физика бега (прыжок, гравитация, разгон) */
+    runner: {
+      winScore: number
+      speedStart: number
+      speedGain: number
+      jumpV: number
+      gravity: number
+      spacingMin: number
+      spacingMax: number
+      duckMs: number
+    }
+    /** «Полёт»: колонн до победы и физика взмаха */
+    flappy: {
+      winScore: number
+      gravity: number
+      flapV: number
+      pipeSpeed: number
+      pipeSpacing: number
+      pipeGap: number
+      pipeW: number
+    }
     /** награда сверх базовой радости play(): за победу и за новый рекорд */
     reward: { winBonus: number; recordBonus: number }
   }
@@ -144,6 +165,11 @@ export const DEFAULT_CONFIG: GameConfig = {
   // новый рекорд — ещё немного сверху (база — обычный play())
   minigames: {
     memory: { pairs: 6, timeLimitMs: 60_000 },
+    // «Побег»: 300 м (~12–15 с с разгоном); прыжок 420 px/с против гравитации
+    // 1050 — окно над камнем (до 31 px) ~0.65 с; препятствия каждые 200–300 px
+    runner: { winScore: 300, speedStart: 200, speedGain: 6, jumpV: 420, gravity: 1050, spacingMin: 200, spacingMax: 300, duckMs: 650 },
+    // «Полёт»: 10 колонн; взмах 250 против гравитации 900 — мягкое парение
+    flappy: { winScore: 10, gravity: 900, flapV: 250, pipeSpeed: 130, pipeSpacing: 200, pipeGap: 112, pipeW: 46 },
     reward: { winBonus: 6, recordBonus: 4 },
   },
   // Хэллоуин: с 24 октября по 2 ноября

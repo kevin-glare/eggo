@@ -8,6 +8,8 @@ import { useStrings } from '../i18n'
 import PetBadge from '../PetBadge'
 import { useDialogFocus } from '../useDialogFocus'
 import MemoryGame from './MemoryGame'
+import RunnerGame from './RunnerGame'
+import FlappyGame from './FlappyGame'
 
 /** Показ результата: счёт, рекорд и бонус — уже применённые в usePet. */
 export interface MinigameResultView {
@@ -161,6 +163,12 @@ export default function MinigameOverlay({
         ) : (
           <div className="mg-area">
             {id === 'memory' && <MemoryGame key={gameKey} config={config} running={!paused} onOver={handleOver} />}
+            {id === 'runner' && (
+              <RunnerGame key={gameKey} config={config} appearance={appearance} running={!paused} onOver={handleOver} />
+            )}
+            {id === 'flappy' && (
+              <FlappyGame key={gameKey} config={config} appearance={appearance} running={!paused} onOver={handleOver} />
+            )}
             {paused && (
               <div className="mg-veil">
                 <p className="mg-veil-title">{str.mgPause}</p>
