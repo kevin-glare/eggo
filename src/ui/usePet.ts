@@ -77,9 +77,12 @@ export function usePet(config: GameConfig) {
         const legacyRaw = await petStore.legacyCloudLoad()
         if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance, config) ?? best
         const payload = best?.name != null ? serialize(best) : null
-        const response = await petStore.serverSync(payload)
+        const posted = await petStore.serverSync(payload)
+        // POST потерялся по пути — тянем состояние GET-ом: часть мобильных
+        // сетей режет POST с телом, а pull без тела доезжает
+        const response = posted ?? (await petStore.serverPull())
         if (response !== null) {
-          setInvited(response.invited)
+          setInvited('invited' in response && typeof response.invited === 'number' ? response.invited : null)
           best = mergeRemoteSave(response.save, best, fallbackAppearance, config) ?? best
         }
     } catch {
@@ -153,14 +156,17 @@ useEffect(() => {
     forceSyncRef.current = false
     if (!forced && now - lastSyncRef.current < SERVER_SYNC_INTERVAL_MS) return
     lastSyncRef.current = now
-    void petStore.serverSync(raw).then((response) => {
-      if (response === null) return
-      setInvited(response.invited)
+    void petStore.serverSync(raw).then(async (response) => {
       // с каждым синком забираем чужие изменения: сервер вернул слитый сейв.
-      // Свой свежее (событие случилось, пока запрос летел) — слияние оставит его
+      // Свой свежее (событие случилось, пока запрос летел) — слияние оставит его.
+      // POST не доехал (сеть его режет) — тянем состояние из базы GET-ом:
+      // так чужие сон и действия доезжают даже при неработающих POST-ах
+      const pulled = response ?? (await petStore.serverPull())
+      if (pulled === null) return
+      setInvited('invited' in pulled && typeof pulled.invited === 'number' ? pulled.invited : null)
       setPet((current) => {
         if (current === null) return current
-        const merged = mergeRemoteSave(response.save, current, current.appearance, config)
+        const merged = mergeRemoteSave(pulled.save, current, current.appearance, config)
         if (merged === current || merged === null) return current
         return catchUp(merged, Date.now(), config)
       })

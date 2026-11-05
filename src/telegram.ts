@@ -60,6 +60,10 @@ export const BOT_URL: string | null = typeof envBotUrl === 'string' && envBotUrl
 /** Сколько ждём ответа API, прежде чем жить дальше по локальному сейву. */
 const SYNC_TIMEOUT_MS = 10_000
 
+/** POST с телом часто теряется по пути (мобильные сети) — повторяем попытки. */
+const SYNC_RETRIES = 2
+const SYNC_RETRY_DELAY_MS = 1_500
+
 /** Сколько ждём старое облако Telegram: замолчавший колбэк не должен вешать загрузку. */
 const CLOUD_STORAGE_TIMEOUT_MS = 5_000
 
@@ -161,14 +165,13 @@ async function legacyCloudLoadRaw(): Promise<string | null> {
 }
 
 /**
- * Синк с сервером: шлём свой сейв, получаем главный (у кого lastTickAt новее)
- * и счётчик приглашённых (для звёзд дружбы). null — сети нет или мы не в
- * Telegram: живём на localStorage, повторим позже.
- * keepalive — для финального сохранения при уходе со страницы.
+ * Одна попытка POST /sync: шлём свой сейв, получаем главный (у кого
+ * lastTickAt новее) и счётчик приглашённых (для звёзд дружбы).
+ * null — сети нет или мы не в Telegram.
  */
-async function serverSyncRaw(
+async function syncAttempt(
   clientRaw: string | null,
-  keepalive = false,
+  keepalive: boolean,
 ): Promise<{ save: string | null; invited: number | null } | null> {
   const initData = tg()?.initData
   if (!initData) return null
@@ -197,12 +200,55 @@ async function serverSyncRaw(
   }
 }
 
+/**
+ * Синк с сервером с ретраями: мобильные сети нередко теряют POST с телом,
+ * повторные попытки через паузу часто доезжают. keepalive (финальное
+ * сохранение при уходе со страницы) не повторяется — страница умирает.
+ */
+async function serverSyncRaw(
+  clientRaw: string | null,
+  keepalive = false,
+): Promise<{ save: string | null; invited: number | null } | null> {
+  const attempts = keepalive ? 1 : 1 + SYNC_RETRIES
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, SYNC_RETRY_DELAY_MS))
+    const result = await syncAttempt(clientRaw, keepalive)
+    if (result !== null) return result
+  }
+  return null
+}
+
+/**
+ * Запасной pull: часть мобильных сетей стабильно теряет POST с телом,
+ * а простой GET доезжает. Читаем слитый сейв из базы, ничего не шлём;
+ * отсутствие Content-Type в запросе избавляет от preflight-OPTIONS.
+ */
+async function serverPullRaw(): Promise<{ save: string | null } | null> {
+  const initData = tg()?.initData
+  if (!initData) return null
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS)
+  try {
+    const response = await fetch(`${API_URL}/sync?initData=${encodeURIComponent(initData)}`, {
+      signal: controller.signal,
+    })
+    if (!response.ok) return null
+    const data = JSON.parse(await response.text()) as { save?: unknown }
+    return { save: typeof data.save === 'string' ? data.save : null }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /** Публичное API хранилища для usePet. */
 export const petStore = {
   loadLocal: loadLocalRaw,
   saveLocal: saveLocalRaw,
   legacyCloudLoad: legacyCloudLoadRaw,
   serverSync: serverSyncRaw,
+  serverPull: serverPullRaw,
 } as const
 
 /** Состояние пушей: 'on' | 'off'; null — не в Telegram или сеть подвела. */

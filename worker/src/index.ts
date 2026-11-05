@@ -59,12 +59,25 @@ export default {
     // фронт живёт на GitHub Pages, API — на своём домене, поэтому нужен CORS
     const cors = {
       'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      // кэш preflight: без него мобильные клиенты шлют OPTIONS перед каждым синком
+      'Access-Control-Max-Age': '86400',
     }
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
 
     const url = new URL(request.url)
+    if (url.pathname === '/sync' && request.method === 'GET') {
+      // запасной pull: часть мобильных сетей теряет POST с телом, а простой GET доезжает.
+      // Только чтение — отдаём слитый сейв из базы, ничего не меняем
+      const initData = url.searchParams.get('initData')
+      if (!initData) return json({ error: 'bad request' }, 400, cors)
+      const auth = await validateInitData(initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
+      if (!auth) return json({ error: 'unauthorized' }, 401, cors)
+      const row = await fetchUser(env.DB, auth.user.id)
+      return json({ save: row?.save_json ?? null }, 200, cors)
+    }
+
     if (url.pathname === '/sync' && request.method === 'POST') {
       let parsed: SyncBody
       try {

@@ -1,10 +1,35 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from '../src/game/config'
 import { catchUp, deserialize, serialize } from '../src/game/storage'
+import worker from '../worker/src/index'
 import { resolveSync } from '../worker/src/sync'
-import { HOUR, TEST_APPEARANCE, hatchedPet, makePet } from './helpers'
+import { HOUR, TEST_APPEARANCE, hatchedPet, makePet, signInitData } from './helpers'
+import { FakeDb } from './worker-fake-db'
 
 const config = DEFAULT_CONFIG
+const BOT_TOKEN = '7000000001:TEST-TOKEN-abcdef'
+
+async function signedInitData(): Promise<string> {
+  return signInitData(
+    {
+      auth_date: String(Math.floor(Date.now() / 1000) - 30),
+      query_id: 'T',
+      user: JSON.stringify({ id: 7, first_name: 'Кевин', username: 'kevin' }),
+    },
+    BOT_TOKEN,
+  )
+}
+
+function dbWith(saveJson: string | null): FakeDb {
+  return new FakeDb([
+    { telegram_id: 7, save_json: saveJson, stage: 'baby', push_enabled: 0 },
+  ])
+}
+
+function getSync(envDb: FakeDb, initData: string | null): Promise<Response> {
+  const url = initData === null ? 'http://api.test/sync' : `http://api.test/sync?initData=${encodeURIComponent(initData)}`
+  return worker.fetch(new Request(url), { DB: envDb, BOT_TOKEN, ALLOWED_ORIGIN: 'https://eggotg.ru' })
+}
 
 function saveAt(lastTickAt: number): string {
   return serialize(makePet(config, { lastTickAt }))
@@ -83,5 +108,42 @@ describe('resolveSync — слияние сейвов по полям (стат�
     const decision = resolveSync(clientRaw, saveAt(1_000))
     expect(decision.stage).toBe('baby')
     expect(resolveSync(saveAt(1_000), null).stage).toBe('egg')
+  })
+})
+
+describe('GET /sync — запасной pull состояния из базы', () => {
+  it('возвращает сейв из базы по подписанному initData', async () => {
+    const stored = saveAt(5_000)
+    const response = await getSync(dbWith(stored), await signedInitData())
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ save: stored })
+  })
+
+  it('питомца в базе ещё нет → save: null', async () => {
+    const response = await getSync(dbWith(null), await signedInitData())
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ save: null })
+  })
+
+  it('initData не подписан → 401; initData нет → 400', async () => {
+    expect((await getSync(dbWith(null), 'auth_date=1&hash=fake')).status).toBe(401)
+    expect((await getSync(dbWith(null), null)).status).toBe(400)
+  })
+
+  it('GET не пишет в базу: сейв не тронут', async () => {
+    const db = dbWith(saveAt(5_000))
+    await getSync(db, await signedInitData())
+    expect(db.users[0]?.save_json).toBe(saveAt(5_000))
+  })
+
+  it('CORS: pull-GET разрешён явно, preflight кэшируется браузером', async () => {
+    const response = await getSync(dbWith(null), await signedInitData())
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://eggotg.ru')
+    const preflight = await worker.fetch(
+      new Request('http://api.test/sync', { method: 'OPTIONS' }),
+      { DB: dbWith(null), BOT_TOKEN, ALLOWED_ORIGIN: 'https://eggotg.ru' },
+    )
+    expect(preflight.headers.get('Access-Control-Allow-Methods')).toContain('GET')
+    expect(preflight.headers.get('Access-Control-Max-Age')).not.toBeNull()
   })
 })
