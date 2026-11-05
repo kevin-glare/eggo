@@ -3,6 +3,7 @@ import type { GameConfig } from '../../game/config'
 import { bubblesScore, createBubbles, stepBubbles, tapBubble, type BubblesState } from '../../game/minigames/bubbles'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { playSound } from '../sound'
 import { applyWorld, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
 import { useGameLoop } from './useGameLoop'
 
@@ -122,6 +123,7 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     stateRef.current = state
     if (popped === 0) return
     hapticTap()
+    playSound('pop')
     const color = BUBBLE_COLORS[state.grid[row * balance.cols + col] ?? 0] ?? '#ffb35c'
     ringsRef.current.push({
       x: boardX + col * CELL + CELL / 2,

@@ -3,6 +3,7 @@ import type { GameConfig } from '../../game/config'
 import { createSnake, snakeScore, stepSnake, turnSnake, type SnakeDir, type SnakeState } from '../../game/minigames/snake'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import type { PetAppearance } from '../../game/appearance'
 import { applyWorld, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
@@ -118,6 +119,7 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
   const doTurn = (dir: SnakeDir) => {
     if (!running) return
     hapticTap()
+    playSound('tap')
     stateRef.current = turnSnake(stateRef.current, dir)
   }
 

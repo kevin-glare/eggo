@@ -13,6 +13,7 @@ import {
 } from '../../game/minigames/runner'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import { applyWorld, drawMinigameSky, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
 import { drawMiniPet } from './miniPet'
@@ -117,6 +118,7 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault()
         hapticTap()
+        playSound('jump')
         stateRef.current = jumpRunner(stateRef.current, balance)
       } else if (e.code === 'ArrowDown') {
         e.preventDefault()
@@ -147,6 +149,7 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
       return
     }
     hapticTap()
+    playSound('jump')
     stateRef.current = jumpRunner(stateRef.current, balance)
   }
 

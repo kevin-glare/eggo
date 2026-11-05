@@ -18,6 +18,7 @@ import {
 import { drawScene } from './scene'
 import { resolveHolidayTheme } from './holidays'
 import { hapticSuccess, hapticTap, hapticWarning } from '../telegram'
+import { playSound } from './sound'
 import { sampleDayCycle } from './dayCycle'
 import { isHintDone, markHintDone, type HintKind } from './hints'
 
@@ -600,6 +601,7 @@ export default function PetCanvas({
       if (e.kind === 'catch') {
         hideHint('feedCatch')
         hapticTap()
+        playSound('chomp')
         // чавк: рот схлопывается, румянец вспыхивает
         gsap
           .timeline({ overwrite: 'auto' })
@@ -611,6 +613,7 @@ export default function PetCanvas({
         // серия пойманных — усиленная радость: прыжок, искры, сердечки
         if (core.streak > 0 && core.streak % balance.streakN === 0) {
           hapticSuccess()
+          playSound('catch')
           spawnSparklesAt(particles, e.x, e.y)
           spawnHearts(particles, SCENE_W / 2 + wanderRef.current.x)
           if (!prefersReducedMotion()) {
@@ -622,12 +625,14 @@ export default function PetCanvas({
         }
       } else if (e.kind === 'junk') {
         hapticWarning()
+        playSound('dizzy')
         // головокружение рисуют звёзды; тело вздрагивает
         if (!prefersReducedMotion()) {
           gsap.fromTo(v, { wiggle: 0.09 }, { wiggle: 0, duration: 0.55, ease: 'sine.out', overwrite: 'auto' })
         }
       } else {
         // промах: уши вниз-вверх, лёгкий вздох корпусом
+        playSound('miss')
         if (!prefersReducedMotion()) {
           gsap
             .timeline({ overwrite: 'auto' })
@@ -641,6 +646,7 @@ export default function PetCanvas({
   /** Финал сессии: перекорм — вяло оседает, сыграл — довольный прыжок; потом complete. */
   function finishFeed(feed: FeedSession, v: PetVisualState): void {
     const caught = feed.core.caught
+    playSound(feed.core.ended === 'full' ? 'miss' : 'win')
     if (feed.core.ended === 'full') {
       // объелся: уши прижаты, корпус оседает — вялость читается без текста
       if (prefersReducedMotion()) {

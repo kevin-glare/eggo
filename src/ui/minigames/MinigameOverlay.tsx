@@ -5,6 +5,7 @@ import type { Mood, Stage } from '../../game/types'
 import type { MinigameId, MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap, tg } from '../../telegram'
 import { useStrings } from '../i18n'
+import { playSound } from '../sound'
 import PetBadge from '../PetBadge'
 import { useDialogFocus } from '../useDialogFocus'
 import MemoryGame from './MemoryGame'
@@ -91,23 +92,32 @@ export default function MinigameOverlay({
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
+  // итог партии озвучен: фанфары за победу, тем более за рекорд
+  useEffect(() => {
+    if (result === null) return
+    playSound(result.isRecord ? 'record' : result.won ? 'win' : 'lose')
+  }, [result])
+
   const finishRef = useRef(onFinish)
   finishRef.current = onFinish
   const handleOver = useCallback((outcome: MinigameOutcome) => finishRef.current(outcome), [])
 
   const start = () => {
     hapticTap()
+    playSound('tap')
     setStarted(true)
     setPaused(false)
   }
   const restart = () => {
     hapticTap()
+    playSound('tap')
     onRestart()
     setGameKey((k) => k + 1)
     setPaused(false)
   }
   const resume = () => {
     hapticTap()
+    playSound('tap')
     setPaused(false)
   }
 

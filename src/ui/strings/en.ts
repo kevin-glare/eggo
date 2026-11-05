@@ -144,6 +144,8 @@ export const en: Strings = {
   menuMore: 'More',
   menuNotifOn: 'Notifications on',
   menuNotifOff: 'Notifications off',
+  menuSoundOn: 'Sound on',
+  menuSoundOff: 'Sound off',
   menuLang: 'Language',
   menuChannel: 'Our channel',
   menuHelp: 'How to play',

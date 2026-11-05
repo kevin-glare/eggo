@@ -6,6 +6,7 @@ import InvitePanel from './InvitePanel'
 import HelpPanel from './HelpPanel'
 import PetBadge from './PetBadge'
 import { useDialogFocus } from './useDialogFocus'
+import { isSoundOn, playSound, setSoundOn } from './sound'
 import { track } from '../metrika'
 import { hapticTap, tg } from '../telegram'
 
@@ -67,6 +68,8 @@ export default function MenuScreen({
   const str = useStrings()
   const lang = useLang()
   const [view, setView] = useState<MenuView>('root')
+  // звук: локальная настройка устройства, как язык
+  const [soundOn, setSoundOnState] = useState(isSoundOn())
   const panelRef = useRef<HTMLElement>(null)
   // экран закрыт — подэкран сбрасывается, следующее открытие начинается с корня
   useEffect(() => {
@@ -103,6 +106,14 @@ export default function MenuScreen({
   const switchLang = () => {
     track('lang-switch')
     setLang(lang === 'ru' ? 'en' : 'ru')
+  }
+
+  // тумблер звука: включение подтверждаем коротким «дзынь»
+  const toggleSound = () => {
+    const on = !soundOn
+    setSoundOn(on)
+    setSoundOnState(on)
+    if (on) playSound('ding')
   }
 
   return (
@@ -146,6 +157,13 @@ export default function MenuScreen({
                     <span className={notifEnabled ? 'menu-row-state on' : 'menu-row-state'} aria-hidden="true" />
                   </button>
                 )}
+                <button type="button" className="menu-row" onClick={tap(toggleSound)}>
+                  <span className="menu-row-icon" aria-hidden="true">
+                    {soundOn ? '🔊' : '🔇'}
+                  </span>
+                  <span className="menu-row-label">{soundOn ? str.menuSoundOn : str.menuSoundOff}</span>
+                  <span className={soundOn ? 'menu-row-state on' : 'menu-row-state'} aria-hidden="true" />
+                </button>
                 <button type="button" className="menu-row" onClick={tap(switchLang)}>
                   <span className="menu-row-icon" aria-hidden="true">
                     🌐

@@ -4,6 +4,7 @@ import type { GameConfig } from '../../game/config'
 import { createFlappy, FLAPPY_WORLD, flap, stepFlappy, type FlappyState } from '../../game/minigames/flappy'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
+import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import { applyWorld, drawMinigameSky, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
 import { drawMiniPet } from './miniPet'
@@ -92,6 +93,7 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
   const doFlap = () => {
     if (!running) return
     hapticTap()
+    playSound('flap')
     stateRef.current = flap(stateRef.current, balance)
   }
 

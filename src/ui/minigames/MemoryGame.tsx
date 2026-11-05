@@ -4,6 +4,7 @@ import { createMemory, flipMemory, memoryScore, stepMemory, type MemoryState } f
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
 import { useStrings } from '../i18n'
+import { playSound } from '../sound'
 
 interface MemoryGameProps {
   config: GameConfig
@@ -53,6 +54,10 @@ export default function MemoryGame({ config, running, onOver }: MemoryGameProps)
       const card = state.cards[index]
       if (!card || card.matched || card.flipped) return
       hapticTap()
+      playSound('tap')
+      // вторая карточка решает пару: совпала — дзынь
+      const first = state.open[0]
+      if (first !== undefined && state.cards[first]?.kind === card.kind) playSound('ding')
       setState((s) => flipMemory(s, index, balance))
     },
     [balance, running, state.cards],

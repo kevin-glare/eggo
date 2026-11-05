@@ -189,6 +189,8 @@ export const ru = {
   menuMore: 'Ещё',
   menuNotifOn: 'Уведомления включены',
   menuNotifOff: 'Уведомления выключены',
+  menuSoundOn: 'Звук включён',
+  menuSoundOff: 'Звук выключен',
   menuLang: 'Язык',
   menuChannel: 'Наш канал',
   menuHelp: 'Как играть',
