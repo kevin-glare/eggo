@@ -127,6 +127,8 @@ export default function App() {
       washPet()
       return
     }
+    // короткая подсказка во всплывашке: как мыть питомца
+    showNotice(str.sceneHint.wash)
     setScene('wash')
   }
   // пока стартовый синк выясняет, есть ли питомец у пользователя (новое устройство), — загрузка
