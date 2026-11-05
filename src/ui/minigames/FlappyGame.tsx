@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import type { PetAppearance } from '../../game/appearance'
 import type { GameConfig } from '../../game/config'
-import { createFlappy, FLAPPY_WORLD, flap, stepFlappy, type FlappyState } from '../../game/minigames/flappy'
+import { createFlappy, FLAPPY_PET_R, flap, flappyPetX, stepFlappy, type FlappyState } from '../../game/minigames/flappy'
+import { canvasWorldSize } from './canvasWorld'
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
 import { playSound } from '../sound'
@@ -23,17 +24,23 @@ const SETTLE_MS = 700
 export default function FlappyGame({ config, appearance, running, onOver }: FlappyGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const balance = config.minigames.flappy
-  const stateRef = useRef<FlappyState>(createFlappy(balance))
+  // мир партии = реальный размер канваса, замеряем лениво на первом кадре
+  const stateRef = useRef<FlappyState | null>(null)
   const viewRef = useRef<WorldView>({ dpr: 1, scale: 1, offsetX: 0, offsetY: 0 })
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
 
+  const ensureState = (): FlappyState => {
+    if (stateRef.current === null) stateRef.current = createFlappy(balance, canvasWorldSize(canvasRef.current!))
+    return stateRef.current
+  }
+
   useGameLoop((dtMs) => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    const s = stepFlappy(stateRef.current, dtMs, balance, Math.random)
+    const s = stepFlappy(ensureState(), dtMs, balance, Math.random)
     stateRef.current = s
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
@@ -44,10 +51,11 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
   }, running)
 
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, s: FlappyState) => {
-    const view = fitWorld(canvas, FLAPPY_WORLD.w, FLAPPY_WORLD.h)
+    const view = fitWorld(canvas, s.world.w, s.world.h)
     viewRef.current = view
     applyWorld(ctx, canvas, view)
-    const { w, h } = FLAPPY_WORLD
+    const w = s.world.w
+    const h = s.world.h
     drawMinigameSky(ctx, w, h, h - 34, performance.now())
 
     // колонны: конфетно-зелёные столбы со шляпками и светлым бликом
@@ -81,7 +89,7 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
     // питомец парит: наклон по вертикальной скорости
     const palette = PET_PALETTES[appearance.palette]
     const tilt = Math.max(-0.35, Math.min(0.6, s.vy / 500))
-    drawMiniPet(ctx, palette, FLAPPY_WORLD.petX, s.y, FLAPPY_WORLD.petR + 4, {
+    drawMiniPet(ctx, palette, flappyPetX(s.world), s.y, FLAPPY_PET_R + 4, {
       eyes: 'open',
       tilt,
       mouthOpen: 0.4,
@@ -94,7 +102,7 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
     if (!running) return
     hapticTap()
     playSound('flap')
-    stateRef.current = flap(stateRef.current, balance)
+    stateRef.current = flap(ensureState(), balance)
   }
 
   useEffect(() => {

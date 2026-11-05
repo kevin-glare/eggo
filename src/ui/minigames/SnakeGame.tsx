@@ -6,7 +6,7 @@ import { hapticTap } from '../../telegram'
 import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import type { PetAppearance } from '../../game/appearance'
-import { applyWorld, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
+import { applyWorld, canvasWorldSize, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
 import { useGameLoop } from './useGameLoop'
 
 interface SnakeGameProps {
@@ -18,24 +18,36 @@ interface SnakeGameProps {
 
 const SETTLE_MS = 700
 const CELL = 26
-const BOARD_PAD = 24
 
-/** «Змейка»: свайпы или стрелки, еда ускоряет. */
+/** «Змейка»: свайпы или стрелки, еда ускоряет; поле выводится из экрана. */
 export default function SnakeGame({ config, appearance, running, onOver }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const balance = config.minigames.snake
-  const stateRef = useRef<SnakeState>(createSnake(balance, Math.random))
+  // мир партии = реальный размер канваса; сетка выводится из клетки cellPx
+  const stateRef = useRef<SnakeState | null>(null)
   const viewRef = useRef<WorldView>({ dpr: 1, scale: 1, offsetX: 0, offsetY: 0 })
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
   const swipeRef = useRef<{ x: number; y: number } | null>(null)
 
+  const ensureState = (): SnakeState => {
+    if (stateRef.current === null) {
+      const world = canvasWorldSize(canvasRef.current!)
+      const grid = {
+        cols: Math.min(40, Math.max(9, Math.floor(world.w / balance.cellPx))),
+        rows: Math.min(40, Math.max(9, Math.floor(world.h / balance.cellPx))),
+      }
+      stateRef.current = createSnake(balance, grid, Math.random)
+    }
+    return stateRef.current
+  }
+
   useGameLoop((dtMs) => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    const s = stepSnake(stateRef.current, dtMs, balance, Math.random)
+    const s = stepSnake(ensureState(), dtMs, balance, Math.random)
     stateRef.current = s
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
@@ -46,13 +58,13 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
   }, running)
 
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, s: SnakeState) => {
-    const view = fitWorld(canvas, 390, 420)
+    const view = fitWorld(canvas, s.grid.cols * CELL + 24, s.grid.rows * CELL + 24)
     viewRef.current = view
     applyWorld(ctx, canvas, view)
     const palette = PET_PALETTES[appearance.palette]
-    const boardW = balance.cells * CELL
-    const boardX = (390 - boardW) / 2
-    const boardY = BOARD_PAD
+    const boardW = s.grid.cols * CELL
+    const boardX = 12
+    const boardY = 12
 
     // поле: стеклянная доска в языке карточек
     ctx.fillStyle = 'rgba(20, 12, 38, 0.55)'
@@ -120,7 +132,7 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
     if (!running) return
     hapticTap()
     playSound('tap')
-    stateRef.current = turnSnake(stateRef.current, dir)
+    stateRef.current = turnSnake(ensureState(), dir)
   }
 
   // стрелки

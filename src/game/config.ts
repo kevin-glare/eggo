@@ -90,10 +90,10 @@ export interface GameConfig {
       pipeGap: number
       pipeW: number
     }
-    /** «Змейка»: кусков до победы и темп хода (ускорение с каждым куском) */
-    snake: { winScore: number; moveMs: number; moveMin: number; moveStep: number; cells: number }
-    /** «Пузыри»: очков до победы, темп подъёма поля и правила групп */
-    bubbles: { winScore: number; riseMs: number; colors: number; minGroup: number; cols: number; rows: number }
+    /** «Змейка»: кусков до победы, темп хода и размер клетки (поле выводится из экрана) */
+    snake: { winScore: number; moveMs: number; moveMin: number; moveStep: number; cellPx: number }
+    /** «Пузыри»: очков до победы, темп подъёма, правила групп и размер клетки */
+    bubbles: { winScore: number; riseMs: number; colors: number; minGroup: number; cellPx: number }
     /** награда сверх базовой радости play(): за победу и за новый рекорд */
     reward: { winBonus: number; recordBonus: number }
   }
@@ -197,10 +197,12 @@ export const DEFAULT_CONFIG: GameConfig = {
     runner: { winScore: 300, speedStart: 200, speedGain: 6, jumpV: 420, gravity: 1050, spacingMin: 200, spacingMax: 300, duckMs: 650 },
     // «Полёт»: 10 колонн; взмах 250 против гравитации 900 — мягкое парение
     flappy: { winScore: 10, gravity: 900, flapV: 250, pipeSpeed: 130, pipeSpacing: 200, pipeGap: 112, pipeW: 46 },
-    // «Змейка»: 12 кусков; ход раз в 160 мс и быстрее на 4 мс за кусок, не быстрее 90
-    snake: { winScore: 12, moveMs: 160, moveMin: 90, moveStep: 4, cells: 15 },
-    // «Пузыри»: 300 очков (30 пузырей) до подъёма поля; ряд каждые 6.5 с, группы от 3
-    bubbles: { winScore: 300, riseMs: 6_500, colors: 4, minGroup: 3, cols: 8, rows: 10 },
+    // «Змейка»: 12 кусков; ход раз в 160 мс и быстрее на 4 мс за кусок, не быстрее 90;
+    // клетка 26 px — поле выводится из реального размера канваса
+    snake: { winScore: 12, moveMs: 160, moveMin: 90, moveStep: 4, cellPx: 26 },
+    // «Пузыри»: 300 очков (30 пузырей) до подъёма поля; ряд каждые 6.5 с, группы от 3;
+    // клетка 40 px — сетка выводится из реального размера канваса
+    bubbles: { winScore: 300, riseMs: 6_500, colors: 4, minGroup: 3, cellPx: 40 },
     reward: { winBonus: 6, recordBonus: 4 },
   },
   // кормление-ловля: 8 еды × ~5-6 пойманных ≈ прежняя сытость +25..40 за сессию

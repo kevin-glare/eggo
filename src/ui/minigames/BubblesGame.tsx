@@ -4,7 +4,7 @@ import { bubblesScore, createBubbles, stepBubbles, tapBubble, type BubblesState 
 import type { MinigameOutcome } from '../../game/minigames/types'
 import { hapticTap } from '../../telegram'
 import { playSound } from '../sound'
-import { applyWorld, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
+import { applyWorld, canvasWorldSize, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
 import { useGameLoop } from './useGameLoop'
 
 interface BubblesGameProps {
@@ -17,7 +17,7 @@ const SETTLE_MS = 700
 /** Цвета пузырей — палитра Eggo: апельсин, мята, небо, розовый. */
 const BUBBLE_COLORS = ['#ffb35c', '#8fe0b0', '#8fd3ff', '#ffb0ce'] as const
 const CELL = 40
-const BOARD_PAD = 14
+const BOARD_PAD = 12
 
 /** Кольцо-хлопок: анимация лопания живёт в рендере, не в ядре. */
 interface PopRing {
@@ -27,22 +27,35 @@ interface PopRing {
   life: number
 }
 
-/** «Пузыри»: тап по группе из трёх и больше одинаковых — хлоп! */
+/** «Пузыри»: тап по группе из трёх и больше одинаковых — хлоп! Поле на весь экран. */
 export default function BubblesGame({ config, running, onOver }: BubblesGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const balance = config.minigames.bubbles
-  const stateRef = useRef<BubblesState>(createBubbles(balance, Math.random))
+  // мир партии = реальный размер канваса; сетка выводится из клетки cellPx
+  const stateRef = useRef<BubblesState | null>(null)
   const viewRef = useRef<WorldView>({ dpr: 1, scale: 1, offsetX: 0, offsetY: 0 })
   const ringsRef = useRef<PopRing[]>([])
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
   onOverRef.current = onOver
 
+  const ensureState = (): BubblesState => {
+    if (stateRef.current === null) {
+      const world = canvasWorldSize(canvasRef.current!)
+      const size = {
+        cols: Math.min(30, Math.max(6, Math.floor(world.w / balance.cellPx))),
+        rows: Math.min(40, Math.max(8, Math.floor(world.h / balance.cellPx))),
+      }
+      stateRef.current = createBubbles(balance, size, Math.random)
+    }
+    return stateRef.current
+  }
+
   useGameLoop((dtMs) => {
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
-    const s = stepBubbles(stateRef.current, dtMs, balance, Math.random)
+    const s = stepBubbles(ensureState(), dtMs, balance, Math.random)
     stateRef.current = s
     const dt = dtMs / 1000
     for (const r of ringsRef.current) r.life += dt
@@ -56,12 +69,13 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
   }, running)
 
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, s: BubblesState) => {
-    const view = fitWorld(canvas, 390, 420)
+    const boardW = s.size.cols * CELL
+    const boardH = s.size.rows * CELL
+    const view = fitWorld(canvas, boardW + 24, boardH + 24)
     viewRef.current = view
     applyWorld(ctx, canvas, view)
-    const boardW = balance.cols * CELL
-    const boardX = (390 - boardW) / 2
-    const boardY = BOARD_PAD
+    const boardX = 12
+    const boardY = 12
 
     // опасная кромка: ряд, до которого нельзя дать полю подняться
     ctx.strokeStyle = 'rgba(255, 107, 122, 0.4)'
@@ -73,9 +87,9 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     ctx.stroke()
     ctx.setLineDash([])
 
-    for (let row = 0; row < balance.rows; row++) {
-      for (let col = 0; col < balance.cols; col++) {
-        const color = s.grid[row * balance.cols + col]!
+    for (let row = 0; row < s.size.rows; row++) {
+      for (let col = 0; col < s.size.cols; col++) {
+        const color = s.grid[row * s.size.cols + col]!
         if (color < 0) continue
         const x = boardX + col * CELL + CELL / 2
         const y = boardY + row * CELL + CELL / 2
@@ -115,16 +129,15 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     const canvas = canvasRef.current
     if (!canvas) return
     const p = worldPoint(canvas, viewRef.current, e.clientX, e.clientY)
-    const boardW = balance.cols * CELL
-    const boardX = (390 - boardW) / 2
+    const boardX = 12
     const col = Math.floor((p.x - boardX) / CELL)
     const row = Math.floor((p.y - BOARD_PAD) / CELL)
-    const { state, popped } = tapBubble(stateRef.current, balance, col, row)
+    const { state, popped } = tapBubble(ensureState(), balance, col, row)
     stateRef.current = state
     if (popped === 0) return
     hapticTap()
     playSound('pop')
-    const color = BUBBLE_COLORS[state.grid[row * balance.cols + col] ?? 0] ?? '#ffb35c'
+    const color = BUBBLE_COLORS[state.grid[row * state.size.cols + col] ?? 0] ?? '#ffb35c'
     ringsRef.current.push({
       x: boardX + col * CELL + CELL / 2,
       y: BOARD_PAD + row * CELL + CELL / 2,

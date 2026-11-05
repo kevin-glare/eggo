@@ -1,7 +1,10 @@
 /**
  * «Полёт»: тап — взмах, не падай и проходи колонны. Чистое ядро,
- * rng снаружи (высота зазора), тесты детерминированы.
+ * rng снаружи (высота зазора), мир приходит снаружи — реальный размер
+ * канваса, тесты детерминированы.
  */
+
+import type { MinigameWorld } from './world'
 
 export interface FlappyBalance {
   /** пройденных колонн до победы */
@@ -20,7 +23,10 @@ export interface FlappyBalance {
   pipeW: number
 }
 
-export const FLAPPY_WORLD = { w: 390, h: 420, petX: 120, petR: 17 } as const
+/** Мир по умолчанию для тестов. */
+export const FLAPPY_WORLD: MinigameWorld = { w: 390, h: 420 }
+/** Радиус питомца, px. */
+export const FLAPPY_PET_R = 17
 
 export interface FlappyPipe {
   x: number
@@ -30,6 +36,7 @@ export interface FlappyPipe {
 }
 
 export interface FlappyState {
+  world: MinigameWorld
   y: number
   vy: number
   pipes: FlappyPipe[]
@@ -40,8 +47,13 @@ export interface FlappyState {
   won: boolean
 }
 
-export function createFlappy(balance: FlappyBalance): FlappyState {
-  return { y: FLAPPY_WORLD.h * 0.45, vy: 0, pipes: [], nextSpawnIn: balance.pipeSpacing + 60, score: 0, over: false, won: false }
+/** Питомец висит на трети ширины мира. */
+export function flappyPetX(world: MinigameWorld): number {
+  return Math.round(world.w * 0.3)
+}
+
+export function createFlappy(balance: FlappyBalance, world: MinigameWorld): FlappyState {
+  return { world, y: world.h * 0.45, vy: 0, pipes: [], nextSpawnIn: balance.pipeSpacing + 60, score: 0, over: false, won: false }
 }
 
 /** Взмах: импульс вверх. */
@@ -53,7 +65,9 @@ export function flap(state: FlappyState, balance: FlappyBalance): FlappyState {
 export function stepFlappy(state: FlappyState, dtMs: number, balance: FlappyBalance, rng: () => number): FlappyState {
   if (state.over) return state
   const dt = dtMs / 1000
-  const { w, h, petX, petR } = FLAPPY_WORLD
+  const { w, h } = state.world
+  const petX = flappyPetX(state.world)
+  const petR = FLAPPY_PET_R
 
   const y = state.y + state.vy * dt + (balance.gravity * dt * dt) / 2
   const vy = state.vy + balance.gravity * dt
@@ -64,7 +78,7 @@ export function stepFlappy(state: FlappyState, dtMs: number, balance: FlappyBala
     .filter((p) => p.x + balance.pipeW > -8)
   let nextSpawnIn = state.nextSpawnIn - balance.pipeSpeed * dt
   if (nextSpawnIn <= 0) {
-    const gapY = 80 + rng() * (h - 200)
+    const gapY = 80 + rng() * Math.max(40, h - 200)
     pipes.push({ x: w + balance.pipeW / 2, gapY, passed: false })
     nextSpawnIn = balance.pipeSpacing
   }
@@ -98,5 +112,5 @@ export function stepFlappy(state: FlappyState, dtMs: number, balance: FlappyBala
   }
 
   const won = !over && score >= balance.winScore
-  return { y: clampedY, vy: clampedVy, pipes, nextSpawnIn, score, over: over || won, won }
+  return { world: state.world, y: clampedY, vy: clampedVy, pipes, nextSpawnIn, score, over: over || won, won }
 }

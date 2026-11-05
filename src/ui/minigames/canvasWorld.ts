@@ -1,15 +1,25 @@
 /**
- * Общая геометрия канвасных мини-игр: мир фиксированного размера вписывается
- * в канвас целиком (letterbox), тапы переводятся обратно в координаты мира.
- * Небо и луг — те же, что на главной сцене, чтобы мини-игры не выглядели
- * чужими демками.
+ * Общая геометрия канвасных мини-игр: мир партии равен реальному размеру
+ * канваса (CSS-пиксели) — игра на весь экран; тапы переводятся обратно
+ * в координаты мира. Небо и луг — те же, что на главной сцене.
  */
+
+import type { MinigameWorld } from '../../game/minigames/world'
 
 export interface WorldView {
   dpr: number
   scale: number
   offsetX: number
   offsetY: number
+}
+
+/** Мир новой партии: реальный размер канваса (не меньше минимального поля). */
+export function canvasWorldSize(canvas: HTMLCanvasElement): MinigameWorld {
+  const rect = canvas.getBoundingClientRect()
+  return {
+    w: Math.max(280, Math.round(rect.width)),
+    h: Math.max(320, Math.round(rect.height)),
+  }
 }
 
 /** Подогнать backing store под CSS-размер и вернуть вписывание мира. */

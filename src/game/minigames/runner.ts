@@ -1,8 +1,11 @@
 /**
  * «Побег»: питомец бежит от препятствий — камни перепрыгнуть, чаек
  * переждать пригнувшись. Скорость растёт, счёт — метры. Чистое ядро:
- * rng передаётся снаружи (спавн препятствий), тесты детерминированы.
+ * rng передаётся снаружи (спавн препятствий), мир приходит снаружи —
+ * в UI это реальный размер канваса, игра занимает весь экран.
  */
+
+import type { MinigameWorld } from './world'
 
 export interface RunnerBalance {
   /** метров до победы (счёт = px/10) */
@@ -22,8 +25,13 @@ export interface RunnerBalance {
   duckMs: number
 }
 
-/** Логический мир игры (px) — рендер масштабирует его под канвас. */
-export const RUNNER_WORLD = { w: 390, h: 420, groundY: 370, petX: 62 } as const
+/** Мир по умолчанию для тестов; в UI мир = размер канваса на старте партии. */
+export const RUNNER_WORLD: MinigameWorld = { w: 390, h: 420 }
+
+/** Питомец бежит на такой высоте от левого края. */
+export const RUNNER_PET_X = 62
+/** Полоса земли внизу мира, px. */
+export const RUNNER_GROUND_H = 50
 
 /** Габариты, влияющие на коллизии. Хит-бокс щедрее рисунка — так честнее. */
 export const RUNNER_HIT = { petW: 36, petStandH: 56, petDuckH: 30, rockW: 24, gullW: 30, gullH: 20, gullBottom: 46 } as const
@@ -36,6 +44,7 @@ export interface RunnerObstacle {
 }
 
 export interface RunnerState {
+  world: MinigameWorld
   /** ноги питомца над землёй, px (0 — на земле) */
   py: number
   /** px/с, вверх — положительно */
@@ -52,8 +61,9 @@ export interface RunnerState {
   won: boolean
 }
 
-export function createRunner(balance: RunnerBalance): RunnerState {
+export function createRunner(balance: RunnerBalance, world: MinigameWorld): RunnerState {
   return {
+    world,
     py: 0,
     vy: 0,
     ducking: false,
@@ -61,7 +71,7 @@ export function createRunner(balance: RunnerBalance): RunnerState {
     speed: balance.speedStart,
     distance: 0,
     obstacles: [],
-    nextSpawnIn: 420,
+    nextSpawnIn: Math.max(300, world.w * 0.5),
     over: false,
     won: false,
   }
@@ -81,7 +91,12 @@ export function duckRunner(state: RunnerState, on: boolean, balance: RunnerBalan
     : { ...state, ducking: false, duckMsLeft: 0 }
 }
 
-export function stepRunner(state: RunnerState, dtMs: number, balance: RunnerBalance, rng: () => number): RunnerState {
+export function stepRunner(
+  state: RunnerState,
+  dtMs: number,
+  balance: RunnerBalance,
+  rng: () => number,
+): RunnerState {
   if (state.over) return state
   const dt = dtMs / 1000
 
@@ -119,9 +134,9 @@ export function stepRunner(state: RunnerState, dtMs: number, balance: RunnerBala
   let nextSpawnIn = state.nextSpawnIn - speed * dt
   if (nextSpawnIn <= 0) {
     if (rng() < 0.4) {
-      obstacles.push({ x: RUNNER_WORLD.w + 30, kind: 'gull', w: RUNNER_HIT.gullW, h: RUNNER_HIT.gullH })
+      obstacles.push({ x: state.world.w + 30, kind: 'gull', w: RUNNER_HIT.gullW, h: RUNNER_HIT.gullH })
     } else {
-      obstacles.push({ x: RUNNER_WORLD.w + 30, kind: 'rock', w: RUNNER_HIT.rockW, h: 24 + rng() * 7 })
+      obstacles.push({ x: state.world.w + 30, kind: 'rock', w: RUNNER_HIT.rockW, h: 24 + rng() * 7 })
     }
     nextSpawnIn += balance.spacingMin + rng() * (balance.spacingMax - balance.spacingMin)
   }
@@ -131,7 +146,7 @@ export function stepRunner(state: RunnerState, dtMs: number, balance: RunnerBala
   const petH = ducking ? RUNNER_HIT.petDuckH : RUNNER_HIT.petStandH
   const petTopAboveGround = py + petH
   for (const o of obstacles) {
-    const overlapsX = o.x < RUNNER_WORLD.petX + RUNNER_HIT.petW / 2 && o.x + o.w > RUNNER_WORLD.petX - RUNNER_HIT.petW / 2
+    const overlapsX = o.x < RUNNER_PET_X + RUNNER_HIT.petW / 2 && o.x + o.w > RUNNER_PET_X - RUNNER_HIT.petW / 2
     if (!overlapsX) continue
     if (o.kind === 'rock') {
       if (py < o.h) over = true
@@ -139,7 +154,19 @@ export function stepRunner(state: RunnerState, dtMs: number, balance: RunnerBala
     if (over) break
   }
 
-  return { py, vy, ducking, duckMsLeft, speed, distance, obstacles, nextSpawnIn, over: over || won, won: won && !over }
+  return {
+    ...state,
+    py,
+    vy,
+    ducking,
+    duckMsLeft,
+    speed,
+    distance,
+    obstacles,
+    nextSpawnIn,
+    over: over || won,
+    won: won && !over,
+  }
 }
 
 /** Счёт: метры с округлением вниз. */

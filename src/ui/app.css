@@ -1102,9 +1102,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  max-width: 480px;
   width: 100%;
-  margin: 0 auto;
   outline: none;
 }
 
@@ -1150,18 +1148,20 @@ body {
   touch-action: none;
 }
 
-/* интро и результат — центр панельного языка меню */
+/* интро и результат — центр панельного языка меню; сами игры без колонки */
 .mg-panel {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  width: 100%;
+  max-width: 480px;
+  margin: 12px auto 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
   text-align: center;
-  margin-top: 12px;
 }
 
 .mg-pet {
@@ -1314,7 +1314,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   width: 100%;
-  max-width: 340px;
+  max-width: 520px;
 }
 
 .mg-card {
