@@ -33,6 +33,8 @@ interface TgWebApp {
     onClick: (cb: () => void) => void
     offClick: (cb: () => void) => void
   }
+  /** Bot API 7.7+: вертикальный свайп не сворачивает мини-апп — игры водят пальцем по экрану */
+  disableVerticalSwipes?: () => void
 }
 
 declare global {
@@ -98,6 +100,8 @@ export function initTelegram(): void {
   app.expand()
   app.setHeaderColor?.(APP_BG)
   app.setBackgroundColor?.(APP_BG)
+  // свайп вниз не должен сворачивать мини-апп: змейка и кормление водят пальцем вниз
+  app.disableVerticalSwipes?.()
 }
 
 export function hapticTap(): void {
