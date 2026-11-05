@@ -1,9 +1,9 @@
 import { useStrings } from './i18n'
 
 /**
- * Карточка «Как играть»: короткие правила — забота, просьбы, квесты, стрик,
- * звёзды за друзей, сон. Живёт подэкраном меню; выход — «← Назад» и
- * системная кнопка Telegram.
+ * Карточка «Как играть»: все механики по разделам — забота, кормление-ловля,
+ * мини-игры, бонусы, настройки. Живёт подэкраном меню; выход — «← Назад»
+ * и системная кнопка Telegram.
  */
 export default function HelpPanel() {
   const str = useStrings()
@@ -12,11 +12,16 @@ export default function HelpPanel() {
       <div className="help-head">
         <p className="help-title">{str.helpTitle}</p>
       </div>
-      <ul className="help-lines">
-        {str.helpLines.map((line) => (
-          <li key={line}>{line}</li>
-        ))}
-      </ul>
+      {str.helpSections.map((section) => (
+        <div className="help-group" key={section.title}>
+          <p className="help-group-title">{section.title}</p>
+          <ul className="help-lines">
+            {section.lines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </section>
   )
 }

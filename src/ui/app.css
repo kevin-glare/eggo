@@ -762,6 +762,26 @@ body {
   font-size: 16px;
 }
 
+/* раздел «Как играть»: заголовок группы в языке секций меню */
+.help-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.help-group + .help-group {
+  margin-top: 6px;
+}
+
+.help-group-title {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .help-lines {
   margin: 0;
   padding: 0;

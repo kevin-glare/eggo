@@ -159,13 +159,44 @@ export const en: Strings = {
   menuHelp: 'How to play',
   menuVersion: 'version',
   helpTitle: 'How to play',
-  helpLines: [
-    '🍔 Feed, play and wash — stats drop on their own, keep an eye on them',
-    '💡 Eggo is asking for something? Do it in time — the effect is doubled',
-    '🎯 Daily quests: the reward goes to the weakest stat',
-    '🔥 Visit every day — streak days and friendship celebrations',
-    '✨ Friends via your link — friendship stars for your pet',
-    '😴 Put it to sleep at night — energy returns by morning',
+  helpSections: [
+    {
+      title: 'Care',
+      lines: [
+        '🍔 Feed, play and wash — stats drop on their own, keep an eye on them',
+        '😴 Put it to sleep at night — energy returns by morning',
+        '🤒 Sick? Good care heals: keep every stat in the clear',
+      ],
+    },
+    {
+      title: 'Catch the food',
+      lines: [
+        '👆 Tap the screen — the pet runs and catches food with its mouth',
+        '🥫 Cans aren’t food: dizzy head and a broken streak',
+        '🤢 Overate? It rests a bit, then you can feed again',
+      ],
+    },
+    {
+      title: 'Mini-games',
+      lines: [
+        '🎮 The “Play” button launches one of five: memory, runner, flight, snake, bubbles',
+        '🏃 Runner: tap above — jump, hold the bottom — duck',
+        '🏆 Winning delights your pet; records survive even on a new device',
+      ],
+    },
+    {
+      title: 'Bonuses',
+      lines: [
+        '💡 Eggo is asking for something? Do it in time — the effect is doubled',
+        '🎯 Daily quests: the reward goes to the weakest stat',
+        '🔥 Visit every day — streak days and friendship celebrations',
+        '✨ Friends via your link — friendship stars for your pet',
+      ],
+    },
+    {
+      title: 'Settings',
+      lines: ['🔊 Sound and language switch in the menu', '🔔 A push will tell you what happened and what to do'],
+    },
   ],
 
   gate: {
