@@ -21,8 +21,6 @@ const SETTLE_MS = 700
 const BUBBLE_PALETTES = [PET_PALETTES.sunny, PET_PALETTES.mint, PET_PALETTES.sky, PET_PALETTES.pink]
 /** Цвет колец-хлопков под каждый окрас. */
 const BUBBLE_COLORS = ['#ffb35c', '#8fe0b0', '#8fd3ff', '#ffb0ce'] as const
-const CELL = 40
-const BOARD_PAD = 12
 
 /** Кольцо-хлопок: анимация лопания живёт в рендере, не в ядре. */
 interface PopRing {
@@ -38,6 +36,7 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
   const balance = config.minigames.bubbles
   // мир партии = реальный размер канваса; сетка выводится из клетки cellPx
   const stateRef = useRef<BubblesState | null>(null)
+  const layoutRef = useRef<{ cell: number; offsetX: number; offsetY: number }>({ cell: 40, offsetX: 0, offsetY: 0 })
   const viewRef = useRef<WorldView>({ dpr: 1, scale: 1, offsetX: 0, offsetY: 0 })
   const ringsRef = useRef<PopRing[]>([])
   const overRef = useRef(false)
@@ -48,11 +47,14 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
 
   const ensureState = (): BubblesState => {
     if (stateRef.current === null) {
+      // клетка подбирается под экран: поле занимает канвас целиком
       const world = canvasWorldSize(canvasRef.current!)
+      const cell = Math.min(54, Math.max(30, Math.floor(Math.min(world.w, world.h) / 11)))
       const size = {
-        cols: Math.min(30, Math.max(6, Math.floor(world.w / balance.cellPx))),
-        rows: Math.min(40, Math.max(8, Math.floor(world.h / balance.cellPx))),
+        cols: Math.max(6, Math.floor(world.w / cell)),
+        rows: Math.max(8, Math.floor(world.h / cell)),
       }
+      layoutRef.current = { cell, offsetX: (world.w - size.cols * cell) / 2, offsetY: (world.h - size.rows * cell) / 2 }
       stateRef.current = createBubbles(balance, size, Math.random)
     }
     return stateRef.current
@@ -79,13 +81,14 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
   }, running)
 
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, s: BubblesState) => {
-    const boardW = s.size.cols * CELL
-    const boardH = s.size.rows * CELL
-    const view = fitWorld(canvas, boardW + 24, boardH + 24)
+    const world = canvasWorldSize(canvas)
+    const view = fitWorld(canvas, world.w, world.h)
     viewRef.current = view
     applyWorld(ctx, canvas, view)
-    const boardX = 12
-    const boardY = 12
+    const CELL = layoutRef.current.cell
+    const boardW = s.size.cols * CELL
+    const boardX = layoutRef.current.offsetX
+    const boardY = layoutRef.current.offsetY
 
     // опасная кромка: ряд, до которого нельзя дать полю подняться
     ctx.strokeStyle = 'rgba(255, 107, 122, 0.4)'
@@ -133,9 +136,10 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     const canvas = canvasRef.current
     if (!canvas) return
     const p = worldPoint(canvas, viewRef.current, e.clientX, e.clientY)
-    const boardX = 12
-    const col = Math.floor((p.x - boardX) / CELL)
-    const row = Math.floor((p.y - BOARD_PAD) / CELL)
+    const boardX = layoutRef.current.offsetX
+    const boardY = layoutRef.current.offsetY
+    const col = Math.floor((p.x - boardX) / layoutRef.current.cell)
+    const row = Math.floor((p.y - boardY) / layoutRef.current.cell)
     const { state, popped } = tapBubble(ensureState(), balance, col, row)
     stateRef.current = state
     if (popped === 0) return
@@ -144,8 +148,8 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     hintRef.current.used = true
     const color = BUBBLE_COLORS[state.grid[row * state.size.cols + col] ?? 0] ?? '#ffb35c'
     ringsRef.current.push({
-      x: boardX + col * CELL + CELL / 2,
-      y: BOARD_PAD + row * CELL + CELL / 2,
+      x: boardX + col * layoutRef.current.cell + layoutRef.current.cell / 2,
+      y: boardY + row * layoutRef.current.cell + layoutRef.current.cell / 2,
       color,
       life: 0,
     })

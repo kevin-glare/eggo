@@ -30,8 +30,13 @@ export const RUNNER_WORLD: MinigameWorld = { w: 390, h: 420 }
 
 /** Питомец бежит на такой высоте от левого края. */
 export const RUNNER_PET_X = 62
-/** Полоса земли внизу мира, px. */
-export const RUNNER_GROUND_H = 50
+/** Линия земли в доле высоты мира: композиция «небо — луг» как у главной сцены. */
+export const RUNNER_GROUND_FRAC = 0.74
+
+/** Единый масштаб мира: элементы и физика растут с экраном, темп игры тот же. */
+export function runnerScale(world: MinigameWorld): number {
+  return Math.min(1.9, Math.max(1, world.h / 420))
+}
 
 /** Габариты, влияющие на коллизии. Хит-бокс щедрее рисунка — так честнее. */
 export const RUNNER_HIT = { petW: 36, petStandH: 56, petDuckH: 30, rockW: 24, gullW: 30, gullH: 20, gullBottom: 46 } as const
@@ -45,6 +50,8 @@ export interface RunnerObstacle {
 
 export interface RunnerState {
   world: MinigameWorld
+  /** единый масштаб мира: все размеры и скорости уже умножены на него */
+  scale: number
   /** ноги питомца над землёй, px (0 — на земле) */
   py: number
   /** px/с, вверх — положительно */
@@ -52,7 +59,7 @@ export interface RunnerState {
   ducking: boolean
   duckMsLeft: number
   speed: number
-  /** пробежано, px (счёт = distance/10) */
+  /** пробежано, экранных px (счёт = distance / (10 · scale) — метры равны на всех устройствах) */
   distance: number
   obstacles: RunnerObstacle[]
   /** px до следующего препятствия */
@@ -62,13 +69,15 @@ export interface RunnerState {
 }
 
 export function createRunner(balance: RunnerBalance, world: MinigameWorld): RunnerState {
+  const scale = runnerScale(world)
   return {
     world,
+    scale,
     py: 0,
     vy: 0,
     ducking: false,
     duckMsLeft: 0,
-    speed: balance.speedStart,
+    speed: balance.speedStart * scale,
     distance: 0,
     obstacles: [],
     nextSpawnIn: Math.max(300, world.w * 0.5),
@@ -80,7 +89,7 @@ export function createRunner(balance: RunnerBalance, world: MinigameWorld): Runn
 /** Прыжок с земли (из приседа выпрыгивает). */
 export function jumpRunner(state: RunnerState, balance: RunnerBalance): RunnerState {
   if (state.over || state.py > 0) return state
-  return { ...state, py: 0.01, vy: balance.jumpV, ducking: false, duckMsLeft: 0 }
+  return { ...state, py: 0.01, vy: balance.jumpV * state.scale, ducking: false, duckMsLeft: 0 }
 }
 
 /** Присед: удержание (клавиша/палец) или свайп с таймером. */
@@ -99,10 +108,11 @@ export function stepRunner(
 ): RunnerState {
   if (state.over) return state
   const dt = dtMs / 1000
+  const s = state.scale
 
-  const speed = state.speed + balance.speedGain * dt
+  const speed = state.speed + balance.speedGain * s * dt
   const distance = state.distance + speed * dt
-  const won = distance / 10 >= balance.winScore
+  const won = distance / (10 * s) >= balance.winScore
 
   // присед со свайпа держится balance.duckMs
   let ducking = state.ducking
@@ -115,11 +125,11 @@ export function stepRunner(
     }
   }
 
-  // прыжок: баллистика над землёй
+  // прыжок: баллистика над землёй (длины и ускорения ×scale — темп тот же)
   let py = state.py
   let vy = state.vy
   if (py > 0 || vy > 0) {
-    vy -= balance.gravity * dt
+    vy -= balance.gravity * s * dt
     py += vy * dt
     if (py <= 0) {
       py = 0
@@ -127,30 +137,31 @@ export function stepRunner(
     }
   }
 
-  // препятствия едут навстречу
+  // препятствия едут навстречу (габариты в масштабе мира)
   const obstacles = state.obstacles
     .map((o) => ({ ...o, x: o.x - speed * dt }))
-    .filter((o) => o.x + o.w > -24)
+    .filter((o) => o.x + o.w > -24 * s)
   let nextSpawnIn = state.nextSpawnIn - speed * dt
   if (nextSpawnIn <= 0) {
     if (rng() < 0.4) {
-      obstacles.push({ x: state.world.w + 30, kind: 'gull', w: RUNNER_HIT.gullW, h: RUNNER_HIT.gullH })
+      obstacles.push({ x: state.world.w + 30 * s, kind: 'gull', w: RUNNER_HIT.gullW * s, h: RUNNER_HIT.gullH * s })
     } else {
-      obstacles.push({ x: state.world.w + 30, kind: 'rock', w: RUNNER_HIT.rockW, h: 24 + rng() * 7 })
+      obstacles.push({ x: state.world.w + 30 * s, kind: 'rock', w: RUNNER_HIT.rockW * s, h: (24 + rng() * 7) * s })
     }
-    nextSpawnIn += balance.spacingMin + rng() * (balance.spacingMax - balance.spacingMin)
+    nextSpawnIn += (balance.spacingMin + rng() * (balance.spacingMax - balance.spacingMin)) * s
   }
 
   // столкновение: камень — ноги ниже его макушки; чайка — голова в её зоне
   let over = false
-  const petH = ducking ? RUNNER_HIT.petDuckH : RUNNER_HIT.petStandH
+  const petH = (ducking ? RUNNER_HIT.petDuckH : RUNNER_HIT.petStandH) * s
+  const petW = RUNNER_HIT.petW * s
   const petTopAboveGround = py + petH
   for (const o of obstacles) {
-    const overlapsX = o.x < RUNNER_PET_X + RUNNER_HIT.petW / 2 && o.x + o.w > RUNNER_PET_X - RUNNER_HIT.petW / 2
+    const overlapsX = o.x < RUNNER_PET_X + petW / 2 && o.x + o.w > RUNNER_PET_X - petW / 2
     if (!overlapsX) continue
     if (o.kind === 'rock') {
       if (py < o.h) over = true
-    } else if (petTopAboveGround > RUNNER_HIT.gullBottom) over = true
+    } else if (petTopAboveGround > RUNNER_HIT.gullBottom * s) over = true
     if (over) break
   }
 
@@ -169,7 +180,7 @@ export function stepRunner(
   }
 }
 
-/** Счёт: метры с округлением вниз. */
+/** Счёт: метры с округлением вниз (независимо от масштаба экрана). */
 export function runnerScore(state: RunnerState): number {
-  return Math.floor(state.distance / 10)
+  return Math.floor(state.distance / (10 * state.scale))
 }

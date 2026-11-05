@@ -19,14 +19,24 @@ interface SnakeGameProps {
 }
 
 const SETTLE_MS = 700
-const CELL = 26
+
+/** Клетка подбирается под экран: поле занимает канвас целиком без пустых полос. */
+function boardLayout(world: { w: number; h: number }, cellsAcross: number) {
+  const cell = Math.min(40, Math.max(18, Math.floor(Math.min(world.w, world.h) / cellsAcross)))
+  return {
+    cell,
+    cols: Math.max(9, Math.floor(world.w / cell)),
+    rows: Math.max(9, Math.floor(world.h / cell)),
+  }
+}
 
 /** «Змейка»: свайпы или стрелки, еда ускоряет; поле выводится из экрана. */
 export default function SnakeGame({ config, appearance, running, onOver }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const balance = config.minigames.snake
-  // мир партии = реальный размер канваса; сетка выводится из клетки cellPx
+  // мир партии = реальный размер канваса; поле занимает его целиком
   const stateRef = useRef<SnakeState | null>(null)
+  const layoutRef = useRef<{ cell: number; offsetX: number; offsetY: number }>({ cell: 26, offsetX: 0, offsetY: 0 })
   const viewRef = useRef<WorldView>({ dpr: 1, scale: 1, offsetX: 0, offsetY: 0 })
   const overRef = useRef(false)
   const onOverRef = useRef(onOver)
@@ -38,11 +48,13 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
   const ensureState = (): SnakeState => {
     if (stateRef.current === null) {
       const world = canvasWorldSize(canvasRef.current!)
-      const grid = {
-        cols: Math.min(40, Math.max(9, Math.floor(world.w / balance.cellPx))),
-        rows: Math.min(40, Math.max(9, Math.floor(world.h / balance.cellPx))),
+      const grid = boardLayout(world, balance.cellPx)
+      layoutRef.current = {
+        cell: grid.cell,
+        offsetX: (world.w - grid.cols * grid.cell) / 2,
+        offsetY: (world.h - grid.rows * grid.cell) / 2,
       }
-      stateRef.current = createSnake(balance, grid, Math.random)
+      stateRef.current = createSnake(balance, { cols: grid.cols, rows: grid.rows }, Math.random)
     }
     return stateRef.current
   }
@@ -66,29 +78,34 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
   }, running)
 
   const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, s: SnakeState) => {
-    const view = fitWorld(canvas, s.grid.cols * CELL + 24, s.grid.rows * CELL + 24)
+    const world = canvasWorldSize(canvas)
+    const view = fitWorld(canvas, world.w, world.h)
     viewRef.current = view
     applyWorld(ctx, canvas, view)
     const palette = PET_PALETTES[appearance.palette]
-    const boardW = s.grid.cols * CELL
-    const boardX = 12
-    const boardY = 12
+    const { cell, offsetX: boardX, offsetY: boardY } = layoutRef.current
+    const boardW = s.grid.cols * cell
+    const boardH = s.grid.rows * cell
 
-    // поле: стеклянная доска в языке карточек
-    ctx.fillStyle = 'rgba(20, 12, 38, 0.55)'
-    ctx.strokeStyle = 'rgba(167, 149, 201, 0.35)'
+    // поле: затемнённая доска со слабой шахматкой — клетка читается, глаз не рябит
+    ctx.fillStyle = 'rgba(16, 9, 32, 0.6)'
+    ctx.fillRect(boardX, boardY, boardW, boardH)
+    ctx.fillStyle = 'rgba(245, 237, 255, 0.025)'
+    for (let row = 0; row < s.grid.rows; row++) {
+      for (let col = (row % 2 === 0 ? 0 : 1); col < s.grid.cols; col += 2) {
+        ctx.fillRect(boardX + col * cell, boardY + row * cell, cell, cell)
+      }
+    }
+    ctx.strokeStyle = 'rgba(167, 149, 201, 0.3)'
     ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.rect(boardX - 6, boardY - 6, boardW + 12, boardW + 12)
-    ctx.fill()
-    ctx.stroke()
+    ctx.strokeRect(boardX - 1, boardY - 1, boardW + 2, boardH + 2)
 
     // еда: яблоко
-    const fx = boardX + s.food.x * CELL + CELL / 2
-    const fy = boardY + s.food.y * CELL + CELL / 2
+    const fx = boardX + s.food.x * cell + cell / 2
+    const fy = boardY + s.food.y * cell + cell / 2
     ctx.fillStyle = '#ff6b6b'
     ctx.beginPath()
-    ctx.arc(fx, fy + 1, CELL * 0.32, 0, Math.PI * 2)
+    ctx.arc(fx, fy + 1, cell * 0.3, 0, Math.PI * 2)
     ctx.fill()
     ctx.strokeStyle = '#8a3038'
     ctx.lineWidth = 2
@@ -96,39 +113,49 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
     ctx.strokeStyle = '#9ec97f'
     ctx.lineWidth = 2.5
     ctx.beginPath()
-    ctx.moveTo(fx, fy - CELL * 0.26)
-    ctx.quadraticCurveTo(fx + 5, fy - CELL * 0.42, fx + 9, fy - CELL * 0.34)
+    ctx.moveTo(fx, fy - cell * 0.24)
+    ctx.quadraticCurveTo(fx + 5, fy - cell * 0.4, fx + 9, fy - cell * 0.32)
     ctx.stroke()
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
     ctx.beginPath()
-    ctx.arc(fx - CELL * 0.1, fy - CELL * 0.06, 2.4, 0, Math.PI * 2)
+    ctx.arc(fx - cell * 0.09, fy - cell * 0.05, 2.4, 0, Math.PI * 2)
     ctx.fill()
 
-    // змейка: тело из бусин окраса питомца, голова — мордочка с ушами
-    for (let i = s.snake.length - 1; i >= 0; i--) {
-      const c = s.snake[i]!
-      const x = boardX + c.x * CELL + CELL / 2
-      const y = boardY + c.y * CELL + CELL / 2
-      if (i === 0) {
-        // голова = тот же мини-питомец: уши, глаза, румянец; лёгкий наклон по движению
-        const tilt = s.dir === 'left' ? -0.12 : s.dir === 'right' ? 0.12 : s.dir === 'up' ? -0.1 : 0.1
-        drawMiniPet(ctx, palette, x, y, CELL * 0.46, { eyes: 'open', tilt })
-        continue
+    // тело: сплошная лента через центры клеток — контур, окрас, блик;
+    // сквозь стену лента рвётся (телепорт), но выглядит как выход за край
+    const center = (c: { x: number; y: number }) => ({ x: boardX + c.x * cell + cell / 2, y: boardY + c.y * cell + cell / 2 })
+    const path = new Path2D()
+    let prev: { x: number; y: number } | null = null
+    for (const seg of s.snake) {
+      const p = center(seg)
+      if (prev === null || Math.abs(p.x - prev.x) > cell * 1.5 || Math.abs(p.y - prev.y) > cell * 1.5) {
+        path.moveTo(p.x, p.y)
+      } else {
+        path.lineTo(p.x, p.y)
       }
-      const r = CELL * 0.38
-      const grad = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.15, x, y, r * 1.4)
-      grad.addColorStop(0, palette.bodyMid)
-      grad.addColorStop(1, palette.bodyShade)
-      ctx.fillStyle = grad
-      ctx.beginPath()
-      ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = palette.outline
-      ctx.lineWidth = 2
-      ctx.stroke()
+      prev = p
     }
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = palette.outline
+    ctx.lineWidth = cell * 0.78
+    ctx.stroke(path)
+    const tape = ctx.createLinearGradient(boardX, boardY, boardX, boardY + boardH)
+    tape.addColorStop(0, palette.bodyMid)
+    tape.addColorStop(1, palette.bodyShade)
+    ctx.strokeStyle = tape
+    ctx.lineWidth = cell * 0.6
+    ctx.stroke(path)
+    ctx.strokeStyle = 'rgba(255, 248, 235, 0.35)'
+    ctx.lineWidth = cell * 0.2
+    ctx.stroke(path)
 
-    drawPill(ctx, getStrings().mgHint.snake, boardX + boardW / 2, boardY + 40, hintRef.current.alpha)
+    // голова — тот же мини-питомец: уши, глаза, румянец; наклон по движению
+    const head = center(s.snake[0]!)
+    const tilt = s.dir === 'left' ? -0.12 : s.dir === 'right' ? 0.12 : s.dir === 'up' ? -0.1 : 0.1
+    drawMiniPet(ctx, palette, head.x, head.y, cell * 0.46, { eyes: 'open', tilt })
+
+    drawPill(ctx, getStrings().mgHint.snake, boardX + boardW / 2, boardY + cell * 1.4, hintRef.current.alpha)
     drawScoreChip(ctx, String(snakeScore(s)), 12, 12)
   }
 

@@ -37,6 +37,8 @@ export interface FlappyPipe {
 
 export interface FlappyState {
   world: MinigameWorld
+  /** единый масштаб мира: размеры и физика уже умножены на него */
+  scale: number
   y: number
   vy: number
   pipes: FlappyPipe[]
@@ -52,41 +54,47 @@ export function flappyPetX(world: MinigameWorld): number {
   return Math.round(world.w * 0.3)
 }
 
+/** Единый масштаб мира: колонны, зазоры и физика растут с экраном, темп тот же. */
+export function flappyScale(world: MinigameWorld): number {
+  return Math.min(1.9, Math.max(1, world.h / 420))
+}
+
 export function createFlappy(balance: FlappyBalance, world: MinigameWorld): FlappyState {
-  return { world, y: world.h * 0.45, vy: 0, pipes: [], nextSpawnIn: balance.pipeSpacing + 60, score: 0, over: false, won: false }
+  return { world, scale: flappyScale(world), y: world.h * 0.45, vy: 0, pipes: [], nextSpawnIn: balance.pipeSpacing * flappyScale(world) + 60, score: 0, over: false, won: false }
 }
 
 /** Взмах: импульс вверх. */
 export function flap(state: FlappyState, balance: FlappyBalance): FlappyState {
   if (state.over) return state
-  return { ...state, vy: -balance.flapV }
+  return { ...state, vy: -balance.flapV * state.scale }
 }
 
 export function stepFlappy(state: FlappyState, dtMs: number, balance: FlappyBalance, rng: () => number): FlappyState {
   if (state.over) return state
   const dt = dtMs / 1000
   const { w, h } = state.world
+  const s = state.scale
   const petX = flappyPetX(state.world)
-  const petR = FLAPPY_PET_R
+  const petR = FLAPPY_PET_R * s
 
-  const y = state.y + state.vy * dt + (balance.gravity * dt * dt) / 2
-  const vy = state.vy + balance.gravity * dt
+  const y = state.y + state.vy * dt + (balance.gravity * s * dt * dt) / 2
+  const vy = state.vy + balance.gravity * s * dt
 
   // колонны едут влево, за левым краем выбрасываются
   let pipes = state.pipes
-    .map((p) => ({ ...p, x: p.x - balance.pipeSpeed * dt }))
-    .filter((p) => p.x + balance.pipeW > -8)
-  let nextSpawnIn = state.nextSpawnIn - balance.pipeSpeed * dt
+    .map((p) => ({ ...p, x: p.x - balance.pipeSpeed * s * dt }))
+    .filter((p) => p.x + balance.pipeW * s > -8)
+  let nextSpawnIn = state.nextSpawnIn - balance.pipeSpeed * s * dt
   if (nextSpawnIn <= 0) {
-    const gapY = 80 + rng() * Math.max(40, h - 200)
-    pipes.push({ x: w + balance.pipeW / 2, gapY, passed: false })
-    nextSpawnIn = balance.pipeSpacing
+    const gapY = 80 * s + rng() * Math.max(40 * s, h - 200 * s)
+    pipes.push({ x: w + (balance.pipeW * s) / 2, gapY, passed: false })
+    nextSpawnIn = balance.pipeSpacing * s
   }
 
   // счёт: колонна пройдена, когда хвост колонны позади питомца
   let score = state.score
   pipes = pipes.map((p) => {
-    if (!p.passed && p.x + balance.pipeW < petX - petR) {
+    if (!p.passed && p.x + balance.pipeW * s < petX - petR) {
       score += 1
       return { ...p, passed: true }
     }
@@ -99,9 +107,9 @@ export function stepFlappy(state: FlappyState, dtMs: number, balance: FlappyBala
   const clampedVy = y < petR ? Math.max(0, vy) : vy
 
   // колонны: круг против двух прямоугольников
-  const gapHalf = balance.pipeGap / 2
+  const gapHalf = (balance.pipeGap * s) / 2
   for (const p of pipes) {
-    const nearX = petX + petR > p.x && petX - petR < p.x + balance.pipeW
+    const nearX = petX + petR > p.x && petX - petR < p.x + balance.pipeW * s
     if (!nearX) continue
     const topBottom = p.gapY - gapHalf
     const bottomTop = p.gapY + gapHalf
@@ -112,5 +120,5 @@ export function stepFlappy(state: FlappyState, dtMs: number, balance: FlappyBala
   }
 
   const won = !over && score >= balance.winScore
-  return { world: state.world, y: clampedY, vy: clampedVy, pipes, nextSpawnIn, score, over: over || won, won }
+  return { world: state.world, scale: s, y: clampedY, vy: clampedVy, pipes, nextSpawnIn, score, over: over || won, won }
 }

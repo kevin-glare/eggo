@@ -65,12 +65,14 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
     const h = s.world.h
     drawMinigameSky(ctx, w, h, h - 34, performance.now())
 
-    // колонны: конфетно-зелёные столбы со шляпками и светлым бликом
-    const gapHalf = balance.pipeGap / 2
+    // колонны: конфетно-зелёные столбы со шляпками и светлым бликом (в масштабе мира)
+    const pw = balance.pipeW * s.scale
+    const cap = 6 * s.scale
+    const gapHalf = (balance.pipeGap * s.scale) / 2
     for (const p of s.pipes) {
       const topH = p.gapY - gapHalf
       const bottomY = p.gapY + gapHalf
-      const grad = ctx.createLinearGradient(p.x, 0, p.x + balance.pipeW, 0)
+      const grad = ctx.createLinearGradient(p.x, 0, p.x + pw, 0)
       grad.addColorStop(0, '#7cc35b')
       grad.addColorStop(0.35, '#a5dd80')
       grad.addColorStop(1, '#5ea84a')
@@ -78,25 +80,25 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
       ctx.strokeStyle = '#3f7d34'
       ctx.lineWidth = 2.5
       // стволы
-      ctx.fillRect(p.x, 0, balance.pipeW, Math.max(0, topH - 14))
-      ctx.strokeRect(p.x, -2, balance.pipeW, Math.max(0, topH - 12))
-      ctx.fillRect(p.x, bottomY + 14, balance.pipeW, h - bottomY - 14)
-      ctx.strokeRect(p.x, bottomY + 12, balance.pipeW, h - bottomY - 10)
+      ctx.fillRect(p.x, 0, pw, Math.max(0, topH - 14 * s.scale))
+      ctx.strokeRect(p.x, -2, pw, Math.max(0, topH - 12 * s.scale))
+      ctx.fillRect(p.x, bottomY + 14 * s.scale, pw, h - bottomY - 14 * s.scale)
+      ctx.strokeRect(p.x, bottomY + 12 * s.scale, pw, h - bottomY - 10 * s.scale)
       // шляпки чуть шире ствола — игрушечные трубы
-      ctx.fillRect(p.x - 5, topH - 16, balance.pipeW + 10, 16)
-      ctx.strokeRect(p.x - 5, topH - 16, balance.pipeW + 10, 16)
-      ctx.fillRect(p.x - 5, bottomY, balance.pipeW + 10, 16)
-      ctx.strokeRect(p.x - 5, bottomY, balance.pipeW + 10, 16)
+      ctx.fillRect(p.x - cap, topH - 16 * s.scale, pw + cap * 2, 16 * s.scale)
+      ctx.strokeRect(p.x - cap, topH - 16 * s.scale, pw + cap * 2, 16 * s.scale)
+      ctx.fillRect(p.x - cap, bottomY, pw + cap * 2, 16 * s.scale)
+      ctx.strokeRect(p.x - cap, bottomY, pw + cap * 2, 16 * s.scale)
       // вертикальный блик
       ctx.fillStyle = 'rgba(255, 255, 255, 0.22)'
-      ctx.fillRect(p.x + 7, 0, 6, Math.max(0, topH - 16))
-      ctx.fillRect(p.x + 7, bottomY + 16, 6, h - bottomY - 16)
+      ctx.fillRect(p.x + 7 * s.scale, 0, 6 * s.scale, Math.max(0, topH - 16 * s.scale))
+      ctx.fillRect(p.x + 7 * s.scale, bottomY + 16 * s.scale, 6 * s.scale, h - bottomY - 16 * s.scale)
     }
 
     // питомец парит: наклон по вертикальной скорости
     const palette = PET_PALETTES[appearance.palette]
-    const tilt = Math.max(-0.35, Math.min(0.6, s.vy / 500))
-    drawMiniPet(ctx, palette, flappyPetX(s.world), s.y, FLAPPY_PET_R + 4, {
+    const tilt = Math.max(-0.35, Math.min(0.6, s.vy / (500 * s.scale)))
+    drawMiniPet(ctx, palette, flappyPetX(s.world), s.y, FLAPPY_PET_R * s.scale + 4, {
       eyes: 'open',
       tilt,
       mouthOpen: 0.4,

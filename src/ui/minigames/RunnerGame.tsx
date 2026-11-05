@@ -5,7 +5,7 @@ import {
   createRunner,
   duckRunner,
   jumpRunner,
-  RUNNER_GROUND_H,
+  RUNNER_GROUND_FRAC,
   RUNNER_HIT,
   RUNNER_PET_X,
   runnerScore,
@@ -89,7 +89,7 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
     applyWorld(ctx, canvas, view)
     const w = s.world.w
     const h = s.world.h
-    const groundY = h - RUNNER_GROUND_H
+    const groundY = Math.round(h * RUNNER_GROUND_FRAC)
     const petX = RUNNER_PET_X
     drawMinigameSky(ctx, w, h, groundY, performance.now())
 
@@ -129,9 +129,9 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
       }
     }
 
-    // питомец
+    // питомец — в масштабе мира, как и препятствия
     const palette = PET_PALETTES[appearance.palette]
-    const petR = 26
+    const petR = 26 * s.scale
     drawMiniPet(ctx, palette, petX, groundY - s.py - petR * 0.92 * (s.ducking ? 0.58 : 1), petR, {
       squash: s.ducking ? 0.58 : 1,
       eyes: 'open',
