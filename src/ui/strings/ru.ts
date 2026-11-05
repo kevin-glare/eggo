@@ -270,6 +270,8 @@ export const ru = {
     skyNight: '🌙 ночь',
     reset: 'Сброс',
     resetConfirm: 'Начать новую игру?',
+    pickGame: 'Мини-игра для «Играть»',
+    pickGameRandom: '🎲 случайно',
   },
 }
 

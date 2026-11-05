@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
-import { AVAILABLE_MINIGAMES, pickMinigame } from './game/minigames'
+import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
 import { desire, getMood } from './game/engine'
@@ -79,6 +79,8 @@ export default function App() {
   // мини-игра кнопки «Играть»: id запущенной партии и её применённый итог
   const [minigameId, setMinigameId] = useState<MinigameId | null>(null)
   const [minigameResult, setMinigameResult] = useState<MinigameResultView | null>(null)
+  // dev: принудительный выбор мини-игры вместо случайной
+  const [forcedGame, setForcedGame] = useState<MinigameId | 'random'>('random')
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // перекорм: питомец отдыхает после объедения — мягкий отказ вместо сессии
@@ -110,7 +112,7 @@ export default function App() {
     }
     track('minigame-open')
     setMinigameResult(null)
-    setMinigameId(pickMinigame(AVAILABLE_MINIGAMES))
+    setMinigameId(forcedGame === 'random' ? pickMinigame(AVAILABLE_MINIGAMES) : forcedGame)
   }
   // партия доиграна: награда применяется один раз, здесь; итог — на экран результата
   const onMinigameFinish = (id: MinigameId, outcome: MinigameOutcome) => {
@@ -298,6 +300,20 @@ export default function App() {
           >
             {str.dev.reset}
           </button>
+          {/* dev: выбрать мини-игру для кнопки «Играть» */}
+          <select
+            className="dev-select"
+            value={forcedGame}
+            onChange={(e) => setForcedGame(e.target.value as MinigameId | 'random')}
+            aria-label={str.dev.pickGame}
+          >
+            <option value="random">{str.dev.pickGameRandom}</option>
+            {MINIGAME_IDS.map((id) => (
+              <option key={id} value={id}>
+                {str.game[id].title}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
