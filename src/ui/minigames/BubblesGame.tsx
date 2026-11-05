@@ -6,6 +6,8 @@ import { hapticTap } from '../../telegram'
 import { getStrings } from '../i18n'
 import { playSound } from '../sound'
 import { applyWorld, canvasWorldSize, drawPill, drawScoreChip, fitWorld, worldPoint, type WorldView } from './canvasWorld'
+import { drawMiniPet } from './miniPet'
+import { PET_PALETTES } from '../petArt'
 import { useGameLoop } from './useGameLoop'
 
 interface BubblesGameProps {
@@ -15,7 +17,9 @@ interface BubblesGameProps {
 }
 
 const SETTLE_MS = 700
-/** Цвета пузырей — палитра Eggo: апельсин, мята, небо, розовый. */
+/** Окрасы шариков-персонажей — четыре палитры питомцев Eggo. */
+const BUBBLE_PALETTES = [PET_PALETTES.sunny, PET_PALETTES.mint, PET_PALETTES.sky, PET_PALETTES.pink]
+/** Цвет колец-хлопков под каждый окрас. */
 const BUBBLE_COLORS = ['#ffb35c', '#8fe0b0', '#8fd3ff', '#ffb0ce'] as const
 const CELL = 40
 const BOARD_PAD = 12
@@ -99,18 +103,11 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
         if (color < 0) continue
         const x = boardX + col * CELL + CELL / 2
         const y = boardY + row * CELL + CELL / 2
-        const base = BUBBLE_COLORS[color] ?? '#ffb35c'
-        const grad = ctx.createRadialGradient(x - 6, y - 7, 3, x, y, CELL * 0.46)
-        grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
-        grad.addColorStop(0.35, base)
-        grad.addColorStop(1, 'rgba(30, 18, 52, 0.35)')
-        ctx.fillStyle = grad
-        ctx.beginPath()
-        ctx.arc(x, y, CELL * 0.42, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
-        ctx.lineWidth = 1.4
-        ctx.stroke()
+        // каждый шар — мини-питомец своего окраса (палитры Eggo)
+        const pal = BUBBLE_PALETTES[color] ?? PET_PALETTES.sunny
+        // лёгкое покачивание — живые шарики
+        const wob = Math.sin(performance.now() / 700 + col * 1.7 + row * 0.9) * 1.5
+        drawMiniPet(ctx, pal, x, y + wob, CELL * 0.36, { eyes: 'open' })
       }
     }
 

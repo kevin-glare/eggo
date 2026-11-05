@@ -8,6 +8,7 @@ import { playSound } from '../sound'
 import { PET_PALETTES } from '../petArt'
 import type { PetAppearance } from '../../game/appearance'
 import { applyWorld, canvasWorldSize, drawPill, drawScoreChip, fitWorld, type WorldView } from './canvasWorld'
+import { drawMiniPet } from './miniPet'
 import { useGameLoop } from './useGameLoop'
 
 interface SnakeGameProps {
@@ -103,14 +104,20 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
     ctx.arc(fx - CELL * 0.1, fy - CELL * 0.06, 2.4, 0, Math.PI * 2)
     ctx.fill()
 
-    // змейка: тело — питомец, голова с глазами
+    // змейка: тело из бусин окраса питомца, голова — мордочка с ушами
     for (let i = s.snake.length - 1; i >= 0; i--) {
       const c = s.snake[i]!
       const x = boardX + c.x * CELL + CELL / 2
       const y = boardY + c.y * CELL + CELL / 2
-      const r = i === 0 ? CELL * 0.44 : CELL * 0.38
+      if (i === 0) {
+        // голова = тот же мини-питомец: уши, глаза, румянец; лёгкий наклон по движению
+        const tilt = s.dir === 'left' ? -0.12 : s.dir === 'right' ? 0.12 : s.dir === 'up' ? -0.1 : 0.1
+        drawMiniPet(ctx, palette, x, y, CELL * 0.46, { eyes: 'open', tilt })
+        continue
+      }
+      const r = CELL * 0.38
       const grad = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.15, x, y, r * 1.4)
-      grad.addColorStop(0, i === 0 ? palette.bodyLight : palette.bodyMid)
+      grad.addColorStop(0, palette.bodyMid)
       grad.addColorStop(1, palette.bodyShade)
       ctx.fillStyle = grad
       ctx.beginPath()
@@ -119,17 +126,6 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
       ctx.strokeStyle = palette.outline
       ctx.lineWidth = 2
       ctx.stroke()
-      if (i === 0) {
-        // глазки по направлению
-        const dx = s.dir === 'left' ? -1 : s.dir === 'right' ? 1 : 0
-        const dy = s.dir === 'up' ? -1 : s.dir === 'down' ? 1 : 0
-        ctx.fillStyle = '#2c2118'
-        for (const side of [-1, 1]) {
-          ctx.beginPath()
-          ctx.arc(x + dx * r * 0.35 + (dy === 0 ? 0 : side * r * 0.3), y + dy * r * 0.35 - (dx === 0 ? 0 : side * r * 0.3), 2.2, 0, Math.PI * 2)
-          ctx.fill()
-        }
-      }
     }
 
     drawPill(ctx, getStrings().mgHint.snake, boardX + boardW / 2, boardY + 40, hintRef.current.alpha)
