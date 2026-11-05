@@ -5,6 +5,7 @@
  */
 import type { ActionReason } from '../../game/actions'
 import type { QuestId } from '../../game/quests'
+import type { MinigameId } from '../../game/minigames/types'
 
 /** Русская плюрализация: 1 день, 3 дня, 14 дней. */
 function pluralDays(n: number): string {
@@ -126,7 +127,31 @@ export const ru = {
   questClaimedAria: 'Награда получена',
 
   // --- подсказки сценок (PetCanvas) ---
-  sceneHint: { feed: 'Тапай по еде!', wash: 'Води пальцем по питомцу', play: 'Тапай по мячу!' },
+  sceneHint: { feed: 'Тапай по еде!', wash: 'Води пальцем по питомцу' },
+
+  // --- мини-игры (кнопка «Играть») ---
+  mgPause: 'Пауза',
+  mgResume: 'Продолжить',
+  mgExit: 'Выйти',
+  mgStart: 'Старт',
+  mgAgain: 'Ещё раз',
+  mgDone: 'Готово',
+  mgBest: (n: number) => `Рекорд: ${n}`,
+  mgNewRecord: '🏆 Новый рекорд!',
+  mgBonus: (n: number) => `Эгго в восторге: +${n} к счастью`,
+  mgLost: 'Эгго грустит, но верит в тебя!',
+  mgRecordToast: (n: number) => `🏆 Новый рекорд: ${n}!`,
+  mgTime: (s: number) => `${s} с`,
+  mgMatched: 'пара собрана',
+  mgCardHidden: 'Закрытая карточка',
+  mgPairsLeft: (n: number) => `Осталось пар: ${n}`,
+  game: {
+    memory: { title: '🧠 Память', hint: 'Открывай карточки и находи все пары, пока не вышло время' },
+    runner: { title: '🏃 Побег', hint: 'Тап — прыжок, свайп вниз — пригнуться' },
+    flappy: { title: '🎈 Полёт', hint: 'Тапай, чтобы не упасть' },
+    snake: { title: '🐍 Змейка', hint: 'Свайпы или стрелки — собирай еду' },
+    bubbles: { title: '🫧 Пузыри', hint: 'Лопай группы из трёх и больше одинаковых' },
+  } as Record<MinigameId, { title: string; hint: string }>,
 
   // --- просьбы питомца ---
   requestHint: '💡 Эгго что-то просит! Успей — эффект будет двойным',

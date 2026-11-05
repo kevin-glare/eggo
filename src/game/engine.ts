@@ -23,6 +23,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     lastVisitDayKey: null,
     request: null,
     nextRequestAt: now + config.requests.firstDelayMs,
+    minigameBest: {},
   }
 }
 

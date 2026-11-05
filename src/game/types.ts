@@ -1,5 +1,6 @@
 import type { PetAppearance } from './appearance'
 import type { DailyQuests } from './quests'
+import type { MinigameId } from './minigames/types'
 
 export type Stage = 'egg' | 'baby' | 'child' | 'teen' | 'adult'
 
@@ -60,4 +61,6 @@ export interface PetState {
   request: PetRequest | null
   /** реальный момент, когда питомец снова может попросить (мс, epoch) */
   nextRequestAt: number
+  /** рекорды мини-игр: лучший счёт каждой; у старых сейвов пусто (нормализуется) */
+  minigameBest: Partial<Record<MinigameId, number>>
 }

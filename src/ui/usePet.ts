@@ -16,6 +16,8 @@ import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/que
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
+import type { MinigameId, MinigameOutcome } from '../game/minigames/types'
+import { applyMinigameBonus, minigameBonus, recordMinigameScore } from '../game/minigames/reward'
 import { updateRequest } from '../game/requests'
 import { applyReferralReward } from '../game/referrals'
 import { useStrings } from './i18n'
@@ -265,6 +267,35 @@ useEffect(() => {
   const playPet = useCallback(() => apply(play, str.actionSuccess.play, 'play'), [apply])
   const washPet = useCallback(() => apply(wash, str.actionSuccess.wash, 'wash'), [apply])
 
+  /**
+   * Партия мини-игры доиграна: база — обычный play() (радость, усталость,
+   * просьба ×2, квест и серия — всё как у прежней кнопки «Играть»), сверху
+   * бонус за победу и запись рекорда. Весь итог — одно событие игрока.
+   */
+  const finishMinigame = useCallback(
+    (id: MinigameId, outcome: MinigameOutcome): { isRecord: boolean; bonus: number } => {
+      // базовое «поиграли»: отказ (уже счастлив и т.п.) не мешает рекорду
+      const base = playPet()
+      const current = base?.state ?? petRef.current
+      if (current === null) return { isRecord: false, bonus: 0 }
+      const rec = recordMinigameScore(current, id, outcome.score)
+      const bonus = minigameBonus(outcome.won, rec.isRecord, config)
+      let next = rec.state
+      if (bonus > 0) next = applyMinigameBonus(next, bonus)
+      if (next !== current) {
+        setPet({ ...next, lastEventAt: Date.now() })
+        forceSyncRef.current = true
+      }
+      if (!outcome.won) setNotice(str.mgLost)
+      else if (rec.isRecord) {
+        setNotice(str.mgRecordToast(outcome.score))
+        setCelebrate((n) => n + 1)
+      }
+      return { isRecord: rec.isRecord, bonus }
+    },
+    [config, playPet, str],
+  )
+
   // кулдаун поглаживания живёт в сессии: сердечки при любом тапе остаются,
   // но счастье капает не чаще config.actions.pet.cooldownMs
   const lastPetAtRef = useRef(0)
@@ -352,6 +383,7 @@ useEffect(() => {
     feedPet,
     playPet,
     washPet,
+    finishMinigame,
     petPet,
     claimDaily,
     showNotice,

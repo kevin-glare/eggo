@@ -4,6 +4,8 @@ import { stageForAge, tick } from './engine'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
 import type { PetRequest, PetState, RequestKind, Stats } from './types'
+import { MINIGAME_IDS } from './minigames'
+import type { MinigameId } from './minigames/types'
 
 const SAVE_VERSION = 1
 
@@ -41,6 +43,22 @@ function normalizeRequest(raw: unknown): PetRequest | null {
   return { kind: r.kind as RequestKind, expiresAt: r.expiresAt }
 }
 
+/**
+ * Рекорды мини-игр появились позже сейва v1: отсутствие или поломка
+ * нормализуется в пустую таблицу — просто рекордов пока нет.
+ */
+function normalizeMinigameBest(raw: unknown): Partial<Record<MinigameId, number>> {
+  if (typeof raw !== 'object' || raw === null) return {}
+  const out: Partial<Record<MinigameId, number>> = {}
+  for (const [key, value] of Object.entries(raw)) {
+    if (!MINIGAME_IDS.includes(key as MinigameId)) continue
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      out[key as MinigameId] = Math.floor(value)
+    }
+  }
+  return out
+}
+
 interface SaveData {
   version: number
   pet: PetState
@@ -76,6 +94,7 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
         : null,
       request: normalizeRequest(pet.request),
       nextRequestAt: typeof pet.nextRequestAt === 'number' && pet.nextRequestAt >= 0 ? pet.nextRequestAt : 0,
+      minigameBest: normalizeMinigameBest(pet.minigameBest),
     }
   } catch {
     return null
@@ -155,8 +174,24 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     // болезнь не снимаем задним числом: вылечит тик при достойном уходе
     sick: caughtNewer.sick || caughtOlder.sick,
     neglectMs: Math.max(caughtNewer.neglectMs, caughtOlder.neglectMs),
+    // рекорды, как статы, — детерминированное поле: берём по максимуму,
+    // чтобы лучший счёт с любого девайса не затирался
+    minigameBest: mergeMinigameBest(caughtNewer.minigameBest, caughtOlder.minigameBest),
     lastTickAt: timeline,
   }
+}
+
+/** Рекорды по каждому виду игр — максимум из двух сторон. */
+function mergeMinigameBest(
+  a: Partial<Record<MinigameId, number>> | undefined,
+  b: Partial<Record<MinigameId, number>> | undefined,
+): Partial<Record<MinigameId, number>> {
+  const out: Partial<Record<MinigameId, number>> = { ...(a ?? {}) }
+  for (const id of MINIGAME_IDS) {
+    const other = b?.[id]
+    if (other !== undefined && other > (out[id] ?? 0)) out[id] = other
+  }
+  return out
 }
 
 /**

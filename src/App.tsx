@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
+import { AVAILABLE_MINIGAMES, pickMinigame } from './game/minigames'
+import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
 import { desire, getMood } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
@@ -17,6 +19,7 @@ import { hapticTap, referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
 import MenuScreen from './ui/MenuScreen'
+import MinigameOverlay, { type MinigameResultView } from './ui/minigames/MinigameOverlay'
 import { version as APP_VERSION } from '../package.json'
 import './ui/app.css'
 
@@ -48,6 +51,7 @@ export default function App() {
     feedPet,
     playPet,
     washPet,
+    finishMinigame,
     petPet,
     claimDaily,
     showNotice,
@@ -71,6 +75,9 @@ export default function App() {
   const [scene, setScene] = useState<PetActionKind | null>(null)
   // полноэкранный экран меню; «Позови друга» и «Как играть» — подэкраны внутри
   const [menuOpen, setMenuOpen] = useState(false)
+  // мини-игра кнопки «Играть»: id запущенной партии и её применённый итог
+  const [minigameId, setMinigameId] = useState<MinigameId | null>(null)
+  const [minigameResult, setMinigameResult] = useState<MinigameResultView | null>(null)
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // guard'ы проверяются чистым вызовом: отказ — тост и хаптика как раньше
@@ -86,15 +93,23 @@ export default function App() {
     track(kind)
     if (kind === 'feed') feedPet()
     else if (kind === 'wash') washPet()
-    else if (kind === 'play') playPet()
   }
   const onPlay = () => {
-    if (scene !== null || pet === null) return
+    if (scene !== null || minigameId !== null || pet === null) return
+    // guard'ы — чистым вызовом: отказ с тостом как раньше, успех — мини-игра
     if (!play(pet, config).ok) {
       playPet()
       return
     }
-    setScene('play')
+    track('minigame-open')
+    setMinigameResult(null)
+    setMinigameId(pickMinigame(AVAILABLE_MINIGAMES))
+  }
+  // партия доиграна: награда применяется один раз, здесь; итог — на экран результата
+  const onMinigameFinish = (id: MinigameId, outcome: MinigameOutcome) => {
+    track('minigame-finish')
+    const summary = finishMinigame(id, outcome)
+    setMinigameResult({ ...outcome, ...summary })
   }
   const onWash = () => {
     if (scene !== null || pet === null) return
@@ -275,6 +290,25 @@ export default function App() {
             {str.dev.reset}
           </button>
         </div>
+      )}
+
+      {/* мини-игра: полноэкранный оверлей над всем, награда применяется один раз в конце */}
+      {minigameId !== null && (
+        <MinigameOverlay
+          id={minigameId}
+          config={config}
+          best={pet.minigameBest[minigameId] ?? null}
+          stage={pet.stage}
+          mood={mood}
+          appearance={pet.appearance}
+          result={minigameResult}
+          onFinish={(outcome) => onMinigameFinish(minigameId, outcome)}
+          onRestart={() => setMinigameResult(null)}
+          onClose={() => {
+            setMinigameId(null)
+            setMinigameResult(null)
+          }}
+        />
       )}
 
       {/* экран меню: фиксированный оверлей, из потока layout'а не выпадает */}

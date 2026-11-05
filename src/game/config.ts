@@ -65,6 +65,13 @@ export interface GameConfig {
   }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
+  /** мини-игры кнопки «Играть»: числа баланса ядер и наград */
+  minigames: {
+    /** «Память»: пары карточек и время на всю партию; победа — собрать всё до нуля */
+    memory: { pairs: number; timeLimitMs: number }
+    /** награда сверх базовой радости play(): за победу и за новый рекорд */
+    reward: { winBonus: number; recordBonus: number }
+  }
   /** праздничные темы оформления: окна по (месяц, день) включительно; откат темы — enabled: false */
   holidays: HolidayWindows
   /** пуши от бота: пороги и кулдауны (логика — game/notifications.ts) */
@@ -133,6 +140,12 @@ export const DEFAULT_CONFIG: GameConfig = {
     milestones: [1, 3, 10],
   },
   streak: { milestones: [3, 7, 14] },
+  // мини-игры: «Память» — 6 пар за минуту; победа даёт бонус к счастью,
+  // новый рекорд — ещё немного сверху (база — обычный play())
+  minigames: {
+    memory: { pairs: 6, timeLimitMs: 60_000 },
+    reward: { winBonus: 6, recordBonus: 4 },
+  },
   // Хэллоуин: с 24 октября по 2 ноября
   holidays: {
     halloween: { enabled: true, from: [10, 24], to: [11, 2] },

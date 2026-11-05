@@ -4,7 +4,8 @@ import type { Mood } from '../game/types'
 import { setLang, useLang, useStrings } from './i18n'
 import InvitePanel from './InvitePanel'
 import HelpPanel from './HelpPanel'
-import { createVisualState, drawPet, GROUND_Y, SCENE_W } from './petArt'
+import PetBadge from './PetBadge'
+import { useDialogFocus } from './useDialogFocus'
 import { track } from '../metrika'
 import { hapticTap, tg } from '../telegram'
 
@@ -67,44 +68,12 @@ export default function MenuScreen({
   const lang = useLang()
   const [view, setView] = useState<MenuView>('root')
   const panelRef = useRef<HTMLElement>(null)
-  const artRef = useRef<HTMLCanvasElement>(null)
   // экран закрыт — подэкран сбрасывается, следующее открытие начинается с корня
   useEffect(() => {
     if (!open) setView('root')
   }, [open])
-  // фокус-менеджмент диалога: фокус в панель на открытии, Tab не выпускает,
-  // на закрытии фокус возвращается на кнопку, открывшую меню
-  useEffect(() => {
-    if (!open) return
-    const prevFocus = document.activeElement as HTMLElement | null
-    panelRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-        return
-      }
-      if (e.key !== 'Tab' || !panelRef.current) return
-      const focusables = panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled])')
-      if (focusables.length === 0) {
-        e.preventDefault()
-        return
-      }
-      const first = focusables[0]!
-      const last = focusables[focusables.length - 1]!
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) {
-        e.preventDefault()
-        last.focus()
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      prevFocus?.focus()
-    }
-  }, [open, onClose])
+  // фокус-менеджмент диалога: фокус в панель, Tab не выпускает, Escape закрывает
+  useDialogFocus(panelRef, open, onClose)
   // Telegram BackButton: из корня закрывает меню, из подэкрана ведёт назад
   useEffect(() => {
     if (!open) return
@@ -121,20 +90,6 @@ export default function MenuScreen({
       btn.hide()
     }
   }, [open, view, onClose])
-  // мини-арт питомца: один статичный кадр движка petArt в карточке профиля
-  useEffect(() => {
-    const canvas = artRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const s = 0.42
-    ctx.setTransform(2, 0, 0, 2, 0, 0)
-    ctx.clearRect(0, 0, 120, 110)
-    ctx.translate(60 - (SCENE_W / 2) * s, 100 - (GROUND_Y + 6) * s)
-    ctx.scale(s, s)
-    drawPet(ctx, pet.stage, mood, pet.appearance, createVisualState(), 0, 0)
-    ctx.setTransform(1, 0, 0, 1, 0, 0)
-  }, [pet.appearance, pet.stage, mood])
 
   // каждый ряд экрана отвечает на тап хаптикой
   const tap = (fn: () => void) => () => {
@@ -172,7 +127,7 @@ export default function MenuScreen({
           {view === 'root' ? (
             <>
               <div className="menu-profile">
-                <canvas ref={artRef} className="menu-avatar" width={240} height={220} aria-hidden="true" />
+                <PetBadge stage={pet.stage} mood={mood} appearance={pet.appearance} className="menu-avatar" />
                 <div className="menu-profile-text">
                   <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
                   <p className="menu-profile-meta">

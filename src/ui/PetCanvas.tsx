@@ -20,7 +20,7 @@ import { hapticTap } from '../telegram'
 import { sampleDayCycle } from './dayCycle'
 import { isHintDone, markHintDone, type HintKind } from './hints'
 
-export type PetActionKind = 'feed' | 'play' | 'wash'
+export type PetActionKind = 'feed' | 'wash'
 
 interface PetCanvasProps {
   stage: Stage
@@ -69,9 +69,9 @@ interface Particle {
   wobPh?: number
 }
 
-/** Реквизит сцены с действием: ножка и мячик живут на канвасе, пока их твинит GSAP. */
+/** Реквизит сцены с действием: живёт на канвасе, пока его твинит GSAP. */
 interface StageProp {
-  kind: 'drumstick' | 'ball'
+  kind: 'drumstick'
   x: number
   y: number
   rot: number
@@ -81,7 +81,6 @@ interface StageProp {
 
 const FOOD_X = SCENE_W / 2 + 64
 const FOOD_Y = GROUND_Y - 10
-const BALL_REST_Y = GROUND_Y - 12
 /** Торт праздника дружбы — на траве слева от питомца. */
 const CAKE_X = SCENE_W / 2 - 120
 
@@ -121,24 +120,6 @@ const WASH_STROKES = 6
 /** Сколько px пути пальцем засчитывается как одно проведение. */
 const WASH_SEGMENT_PX = 56
 const WASH_IDLE_MS = 8_000
-
-/**
- * Сценка «поймай мяч»: мяч летает по дугам, тап по нему — отбивание
- * (питомец прыгает, искры); PLAY_HITS отбиваний — наигрались.
- * Промахи не штрафуют; без отбиваний PLAY_IDLE_MS — мяч улетает,
- * действие всё равно применяется. Движок — один раз в конце.
- */
-interface PlayScene {
-  ball: StageProp
-  hits: number
-  done: boolean
-  idleTimer: number | null
-}
-
-const PLAY_HITS = 3
-/** Щедрая хит-зона мяча, px. */
-const PLAY_HIT_R = 36
-const PLAY_IDLE_MS = 10_000
 
 /**
  * Подсказки сценок: подпись сверху + указатель на цель (кольцо на еде и
@@ -271,8 +252,6 @@ export default function PetCanvas({
   const feedRef = useRef<FeedScene | null>(null)
   // сценка купания: путь пальца по питомцу копится в проведениях
   const washRef = useRef<WashScene | null>(null)
-  // сценка с мячом: тапы по летящему мячу
-  const playRef = useRef<PlayScene | null>(null)
   const dragRef = useRef<{ active: boolean; x: number; y: number; moved: number } | null>(null)
   const dragMovedRef = useRef(false)
   const completeRef = useRef(onSceneComplete)
@@ -377,13 +356,7 @@ export default function PetCanvas({
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
       drawPet(ctx, st, md, look, v, now, prog, dirt)
-      drawHintOverlay(
-        ctx,
-        hintRef.current,
-        now,
-        feedRef.current?.landed === true,
-        playRef.current?.done === false ? playRef.current.ball : null,
-      )
+      drawHintOverlay(ctx, hintRef.current, now, feedRef.current?.landed === true)
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
@@ -474,101 +447,6 @@ export default function PetCanvas({
     }
     prevStageRef.current = stage
   }, [stage])
-
-  // сценка «поймай мяч»: мяч летает по дугам, ждёт тапов-отбиваний
-  useEffect(() => {
-    if (!scene || scene !== 'play') return
-    if (propsRef.current.stage === 'egg') return
-    busyUntilRef.current = performance.now() + 20_000
-    const stageProps = stagePropsRef.current
-    const ball: StageProp = { kind: 'ball', x: -30, y: BALL_REST_Y, rot: 0, scale: 1, alpha: 1 }
-    stageProps.push(ball)
-    const sc: PlayScene = { ball, hits: 0, done: false, idleTimer: null }
-    playRef.current = sc
-    if (prefersReducedMotion()) {
-      ball.x = SCENE_W / 2
-      ball.y = GROUND_Y - 120
-    } else {
-      launchBall(sc)
-    }
-    sc.idleTimer = window.setTimeout(autoPlayFinish, PLAY_IDLE_MS)
-    showHint('play', 0.6)
-    return () => {
-      if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
-      gsap.killTweensOf(ball)
-      removeProp(stageProps, ball)
-      playRef.current = null
-      hintRef.current = null
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene])
-
-  /** Новая дуга в случайную точку неба; живёт, пока сцена активна. */
-  function launchBall(sc: PlayScene): void {
-    if (sc.done || playRef.current !== sc) return
-    const from = { x: sc.ball.x, y: sc.ball.y }
-    const to = { x: 55 + Math.random() * (SCENE_W - 110), y: 70 + Math.random() * (GROUND_Y - 170) }
-    const dur = Math.max(0.6, Math.min(1.1, Math.hypot(to.x - from.x, to.y - from.y) / 380))
-    const peak = Math.min(from.y, to.y) - 45
-    gsap.killTweensOf(sc.ball)
-    gsap.to(sc.ball, { x: to.x, duration: dur, ease: 'none' })
-    gsap.to(sc.ball, { y: peak, duration: dur / 2, ease: 'power2.out' })
-    gsap.to(sc.ball, {
-      y: to.y,
-      duration: dur / 2,
-      ease: 'power2.in',
-      delay: dur / 2,
-      onComplete: () => gsap.delayedCall(0.15, () => launchBall(sc)),
-    })
-    gsap.to(sc.ball, { rot: '+=6', duration: dur, ease: 'none' })
-  }
-
-  /** Мяч улетает, сцена доиграна: действие применяется даже без отбиваний. */
-  function autoPlayFinish(): void {
-    const sc = playRef.current
-    if (!sc || sc.done) return
-    sc.done = true
-    if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
-    if (!prefersReducedMotion()) {
-      gsap.killTweensOf(sc.ball)
-      gsap.to(sc.ball, { x: SCENE_W + 60, duration: 0.7, ease: 'none' })
-    }
-    gsap.delayedCall(0.75, () => completeRef.current?.('play'))
-  }
-
-  /** Отбить мяч: прыжок питомца, искры, новая дуга; три отбивания — наигрались. */
-  const hitBall = () => {
-    const sc = playRef.current
-    if (!sc || sc.done) return
-    sc.hits += 1
-    hideHint('play')
-    if (sc.idleTimer !== null) window.clearTimeout(sc.idleTimer)
-    hapticTap()
-    spawnSparkles(particlesRef.current)
-    const v = visRef.current
-    if (!prefersReducedMotion()) {
-      gsap
-        .timeline({ overwrite: 'auto' })
-        .to(v, { jumpY: -30, duration: 0.16, ease: 'power2.out' })
-        .to(v, { jumpY: 0, duration: 0.45, ease: 'elastic.out(1.1, 0.4)' })
-    }
-    if (sc.hits >= PLAY_HITS) {
-      sc.done = true
-      if (prefersReducedMotion()) {
-        sc.ball.alpha = 0
-        completeRef.current?.('play')
-        return
-      }
-      gsap.killTweensOf(sc.ball)
-      gsap.to(sc.ball, { x: SCENE_W + 60, duration: 0.7, ease: 'none' })
-      gsap.to(sc.ball, { y: BALL_REST_Y - 50, duration: 0.35, ease: 'power2.out' })
-      gsap.to(sc.ball, { y: BALL_REST_Y, duration: 0.35, ease: 'power2.in', delay: 0.35 })
-      gsap.delayedCall(0.75, () => completeRef.current?.('play'))
-    } else {
-      sc.idleTimer = window.setTimeout(autoPlayFinish, PLAY_IDLE_MS)
-      launchBall(sc)
-    }
-  }
 
   // сценка «кормление с руки»: еда падает, ждёт тапов-укусов, доиграла — complete
   useEffect(() => {
@@ -808,12 +686,6 @@ export default function PetCanvas({
       biteFood()
       return
     }
-    // сценка с мячом: тап по мячу — отбивание
-    const ps = playRef.current
-    if (ps && !ps.done && Math.hypot(x - ps.ball.x, y - ps.ball.y) <= PLAY_HIT_R) {
-      hitBall()
-      return
-    }
     const stroked = propsRef.current.stage !== 'egg' && hitPet(x, y)
     const v = visRef.current
     busyUntilRef.current = Math.max(busyUntilRef.current, performance.now() + 1_200)
@@ -920,14 +792,12 @@ function drawHintOverlay(
   hint: SceneHint | null,
   now: number,
   feedLanded: boolean,
-  playBall: StageProp | null,
 ): void {
   if (!hint || hint.alpha <= 0.01) return
-  // указатель цели: кольцо на еде и мяче, ведущий палец при купании
+  // указатель цели: кольцо на еде, ведущий палец при купании
   let ring: { x: number; y: number } | null = null
   let finger: { x: number; y: number } | null = null
   if (hint.kind === 'feed' && feedLanded) ring = { x: FOOD_X, y: FOOD_Y }
-  if (hint.kind === 'play' && playBall) ring = { x: playBall.x, y: playBall.y }
   if (hint.kind === 'wash') finger = { x: SCENE_W / 2 + Math.sin(now / 700) * 46, y: GROUND_Y - 90 }
 
   ctx.save()
@@ -1016,31 +886,10 @@ function spawnCrumbs(particles: Particle[], x: number, y: number): void {
   }
 }
 
-function spawnSparkles(particles: Particle[]): void {
-  for (let i = 0; i < 5; i++) {
-    particles.push({
-      x: SCENE_W / 2 + (Math.random() - 0.5) * 80,
-      y: GROUND_Y - 95 - Math.random() * 35,
-      vx: (Math.random() - 0.5) * 30,
-      vy: -10 - Math.random() * 20,
-      rot: Math.random() * Math.PI,
-      vr: 1.5,
-      life: 0,
-      maxLife: 0.8 + Math.random() * 0.4,
-      size: 3 + Math.random() * 2.5,
-      color: '#ffd76a',
-      shape: 'sparkle',
-      grav: 0,
-    })
-  }
-}
-
 /* ---------- отрисовка реквизита и частиц ---------- */
-
 function drawStageProps(ctx: CanvasRenderingContext2D, props: StageProp[]): void {
   for (const p of props) {
-    if (p.kind === 'drumstick') drawDrumstick(ctx, p)
-    else drawBall(ctx, p)
+    drawDrumstick(ctx, p)
   }
 }
 
@@ -1120,36 +969,6 @@ function drawDrumstick(ctx: CanvasRenderingContext2D, f: StageProp): void {
   ctx.beginPath()
   ctx.ellipse(-3.5, -3, 5, 3, -0.5, 0, Math.PI * 2)
   ctx.fillStyle = 'rgba(255, 224, 170, 0.7)'
-  ctx.fill()
-  ctx.restore()
-}
-
-/** Мячик: красный с белой полосой, катится с наклоном. */
-function drawBall(ctx: CanvasRenderingContext2D, b: StageProp): void {
-  ctx.save()
-  ctx.translate(b.x, b.y)
-  ctx.rotate(b.rot)
-  ctx.scale(b.scale, b.scale)
-  ctx.globalAlpha = b.alpha
-  ctx.beginPath()
-  ctx.arc(0, 0, 13, 0, Math.PI * 2)
-  ctx.fillStyle = '#ff6b6b'
-  ctx.fill()
-  ctx.save()
-  ctx.clip()
-  ctx.fillStyle = '#fff7ee'
-  ctx.beginPath()
-  ctx.ellipse(0, 0, 14, 4.6, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-  ctx.strokeStyle = '#8a3038'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.arc(0, 0, 13, 0, Math.PI * 2)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(-4.5, -5.5, 2.6, 0, Math.PI * 2)
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
   ctx.fill()
   ctx.restore()
 }

@@ -83,7 +83,31 @@ export const en: Strings = {
   questClaimAria: 'Claim the daily reward',
   questClaimedAria: 'Reward claimed',
 
-  sceneHint: { feed: 'Tap the food!', wash: 'Rub the pet with your finger', play: 'Tap the ball!' },
+  sceneHint: { feed: 'Tap the food!', wash: 'Rub the pet with your finger' },
+
+  // --- minigames (the “Play” button) ---
+  mgPause: 'Pause',
+  mgResume: 'Resume',
+  mgExit: 'Exit',
+  mgStart: 'Start',
+  mgAgain: 'Play again',
+  mgDone: 'Done',
+  mgBest: (n: number) => `Best: ${n}`,
+  mgNewRecord: '🏆 New record!',
+  mgBonus: (n: number) => `Eggo is thrilled: +${n} happiness`,
+  mgLost: 'Eggo is sad but believes in you!',
+  mgRecordToast: (n: number) => `🏆 New record: ${n}!`,
+  mgTime: (s: number) => `${s} s`,
+  mgMatched: 'pair matched',
+  mgCardHidden: 'Hidden card',
+  mgPairsLeft: (n: number) => `Pairs left: ${n}`,
+  game: {
+    memory: { title: '🧠 Memory', hint: 'Flip the cards and match every pair before time runs out' },
+    runner: { title: '🏃 Runner', hint: 'Tap to jump, swipe down to duck' },
+    flappy: { title: '🎈 Flight', hint: 'Tap to stay airborne' },
+    snake: { title: '🐍 Snake', hint: 'Swipe or arrow keys — collect the food' },
+    bubbles: { title: '🫧 Bubbles', hint: 'Pop groups of three or more alike' },
+  },
 
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',

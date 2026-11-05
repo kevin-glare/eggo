@@ -102,6 +102,22 @@ describe('serialize / deserialize', () => {
     const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.lastEventAt).toBe(0)
   })
+
+  it('старый сейв без рекордов мини-игр → пустая таблица', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, { minigameBest: { memory: 42 } })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.minigameBest
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.minigameBest).toEqual({})
+  })
+
+  it('битые рекорды мини-игр отбрасываются по одному: неизвестный вид и не-число', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, { minigameBest: { memory: 42 } })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    data.pet.minigameBest = { memory: 42, рыба: 7, runner: 'мусор', snake: -3 }
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.minigameBest).toEqual({ memory: 42 })
+  })
 })
 
 describe('catchUp — оффлайн-время', () => {
@@ -204,6 +220,13 @@ describe('mergeStates — слияние состояний одного пит�
     const e2 = makePet(DEFAULT_CONFIG, { lastTickAt: 2 * HOUR, lastEventAt: 2 * HOUR, name: null })
     expect(mergeStates(e1, e2, DEFAULT_CONFIG)).toEqual(e2)
     expect(mergeStates(e2, e1, DEFAULT_CONFIG)).toEqual(e2)
+  })
+
+  it('рекорды мини-игр сливаются по максимуму с обеих сторон', () => {
+    const a = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, minigameBest: { memory: 70, runner: 5 } })
+    const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, minigameBest: { memory: 30, snake: 9 } })
+    expect(mergeStates(a, b, DEFAULT_CONFIG).minigameBest).toEqual({ memory: 70, runner: 5, snake: 9 })
+    expect(mergeStates(b, a, DEFAULT_CONFIG).minigameBest).toEqual({ memory: 70, runner: 5, snake: 9 })
   })
 })
 
