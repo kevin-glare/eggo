@@ -7,7 +7,7 @@ export const MINIGAME_IDS: MinigameId[] = ['memory', 'runner', 'flappy', 'snake'
  * Игры, уже реализованные в UI: кнопка «Играть» выбирает случайную из них.
  * Новая партия ядер добавляется сюда вместе с рендером в ui/minigames.
  */
-export const AVAILABLE_MINIGAMES: MinigameId[] = ['memory', 'runner', 'flappy']
+export const AVAILABLE_MINIGAMES: MinigameId[] = ['memory', 'runner', 'flappy', 'snake', 'bubbles']
 
 /** Случайная мини-игра; rng передаётся снаружи — тесты детерминированы. */
 export function pickMinigame(ids: MinigameId[], rng: () => number = Math.random): MinigameId {

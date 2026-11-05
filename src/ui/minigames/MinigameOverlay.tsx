@@ -10,6 +10,8 @@ import { useDialogFocus } from '../useDialogFocus'
 import MemoryGame from './MemoryGame'
 import RunnerGame from './RunnerGame'
 import FlappyGame from './FlappyGame'
+import SnakeGame from './SnakeGame'
+import BubblesGame from './BubblesGame'
 
 /** Показ результата: счёт, рекорд и бонус — уже применённые в usePet. */
 export interface MinigameResultView {
@@ -168,6 +170,12 @@ export default function MinigameOverlay({
             )}
             {id === 'flappy' && (
               <FlappyGame key={gameKey} config={config} appearance={appearance} running={!paused} onOver={handleOver} />
+            )}
+            {id === 'snake' && (
+              <SnakeGame key={gameKey} config={config} appearance={appearance} running={!paused} onOver={handleOver} />
+            )}
+            {id === 'bubbles' && (
+              <BubblesGame key={gameKey} config={config} running={!paused} onOver={handleOver} />
             )}
             {paused && (
               <div className="mg-veil">
