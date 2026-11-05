@@ -142,9 +142,11 @@ export default function MenuScreen({
                 <div className="menu-profile-text">
                   <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
                   <p className="menu-profile-meta">
-                    {str.stage[pet.stage]} · {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
+                    {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
                   </p>
                 </div>
+                {/* стадия — у правого края карточки */}
+                <span className="menu-profile-stage">{str.stage[pet.stage]}</span>
               </div>
               <p className="menu-section">{str.menuSettings}</p>
               <nav className="menu-rows">
@@ -234,12 +236,12 @@ export default function MenuScreen({
             </>
           ) : (
             <div className="menu-sub">
-              <button type="button" className="menu-row" onClick={tap(back)}>
-                <span className="menu-row-icon" aria-hidden="true">
+              {/* возврат — компактной кнопкой у правого края */}
+              <div className="menu-sub-head">
+                <button type="button" className="tool-btn" onClick={tap(back)} aria-label={str.menuBack}>
                   ←
-                </span>
-                <span className="menu-row-label">{str.menuBack}</span>
-              </button>
+                </button>
+              </div>
               {view === 'invite' ? (
                 <InvitePanel invited={invited} stars={pet.appearance.refMark} milestones={milestones} onShare={onShare} />
               ) : (

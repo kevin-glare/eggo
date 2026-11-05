@@ -556,6 +556,27 @@ body {
   color: var(--muted);
 }
 
+/* стадия питомца — у правого края карточки профиля */
+.menu-profile-stage {
+  margin-left: auto;
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent-lo));
+  border: 1px solid var(--edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+
+/* подэкран: возврат прижат к правому краю */
+.menu-sub-head {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* прокручиваемое тело экрана — запас на рост списка пунктов */
 .menu-body {
   flex: 1;
