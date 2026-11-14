@@ -7,7 +7,6 @@ import type { Strings } from './ru'
 export const en: Strings = {
   loading: 'Loading your pet…',
   ageLabel: 'Age:',
-  streakTitle: 'Days in a row',
   streakConverted: '⭐ Your accumulated streak days became stars!',
   stage: {
     egg: '🥚 Egg',

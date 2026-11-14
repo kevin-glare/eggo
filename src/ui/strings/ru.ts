@@ -47,7 +47,6 @@ export const ru = {
   // --- главный экран ---
   loading: 'Загружаем питомца…',
   ageLabel: 'Возраст:',
-  streakTitle: 'Дней подряд',
   streakConverted: '⭐ Накопленные огоньки стали звёздочками!',
   stage: {
     egg: '🥚 Яйцо',
