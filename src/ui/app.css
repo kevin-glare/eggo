@@ -1334,17 +1334,6 @@ body {
   flex-wrap: wrap;
 }
 
-.dev-select {
-  background: transparent;
-  border: 1px dashed var(--stroke);
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
 .devtools button {
   background: transparent;
   border: 1px dashed var(--stroke);

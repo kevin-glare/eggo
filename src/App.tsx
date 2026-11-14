@@ -5,7 +5,7 @@ import { feed, play, wash } from './game/actions'
 import { dayGame } from './game/dailyChallenge'
 import { allAchievementIds } from './game/achievements'
 import { itemById } from './game/economy'
-import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
+import { AVAILABLE_MINIGAMES, pickMinigame } from './game/minigames'
 import { dayKey } from './game/quests'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
@@ -88,8 +88,6 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [minigameId, setMinigameId] = useState<MinigameId | null>(null)
   const [minigameResult, setMinigameResult] = useState<MinigameResultView | null>(null)
-  // dev: принудительный выбор мини-игры вместо случайной
-  const [forcedGame, setForcedGame] = useState<MinigameId | 'random'>('random')
   const onFeed = () => {
     if (scene !== null || pet === null) return
     // перекорм: питомец отдыхает после объедения — мягкий отказ вместо сессии
@@ -121,12 +119,12 @@ export default function App() {
     }
     setPickerOpen(true)
   }
-  // плитка пикера выбрана: «случайная» уважает dev-форс
+  // плитка пикера выбрана: «случайная» — честный rng
   const launchGame = (id: MinigameId | 'random') => {
     track('minigame-open')
     setPickerOpen(false)
     setMinigameResult(null)
-    setMinigameId(id === 'random' ? (forcedGame === 'random' ? pickMinigame(AVAILABLE_MINIGAMES) : forcedGame) : id)
+    setMinigameId(id === 'random' ? pickMinigame(AVAILABLE_MINIGAMES) : id)
   }
   // партия доиграна: награда применяется один раз, здесь; итог — на экран результата
   const onMinigameFinish = (id: MinigameId, outcome: MinigameOutcome) => {
@@ -377,20 +375,6 @@ export default function App() {
           >
             {str.dev.reset}
           </button>
-          {/* dev: выбрать мини-игру для кнопки «Играть» */}
-          <select
-            className="dev-select"
-            value={forcedGame}
-            onChange={(e) => setForcedGame(e.target.value as MinigameId | 'random')}
-            aria-label={str.dev.pickGame}
-          >
-            <option value="random">{str.dev.pickGameRandom}</option>
-            {MINIGAME_IDS.map((id) => (
-              <option key={id} value={id}>
-                {str.game[id].title}
-              </option>
-            ))}
-          </select>
         </div>
       )}
 

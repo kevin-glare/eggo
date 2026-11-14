@@ -304,7 +304,5 @@ export const en: Strings = {
     skyNight: '🌙 night',
     reset: 'Reset',
     resetConfirm: 'Start a new game?',
-    pickGame: 'Mini-game for “Play”',
-    pickGameRandom: '🎲 random',
   },
 }
