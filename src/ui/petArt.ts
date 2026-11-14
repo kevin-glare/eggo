@@ -190,6 +190,7 @@ export function drawPet(
   tMs: number,
   eggProgress: number,
   dirtLevel: DirtLevel = 0,
+  accessory: string | null = null,
 ): void {
   const cx = SCENE_W / 2 + v.wanderX
   const bob = v.bob + v.jumpY
@@ -231,7 +232,7 @@ export function drawPet(
   if (stage === 'egg') {
     drawEgg(ctx, eggProgress, EGG_PALETTE)
   } else {
-    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v, tMs, dirtLevel)
+    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v, tMs, dirtLevel, accessory)
   }
   ctx.restore()
 }
@@ -245,6 +246,7 @@ function drawCreature(
   v: PetVisualState,
   tMs: number,
   dirtLevel: DirtLevel,
+  accessory: string | null,
 ): void {
   const blink = v.blink
   const dirtAlpha = v.dirtAlpha
@@ -337,6 +339,117 @@ function drawCreature(
   if (mood === 'sick') drawSweat(ctx, rx * 0.6, cy - ry * 0.85, tMs)
   if (v.dizzy > 0.02) drawDizzyStars(ctx, cy, ry, tMs, v.dizzy)
   drawFlies(ctx, cy, ry, dirtLevel, dirtAlpha, tMs)
+  if (accessory !== null) drawAccessory(ctx, d, rx, ry, cy, faceScale, p, accessory)
+}
+
+/**
+ * Аксессуар поверх существа: id из config.shop.items ('acc-cap' → 'cap').
+ * Координаты локальные — начало в точке контакта с землёй, рисуется
+ * последним, поверх лица: очки обрамляют глаза, кепка сидит на макушке.
+ */
+function drawAccessory(
+  ctx: CanvasRenderingContext2D,
+  d: Dims,
+  rx: number,
+  ry: number,
+  cy: number,
+  faceScale: number,
+  p: PetPalette,
+  accessory: string,
+): void {
+  const kind = accessory.replace(/^acc-/, '')
+  const topY = cy - ry
+  ctx.lineWidth = 3
+  ctx.strokeStyle = p.outline
+  switch (kind) {
+    case 'cap': {
+      // кепка: полусфера на макушке, козырёк, пуговка
+      ctx.fillStyle = '#e0533f'
+      ctx.beginPath()
+      ctx.ellipse(0, topY + ry * 0.16, rx * 0.72, ry * 0.36, 0, Math.PI, Math.PI * 2)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = '#c8402e'
+      ctx.beginPath()
+      ctx.ellipse(0, topY + ry * 0.16, rx * 0.88, ry * 0.13, 0, 0, Math.PI)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = '#f2c14e'
+      ctx.beginPath()
+      ctx.arc(0, topY - ry * 0.18, 4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+      break
+    }
+    case 'crown': {
+      // корона: зубцы на макушке, камушек по центру
+      const baseY = topY + 5
+      const w = rx * 0.42
+      const h = ry * 0.3
+      ctx.fillStyle = '#f2c14e'
+      ctx.beginPath()
+      ctx.moveTo(-w, baseY)
+      ctx.lineTo(-w, baseY - h * 0.6)
+      ctx.lineTo(-w * 0.45, baseY - h * 0.75)
+      ctx.lineTo(0, baseY - h)
+      ctx.lineTo(w * 0.45, baseY - h * 0.75)
+      ctx.lineTo(w, baseY - h * 0.6)
+      ctx.lineTo(w, baseY)
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = '#e0533f'
+      ctx.beginPath()
+      ctx.arc(0, baseY - h * 0.18, 3.5, 0, Math.PI * 2)
+      ctx.fill()
+      break
+    }
+    case 'glasses': {
+      // очки: два кольца вокруг глаз, переносица и дужки
+      const ey = cy + d.eyeDY
+      const ex = d.eyeDX * faceScale
+      ctx.strokeStyle = '#2b2135'
+      ctx.lineWidth = 3.5
+      for (const side of [-1, 1]) {
+        ctx.beginPath()
+        ctx.arc(side * ex, ey, d.eyeR + 4.5, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      ctx.beginPath()
+      ctx.moveTo(-ex + d.eyeR + 4.5, ey)
+      ctx.lineTo(ex - d.eyeR - 4.5, ey)
+      ctx.moveTo(ex + d.eyeR + 4.5, ey)
+      ctx.lineTo(rx * 0.95, ey - 2)
+      ctx.moveTo(-ex - d.eyeR - 4.5, ey)
+      ctx.lineTo(-rx * 0.95, ey - 2)
+      ctx.stroke()
+      break
+    }
+    case 'bandana': {
+      // шарф: полоса по нижней части тела (клип в силуэт) + узелок сбоку
+      ctx.save()
+      ctx.beginPath()
+      ctx.ellipse(0, cy, rx, ry, 0, 0, Math.PI * 2)
+      ctx.clip()
+      ctx.fillStyle = '#3f7bd9'
+      ctx.fillRect(-rx, cy + ry * 0.52, rx * 2, ry * 0.2)
+      ctx.restore()
+      ctx.beginPath()
+      ctx.moveTo(rx * 0.55, cy + ry * 0.55)
+      ctx.lineTo(rx * 0.98, cy + ry * 0.72)
+      ctx.lineTo(rx * 0.72, cy + ry * 0.84)
+      ctx.closePath()
+      ctx.fillStyle = '#3f7bd9'
+      ctx.fill()
+      ctx.strokeStyle = p.outline
+      ctx.stroke()
+      break
+    }
+    default:
+      break
+  }
 }
 
 /** Цвета грязи: бурые и зеленоватые пятна + тёмные мухи. */

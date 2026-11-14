@@ -266,6 +266,10 @@ export const DEFAULT_CONFIG: GameConfig = {
     items: [
       { id: 'dish-cake', kind: 'dish', price: 8, emoji: '🍰', bonusPerFood: 4 },
       { id: 'dish-feast', kind: 'dish', price: 15, emoji: '🍱', bonusPerFood: 8 },
+      { id: 'acc-cap', kind: 'accessory', price: 25, emoji: '🧢' },
+      { id: 'acc-bandana', kind: 'accessory', price: 30, emoji: '🧣' },
+      { id: 'acc-glasses', kind: 'accessory', price: 35, emoji: '👓' },
+      { id: 'acc-crown', kind: 'accessory', price: 60, emoji: '👑' },
     ],
   },
   // уровень дружбы: ~75 опыта в день заботы; уровни через ~1.5 дня, 4 дня,

@@ -691,6 +691,12 @@ body {
   box-shadow: 0 0 0 var(--edge), inset 0 2px 6px rgba(186, 96, 20, 0.45);
 }
 
+.shop-buy.ghost {
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  color: var(--ink);
+  box-shadow: 0 3px 0 rgba(20, 12, 38, 0.55), inset 0 1px 0 var(--sheen);
+}
+
 .menu-profile-age {
   margin: 0;
   font-size: 12.5px;

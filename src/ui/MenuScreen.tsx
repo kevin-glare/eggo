@@ -43,6 +43,8 @@ interface MenuScreenProps {
   onBuyService: (id: ServiceId | 'nanny') => { ok: boolean; reason?: 'no-stars' }
   /** витамин: лечит сразу; здоровому не нужен */
   onVitamin: () => { ok: boolean; reason?: 'healthy' | 'no-stars' }
+  /** надеть/снять купленную косметику */
+  onActivate: (id: string) => { ok: boolean }
   /** настроение питомца — рисуется в мини-арте */
   mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
@@ -86,6 +88,7 @@ export default function MenuScreen({
   servicePrices,
   onBuyService,
   onVitamin,
+  onActivate,
   mood,
   notifSupported,
   notifEnabled,
@@ -235,7 +238,13 @@ export default function MenuScreen({
           {view === 'root' ? (
             <>
               <div className="menu-profile">
-                <PetBadge stage={pet.stage} mood={mood} appearance={pet.appearance} className="menu-avatar" />
+                <PetBadge
+                  stage={pet.stage}
+                  mood={mood}
+                  appearance={pet.appearance}
+                  accessory={pet.cosmetics.activeAccessory}
+                  className="menu-avatar"
+                />
                 {renaming ? (
                   <form
                     className="menu-rename"
@@ -434,6 +443,11 @@ export default function MenuScreen({
                           {items.map((it) => {
                             const title = str.shopItem[it.id]?.title ?? it.id
                             const active = it.kind === 'dish' && pet.dish === it.id
+                            const worn = it.kind === 'accessory' && pet.cosmetics.activeAccessory === it.id
+                            const decorOn =
+                              it.kind === 'decor' &&
+                              it.decorSlot !== undefined &&
+                              pet.cosmetics.decor[it.decorSlot] === it.id
                             const owned = it.kind !== 'dish' && pet.cosmetics.owned.includes(it.id)
                             return (
                               <div key={it.id} className="shop-row">
@@ -444,7 +458,13 @@ export default function MenuScreen({
                                 {active ? (
                                   <span className="mg-chip">{str.shopActive}</span>
                                 ) : owned ? (
-                                  <span className="mg-chip">{str.shopOwned}</span>
+                                  <button
+                                    type="button"
+                                    className="shop-buy ghost"
+                                    onClick={tap(() => onActivate(it.id))}
+                                  >
+                                    {worn || decorOn ? str.remove : str.wear}
+                                  </button>
                                 ) : (
                                   <button type="button" className="shop-buy" onClick={tap(() => handleBuy(it.id))}>
                                     ⭐ {it.price}

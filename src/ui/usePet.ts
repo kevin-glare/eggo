@@ -15,7 +15,7 @@ import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { dayGame } from '../game/dailyChallenge'
 import { evaluateAchievements } from '../game/achievements'
-import { buyItem, type BuyReason } from '../game/economy'
+import { activateItem, buyItem, type BuyReason } from '../game/economy'
 import { buyService as buyServiceAction, useVitamin as useVitaminAction, type ServiceId, type VitaminReason } from '../game/services'
 import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
@@ -400,8 +400,7 @@ useEffect(() => {
   }, [config])
 
   /** Купить суточный пропуск автосервиса («няня» — все три). */
-  const buyService = useCallback((id: ServiceId | 'nanny'): { ok: boolean; reason?: 'no-stars' } => {
-    const current = petRef.current
+  const buyService = useCallback((id: ServiceId | 'nanny'): { ok: boolean; reason?: 'no-stars' } => {    const current = petRef.current
     if (current === null) return { ok: false, reason: 'no-stars' }
     const res = buyServiceAction(current, id, config, Date.now())
     if (res.ok) {
@@ -416,6 +415,18 @@ useEffect(() => {
     const current = petRef.current
     if (current === null) return { ok: false, reason: 'healthy' }
     const res = useVitaminAction(current, config)
+    if (res.ok) {
+      setPet({ ...res.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+    }
+    return { ok: res.ok, reason: res.reason }
+  }, [config])
+
+  /** Надеть/снять купленную косметику (декор — тумблер слота). */
+  const activate = useCallback((id: string): { ok: boolean; reason?: 'unknown-item' | 'not-owned' } => {
+    const current = petRef.current
+    if (current === null) return { ok: false, reason: 'not-owned' }
+    const res = activateItem(current, id, config)
     if (res.ok) {
       setPet({ ...res.state, lastEventAt: Date.now() })
       forceSyncRef.current = true
@@ -508,6 +519,7 @@ useEffect(() => {
     buy,
     buyService,
     useVitaminItem,
+    activate,
     reset,
   }
 }

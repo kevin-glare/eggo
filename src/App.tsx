@@ -69,6 +69,7 @@ export default function App() {
     buy,
     buyService,
     useVitaminItem,
+    activate,
     reset,
   } = usePet(config)
   // служебные кнопки шапки: состояние тумблера пушей живёт на сервере
@@ -259,6 +260,7 @@ export default function App() {
               appearance={pet.appearance}
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
+              accessory={pet.cosmetics.activeAccessory}
               neglectLevel={neglectLevel(pet, config)}
               desire={desireKind}
               request={pet.request}
@@ -391,6 +393,7 @@ export default function App() {
           servicePrices={config.services.prices}
           onBuyService={buyService}
           onVitamin={useVitaminItem}
+          onActivate={activate}
           mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}

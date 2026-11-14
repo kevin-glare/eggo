@@ -33,6 +33,8 @@ interface PetCanvasProps {
   eggProgress: number
   /** 0..3 — насколько питомец грязный (из чистоты); undefined = чист */
   dirtLevel?: DirtLevel
+  /** надетый аксессуар (id из config.shop.items); undefined/null — без аксессуара */
+  accessory?: string | null
   /** 0..3 — запущенность сцены (из neglectMs): луг вянет; undefined = ухожен */
   neglectLevel?: 0 | 1 | 2 | 3
   /** чего питомец хочет прямо сейчас — пузырёк над головой; null = скрыт */
@@ -209,6 +211,7 @@ export default function PetCanvas({
   appearance,
   eggProgress,
   dirtLevel = 0,
+  accessory = null,
   neglectLevel = 0,
   desire,
   request,
@@ -223,8 +226,8 @@ export default function PetCanvas({
   cake = false,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, cake, feeding, fullness })
-  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, cake, feeding, fullness }
+  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessory, cake, feeding, fullness })
+  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessory, cake, feeding, fullness }
   const visRef = useRef<PetVisualState>(createVisualState())
   const sceneRef = useRef({ energy: 0.7, warm: 0.9, neglect: 0 })
   const particlesRef = useRef<Particle[]>([])
@@ -308,7 +311,7 @@ export default function PetCanvas({
     const frame = (now: number) => {
       const dt = Math.min(64, now - last)
       last = now
-      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour, dirtLevel: dirt, cake: showCake } =
+      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour, dirtLevel: dirt, accessory: acc, cake: showCake } =
         propsRef.current
 
       // сессия кормления: питомец бежит по лугу за тапом, ядро решает поимки
@@ -359,7 +362,7 @@ export default function PetCanvas({
       if (feed && !feed.done) drawFeedItems(ctx, feed.core, now)
       updateParticles(particles, dt / 1000)
       drawParticles(ctx, particles)
-      drawPet(ctx, st, md, look, v, now, prog, dirt)
+      drawPet(ctx, st, md, look, v, now, prog, dirt, acc)
       drawHintOverlay(ctx, hintRef.current, now)
       raf = requestAnimationFrame(frame)
     }

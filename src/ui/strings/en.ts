@@ -179,7 +179,13 @@ export const en: Strings = {
   shopItem: {
     'dish-cake': { title: 'Cake — extra fullness for one feeding session' },
     'dish-feast': { title: 'Feast — the heartiest single session' },
+    'acc-cap': { title: 'Cap — a well-worn headpiece' },
+    'acc-bandana': { title: 'Bandana scarf — style in any weather' },
+    'acc-glasses': { title: 'Glasses — a clever look for your pet' },
+    'acc-crown': { title: 'Crown — for royalty' },
   } as Record<string, { title: string }>,
+  wear: 'Wear',
+  remove: 'Remove',
 
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
