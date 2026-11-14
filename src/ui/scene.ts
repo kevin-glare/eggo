@@ -432,3 +432,132 @@ export function drawScene(
   ctx.fillStyle = vg
   ctx.fillRect(0, 0, w, h)
 }
+
+const DECOR_INK = '#3a2a4a'
+const DECOR_WOOD = '#b5793f'
+const DECOR_WOOD_DARK = '#8a5a2a'
+
+/**
+ * Купленный декор сцены: слот «луг» — левее питомца (бока канваса режутся
+ * cover'ом, поэтому полоса x 0.23–0.77), слот «море» — лодка качается на
+ * волне. Вызывается из PetCanvas между сценой и питомцем.
+ */
+export function drawDecor(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  decor: { meadow: string | null; sea: string | null },
+  now: number,
+): void {
+  if (decor.meadow !== null) {
+    const x = w * 0.3
+    const kind = decor.meadow.replace(/^dec-/, '')
+    if (kind === 'flower') drawFlowerDecor(ctx, x, GROUND_Y + 4)
+    if (kind === 'mushroom') drawMushroomDecor(ctx, x, GROUND_Y + 4)
+    if (kind === 'house') drawHouseDecor(ctx, x, GROUND_Y + 4)
+  }
+  if (decor.sea !== null) {
+    const kind = decor.sea.replace(/^dec-/, '')
+    if (kind === 'boat') drawBoatDecor(ctx, w * 0.72, h * 0.66, now)
+  }
+}
+
+function drawFlowerDecor(ctx: CanvasRenderingContext2D, x: number, baseY: number): void {
+  ctx.strokeStyle = DECOR_WOOD_DARK
+  ctx.lineWidth = 2.5
+  ctx.beginPath()
+  ctx.moveTo(x, baseY)
+  ctx.quadraticCurveTo(x + 2, baseY - 8, x, baseY - 15)
+  ctx.stroke()
+  for (let i = 0; i < 5; i++) {
+    const ang = (Math.PI * 2 * i) / 5
+    ctx.fillStyle = '#f087b8'
+    ctx.beginPath()
+    ctx.arc(x + Math.cos(ang) * 5, baseY - 15 + Math.sin(ang) * 5, 4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.fillStyle = '#f2c14e'
+  ctx.beginPath()
+  ctx.arc(x, baseY - 15, 3.2, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function drawMushroomDecor(ctx: CanvasRenderingContext2D, x: number, baseY: number): void {
+  ctx.fillStyle = '#efe2c8'
+  ctx.strokeStyle = DECOR_INK
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(x - 5, baseY)
+  ctx.quadraticCurveTo(x - 6, baseY - 10, x - 4, baseY - 12)
+  ctx.lineTo(x + 4, baseY - 12)
+  ctx.quadraticCurveTo(x + 6, baseY - 10, x + 5, baseY)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#d9534f'
+  ctx.beginPath()
+  ctx.ellipse(x, baseY - 12, 12, 7, 0, Math.PI, Math.PI * 2)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(255, 244, 224, 0.9)'
+  ctx.beginPath()
+  ctx.arc(x - 5, baseY - 15, 2, 0, Math.PI * 2)
+  ctx.arc(x + 4, baseY - 16, 1.6, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+function drawHouseDecor(ctx: CanvasRenderingContext2D, x: number, baseY: number): void {
+  const w = 34
+  const h = 24
+  ctx.fillStyle = DECOR_WOOD
+  ctx.strokeStyle = DECOR_INK
+  ctx.lineWidth = 2
+  ctx.fillRect(x - w / 2, baseY - h, w, h)
+  ctx.strokeRect(x - w / 2, baseY - h, w, h)
+  ctx.fillStyle = '#d9534f'
+  ctx.beginPath()
+  ctx.moveTo(x - w / 2 - 5, baseY - h)
+  ctx.lineTo(x, baseY - h - 14)
+  ctx.lineTo(x + w / 2 + 5, baseY - h)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.fillStyle = '#f2c14e'
+  ctx.fillRect(x + w / 2 - 12, baseY - h + 7, 8, 8)
+  ctx.strokeRect(x + w / 2 - 12, baseY - h + 7, 8, 8)
+  ctx.fillStyle = DECOR_WOOD_DARK
+  ctx.fillRect(x - w / 2 + 5, baseY - 12, 8, 12)
+  ctx.strokeRect(x - w / 2 + 5, baseY - 12, 8, 12)
+}
+
+function drawBoatDecor(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
+  const bob = Math.sin(now / 800) * 3
+  ctx.save()
+  ctx.translate(x, y + bob)
+  ctx.rotate(Math.sin(now / 900) * 0.05)
+  ctx.fillStyle = DECOR_WOOD
+  ctx.strokeStyle = DECOR_INK
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(-18, -2)
+  ctx.quadraticCurveTo(-12, 8, 0, 8)
+  ctx.quadraticCurveTo(12, 8, 18, -2)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+  ctx.strokeStyle = DECOR_WOOD_DARK
+  ctx.beginPath()
+  ctx.moveTo(0, -2)
+  ctx.lineTo(0, -26)
+  ctx.stroke()
+  ctx.fillStyle = '#f5efdf'
+  ctx.beginPath()
+  ctx.moveTo(1, -25)
+  ctx.quadraticCurveTo(14, -14, 2, -4)
+  ctx.closePath()
+  ctx.fill()
+  ctx.strokeStyle = DECOR_INK
+  ctx.stroke()
+  ctx.restore()
+}

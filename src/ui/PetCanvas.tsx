@@ -20,6 +20,7 @@ import { resolveHolidayTheme } from './holidays'
 import { hapticSuccess, hapticTap, hapticWarning } from '../telegram'
 import { playSound } from './sound'
 import { sampleDayCycle } from './dayCycle'
+import { drawDecor } from './scene'
 import { isHintDone, markHintDone, type HintKind } from './hints'
 
 export type PetActionKind = 'feed' | 'wash'
@@ -35,6 +36,8 @@ interface PetCanvasProps {
   dirtLevel?: DirtLevel
   /** надетый аксессуар (id из config.shop.items); undefined/null — без аксессуара */
   accessory?: string | null
+  /** активный декор сцены по слотам из config.shop.items */
+  decor?: { meadow: string | null; sea: string | null }
   /** 0..3 — запущенность сцены (из neglectMs): луг вянет; undefined = ухожен */
   neglectLevel?: 0 | 1 | 2 | 3
   /** чего питомец хочет прямо сейчас — пузырёк над головой; null = скрыт */
@@ -212,6 +215,7 @@ export default function PetCanvas({
   eggProgress,
   dirtLevel = 0,
   accessory = null,
+  decor = { meadow: null, sea: null },
   neglectLevel = 0,
   desire,
   request,
@@ -226,8 +230,8 @@ export default function PetCanvas({
   cake = false,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessory, cake, feeding, fullness })
-  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessory, cake, feeding, fullness }
+  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessory, decor, cake, feeding, fullness })
+  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessory, decor, cake, feeding, fullness }
   const visRef = useRef<PetVisualState>(createVisualState())
   const sceneRef = useRef({ energy: 0.7, warm: 0.9, neglect: 0 })
   const particlesRef = useRef<Particle[]>([])
@@ -311,7 +315,7 @@ export default function PetCanvas({
     const frame = (now: number) => {
       const dt = Math.min(64, now - last)
       last = now
-      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour, dirtLevel: dirt, accessory: acc, cake: showCake } =
+      const { stage: st, mood: md, appearance: look, eggProgress: prog, skyHourOverride: skyHour, dirtLevel: dirt, accessory: acc, decor: deco, cake: showCake } =
         propsRef.current
 
       // сессия кормления: питомец бежит по лугу за тапом, ядро решает поимки
@@ -355,6 +359,8 @@ export default function PetCanvas({
       // праздничный декор поверх сцены, до питомца; null — рисуем как обычно
       const holiday = resolveHolidayTheme(d)
       if (holiday) holiday.draw(ctx, SCENE_W, SCENE_H, now, sky)
+      // купленный декор: цветы/гриб/домик на лугу, лодка у берега
+      drawDecor(ctx, SCENE_W, SCENE_H, deco, now)
       if (showCake) drawCake(ctx, CAKE_X, GROUND_Y + 3, now)
       if (bubbleRef.current.alpha > 0.01)
         drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now, SCENE_W / 2 + wanderRef.current.x)

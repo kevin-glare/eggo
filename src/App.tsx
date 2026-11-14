@@ -261,6 +261,7 @@ export default function App() {
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
               accessory={pet.cosmetics.activeAccessory}
+              decor={pet.cosmetics.decor}
               neglectLevel={neglectLevel(pet, config)}
               desire={desireKind}
               request={pet.request}
