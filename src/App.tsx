@@ -15,7 +15,7 @@ import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
 import { useStrings } from './ui/i18n'
-import { isRequestHintDone } from './ui/hints'
+import { isRequestHintDone, isWhatsNewDone, markWhatsNewDone } from './ui/hints'
 import PetCanvas, { type PetActionKind } from './ui/PetCanvas'
 import QuestsBar from './ui/QuestsBar'
 import StatsBar from './ui/StatsBar'
@@ -23,7 +23,7 @@ import { track } from './metrika'
 import { hapticTap, hapticWarning, referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
-import MenuScreen from './ui/MenuScreen'
+import MenuScreen, { type MenuView } from './ui/MenuScreen'
 import MinigamePicker from './ui/minigames/MinigamePicker'
 import MinigameOverlay, { type MinigameResultView } from './ui/minigames/MinigameOverlay'
 import { version as APP_VERSION } from '../package.json'
@@ -35,9 +35,6 @@ const config: GameConfig = import.meta.env.DEV ? DEV_CONFIG : DEFAULT_CONFIG
 /** Кнопка «написать автору»: t.me-ссылка из VITE_AUTHOR_URL; не задана — кнопки нет. */
 const envAuthorUrl: unknown = import.meta.env.VITE_AUTHOR_URL
 const AUTHOR_URL: string | null = typeof envAuthorUrl === 'string' && envAuthorUrl !== '' ? envAuthorUrl : null
-
-/** Наш канал: бот — админ, пункт меню открывает его штатным клиентом Telegram. */
-const CHANNEL_URL = 'https://t.me/EggoTg'
 
 export default function App() {
   const str = useStrings()
@@ -85,8 +82,9 @@ export default function App() {
   const [skyHour, setSkyHour] = useState<number | null>(null)
   // активная интерактивная сценка; на время сценки остальные действия не стартуют
   const [scene, setScene] = useState<PetActionKind | null>(null)
-  // полноэкранный экран меню; «Позови друга» и «Как играть» — подэкраны внутри
+  // полноэкранный экран меню; ☰ открывает корень, кнопка магазина — сразу магазин
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuView, setMenuView] = useState<MenuView>('root')
   // мини-игра кнопки «Играть»: выбор в пикере, id запущенной партии и её итог
   const [pickerOpen, setPickerOpen] = useState(false)
   const [minigameId, setMinigameId] = useState<MinigameId | null>(null)
@@ -156,6 +154,12 @@ export default function App() {
     if (pet?.request == null || isRequestHintDone()) return
     showNotice(str.requestHint)
   }, [pet?.request?.kind, pet?.request?.expiresAt, showNotice])
+
+  // карточка «что нового»: один раз, когда появился названный питомец
+  const [whatsNewShown, setWhatsNewShown] = useState(false)
+  useEffect(() => {
+    if (pet !== null && pet.name !== null && !isWhatsNewDone()) setWhatsNewShown(true)
+  }, [pet?.name])
 
   // t.me-ссылки внутри Telegram открывает сам клиент, снаружи — новая вкладка
   const openTgLink = (url: string) => {
@@ -250,6 +254,7 @@ export default function App() {
                 onClick={() => {
                   track('menu-open')
                   hapticTap()
+                  setMenuView('root')
                   setMenuOpen(true)
                 }}
                 aria-label={str.menuAria}
@@ -289,6 +294,39 @@ export default function App() {
               {notice && <div className="toast">{notice}</div>}
               {notifNotice && <div className="toast secondary">{notifNotice}</div>}
             </div>
+            {/* карточка «что нового»: разовое сообщение об обновлении */}
+            {whatsNewShown && (
+              <div className="whatsnew" role="status">
+                <p className="whatsnew-text">{str.whatsNewText}</p>
+                <div className="whatsnew-btns">
+                  <button
+                    type="button"
+                    className="mg-btn"
+                    onClick={() => {
+                      track('shop-open')
+                      hapticTap()
+                      markWhatsNewDone()
+                      setWhatsNewShown(false)
+                      setMenuView('shop')
+                      setMenuOpen(true)
+                    }}
+                  >
+                    {str.whatsNewOpen}
+                  </button>
+                  <button
+                    type="button"
+                    className="whatsnew-close"
+                    aria-label={str.menuClose}
+                    onClick={() => {
+                      markWhatsNewDone()
+                      setWhatsNewShown(false)
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="mood">{str.mood[mood]}</div>
           </div>
 
@@ -299,6 +337,7 @@ export default function App() {
           <ActionsBar
             isEgg={pet.stage === 'egg'}
             sleeping={pet.sleeping}
+            stars={pet.stars}
             onFeed={onFeed}
             onPlay={onPlay}
             onWash={onWash}
@@ -306,6 +345,12 @@ export default function App() {
               if (scene !== null) return
               track(pet.sleeping ? 'wake' : 'sleep')
               toggleSleep()
+            }}
+            onShop={() => {
+              track('shop-open')
+              hapticTap()
+              setMenuView('shop')
+              setMenuOpen(true)
             }}
           />
         </>
@@ -388,6 +433,7 @@ export default function App() {
       {!isCreating && (
         <MenuScreen
           open={menuOpen}
+          openView={menuView}
           onClose={() => setMenuOpen(false)}
           pet={pet}
           onRename={renamePet}
@@ -409,10 +455,6 @@ export default function App() {
           onToggleNotifications={() => void toggleNotifications()}
           notifNotice={notifNotice}
           onShare={shareEggo}
-          onChannel={() => {
-            track('channel')
-            openTgLink(CHANNEL_URL)
-          }}
           onAuthor={() => {
             if (AUTHOR_URL !== null) {
               track('author')

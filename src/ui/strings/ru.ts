@@ -111,7 +111,7 @@ export const ru = {
 
   // --- панели: действия, статы, задания ---
   actionsAria: 'Действия',
-  action: { feed: 'Покормить', play: 'Играть', wash: 'Помыть', wake: 'Разбудить', sleep: 'Спать' },
+  action: { feed: 'Покормить', play: 'Играть', wash: 'Помыть', wake: 'Разбудить', sleep: 'Спать', shop: 'Магазин' },
   statsAria: 'Показатели',
   stat: { fullness: 'Сытость', happiness: 'Счастье', energy: 'Энергия', cleanliness: 'Чистота' },
   questsAria: 'Задания дня',
@@ -216,6 +216,8 @@ export const ru = {
   shopDishActive: '🍽 Сначала покормите — блюдо уже подано',
   shopStarsHint: '⭐ За заботу дают звёздочки — потрать их в магазине',
   walletAria: 'Кошелёк звёздочек',
+  whatsNewText: '🛍 В Eggo теперь магазин! Копите ⭐ за заботу — блюда, аксессуары, декор и помощники',
+  whatsNewOpen: '🛍 Открыть магазин',
   serviceLeft: (h: number) => `ещё ${h} ч`,
   serviceHealthy: '💚 Питомец здоров — витамин не нужен',
   svcFeed: 'Автокормушка — кормит сама сутки',
@@ -279,7 +281,6 @@ export const ru = {
   menuSoundOn: 'Звук включён',
   menuSoundOff: 'Звук выключен',
   menuLang: 'Язык',
-  menuChannel: 'Наш канал',
   menuHelp: 'Как играть',
   menuVersion: 'версия',
   helpTitle: 'Как играть',

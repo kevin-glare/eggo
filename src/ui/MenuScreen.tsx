@@ -16,10 +16,12 @@ import { track } from '../metrika'
 import { hapticTap, hapticWarning, tg } from '../telegram'
 
 /** Подэкраны меню: корень с рядами и карточки-объяснения поверх главного экрана. */
-type MenuView = 'root' | 'invite' | 'help' | 'achievements' | 'shop'
+export type MenuView = 'root' | 'invite' | 'help' | 'achievements' | 'shop'
 
 interface MenuScreenProps {
   open: boolean
+  /** какой подэкран открывать: ☰ ведёт в корень, кнопка магазина — сразу в магазин */
+  openView: MenuView
   onClose: () => void
   /** питомец для карточки-профиля и мини-арта */
   pet: PetState
@@ -58,8 +60,6 @@ interface MenuScreenProps {
   notifNotice: string | null
   /** «Позови друга»: штатный шер Telegram со ссылкой-приглашением */
   onShare: () => void
-  /** «Наш канал»: открыть штатным клиентом Telegram */
-  onChannel: () => void
   /** «Написать автору»: открыть штатным клиентом Telegram */
   onAuthor: () => void
   /** показывать ли строку автора (ссылка не задана — строки нет) */
@@ -78,6 +78,7 @@ interface MenuScreenProps {
  */
 export default function MenuScreen({
   open,
+  openView,
   onClose,
   pet,
   onRename,
@@ -99,7 +100,6 @@ export default function MenuScreen({
   onToggleNotifications,
   notifNotice,
   onShare,
-  onChannel,
   onAuthor,
   authorUrl,
   invited,
@@ -109,6 +109,10 @@ export default function MenuScreen({
   const str = useStrings()
   const lang = useLang()
   const [view, setView] = useState<MenuView>('root')
+  // открытие с нужным подэкраном: ☰ → корень, кнопка магазина → магазин
+  useEffect(() => {
+    if (open) setView(openView)
+  }, [open, openView])
   // переименование: инлайн-форма в карточке профиля
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState('')
@@ -351,15 +355,6 @@ export default function MenuScreen({
                     ✨
                   </span>
                   <span className="menu-row-label">{str.inviteAria}</span>
-                  <span className="menu-row-chevron" aria-hidden="true">
-                    ›
-                  </span>
-                </button>
-                <button type="button" className="menu-row" onClick={tap(onChannel)}>
-                  <span className="menu-row-icon" aria-hidden="true">
-                    📢
-                  </span>
-                  <span className="menu-row-label">{str.menuChannel}</span>
                   <span className="menu-row-chevron" aria-hidden="true">
                     ›
                   </span>

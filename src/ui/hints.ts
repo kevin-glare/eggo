@@ -45,3 +45,25 @@ export function markRequestHintDone(): void {
     // без хранилища подсказка будет показываться снова — не страшно
   }
 }
+
+/**
+ * Карточка «Что нового» — разовое сообщение об обновлении. Флаг в
+ * localStorage: на новом устройстве карточка покажется снова — не страшно.
+ */
+const WHATSNEW_FLAG = PREFIX + 'whatsnew-shop'
+
+export function isWhatsNewDone(): boolean {
+  try {
+    return window.localStorage.getItem(WHATSNEW_FLAG) === 'done'
+  } catch {
+    return true
+  }
+}
+
+export function markWhatsNewDone(): void {
+  try {
+    window.localStorage.setItem(WHATSNEW_FLAG, 'done')
+  } catch {
+    // без хранилища карточка будет показываться снова — не страшно
+  }
+}

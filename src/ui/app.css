@@ -1140,8 +1140,8 @@ body {
   width: 100%;
   max-width: 360px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 
 .actions button {
@@ -1182,6 +1182,33 @@ body {
   box-shadow:
     0 0 0 rgba(20, 12, 38, 0.55),
     inset 0 2px 6px rgba(6, 2, 16, 0.45);
+}
+
+/* магазин в ряду действий: золотая подсветка и бейдж кошелька */
+.actions button.shop {
+  background: linear-gradient(180deg, rgba(255, 179, 92, 0.3), rgba(255, 179, 92, 0.12));
+  border-color: rgba(255, 179, 92, 0.5);
+}
+
+.actions .shop-stars {
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+/* на узких экранах подписи мельче, на совсем узких прячутся — иконки говорят сами */
+@media (max-width: 419px) {
+  .actions .lbl {
+    font-size: 10.5px;
+  }
+}
+
+@media (max-width: 374px) {
+  .actions .lbl {
+    display: none;
+  }
 }
 
 .actions button:disabled {
@@ -1236,6 +1263,59 @@ body {
   font-size: 13px;
   padding: 8px 15px;
   opacity: 0.92;
+}
+
+/* карточка «что нового» — под тостами, с кнопкой в магазин */
+.whatsnew {
+  position: absolute;
+  top: 54px;
+  left: 16px;
+  right: 16px;
+  z-index: 9;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--card-strong);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 12px 32px -12px rgba(10, 4, 24, 0.8),
+    inset 0 1px 0 var(--sheen);
+  animation: toast-in 0.18s ease-out;
+  text-align: center;
+}
+
+.whatsnew-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.whatsnew-btns {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.whatsnew-btns .mg-btn {
+  flex: 1;
+  max-width: none;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 14px;
+}
+
+.whatsnew-close {
+  flex: none;
+  width: 40px;
+  border-radius: 14px;
+  border: 1px solid var(--stroke);
+  background: var(--card-strong);
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* подэкраны меню сменяются мягким слайдом */
