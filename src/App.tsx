@@ -7,7 +7,7 @@ import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigame
 import { dayKey } from './game/quests'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
-import { desire, getMood } from './game/engine'
+import { desire, getMood, neglectLevel } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
 import { dirtLevel } from './ui/dirt'
@@ -240,6 +240,7 @@ export default function App() {
               appearance={pet.appearance}
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
+              neglectLevel={neglectLevel(pet, config)}
               desire={desireKind}
               request={pet.request}
               skyHourOverride={skyHour}

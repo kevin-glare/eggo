@@ -90,6 +90,18 @@ export function tick(state: PetState, dtMs: number, config: GameConfig): PetStat
   return { ...state, ageMs, stage, stats, neglectMs, sick }
 }
 
+/**
+ * Уровень запущенности сцены по neglectMs: 0 — ухожен, 3 — долго без
+ * заботы. Управляет увяданием луга (мухи на питомце уже растут от грязи).
+ */
+export function neglectLevel(state: PetState, config: GameConfig): 0 | 1 | 2 | 3 {
+  const ms = state.neglectMs
+  if (ms >= config.neglect.criticalMs) return 3
+  if (ms >= config.neglect.badMs) return 2
+  if (ms >= config.neglect.warnMs) return 1
+  return 0
+}
+
 /** Настроение — производное от состояния, нигде не хранится. */
 export function getMood(state: PetState, config: GameConfig): Mood {
   if (state.stage === 'egg') return 'content'

@@ -19,6 +19,8 @@ export interface GameConfig {
   criticalThreshold: number
   /** столько непрерывного пренебрежения → болезнь */
   sicknessAfterMs: number
+  /** пороги запущенности сцены по neglectMs: луг вянет, питомец тоскует */
+  neglect: { warnMs: number; badMs: number; criticalMs: number }
   /** средний стат выше этого уровня → выздоровление */
   healAvgThreshold: number
   /** пороги настроения по среднему стату */
@@ -164,6 +166,8 @@ export const DEFAULT_CONFIG: GameConfig = {
   sleepEnergyPerHour: 25,
   criticalThreshold: 25,
   sicknessAfterMs: 12 * HOUR,
+  // сцена сдается постепенно: вялый луг через 3 ч без заботы, совсем рыжий к болезни
+  neglect: { warnMs: 3 * HOUR, badMs: 8 * HOUR, criticalMs: 12 * HOUR },
   healAvgThreshold: 60,
   happyThreshold: 75,
   contentThreshold: 45,

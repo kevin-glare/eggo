@@ -11,6 +11,8 @@ import { GROUND_Y } from './petArt'
 export interface SceneMood {
   energy: number
   warm: number
+  /** запущенность 0..1: луг вянет, трава желтеет (neglectLevel / 3) */
+  neglect: number
 }
 
 function mulberry32(seed: number): () => number {
@@ -216,6 +218,13 @@ function darkenRGB(c: RGB, k: number): RGB {
   return [c[0] * (1 - k), c[1] * (1 - k), c[2] * (1 - k)]
 }
 
+function mixRGB(a: RGB, b: RGB, k: number): RGB {
+  return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]
+}
+
+/** Сухая выгоревшая трава — цвет, к которому луг приходит при запущенности. */
+const WILT_COLOR: RGB = [172, 144, 82]
+
 export function drawScene(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -359,6 +368,19 @@ export function drawScene(
   ctx.closePath()
   ctx.fill()
 
+  // запущенность: луг вянет — рыжий налёт поверх травы, тем сильнее, чем
+  // дольше питомец без заботы (neglectLevel / 3 приходит с твином)
+  if (mood.neglect > 0.02) {
+    ctx.fillStyle = `rgba(122, 96, 44, ${(mood.neglect * 0.22).toFixed(3)})`
+    ctx.beginPath()
+    ctx.moveTo(0, h * 0.75)
+    ctx.bezierCurveTo(w * 0.25, h * 0.73, w * 0.6, h * 0.77, w, h * 0.74)
+    ctx.lineTo(w, h)
+    ctx.lineTo(0, h)
+    ctx.closePath()
+    ctx.fill()
+  }
+
   // светящаяся кромка луга
   ctx.strokeStyle = rgba(sky.rim, sky.rimAlpha * (0.5 + 0.5 * mood.energy))
   ctx.lineWidth = 2
@@ -380,7 +402,8 @@ export function drawScene(
   for (const b of GRASS) {
     const bx = gx + b.dx * b.side
     const sway = Math.sin((tMs / 1000) * b.sp + b.ph) * 2.2
-    ctx.strokeStyle = rgba(lightenRGB(sky.meadow, b.light ? 0.3 : 0.13), 0.9)
+    // травинки вянут вместе с лугом: чем выше запущенность, тем суше цвет
+    ctx.strokeStyle = rgba(mixRGB(lightenRGB(sky.meadow, b.light ? 0.3 : 0.13), WILT_COLOR, mood.neglect), 0.9)
     ctx.beginPath()
     ctx.moveTo(bx, gy + 2)
     ctx.quadraticCurveTo(bx + b.lean * 2.5, gy - b.h * 0.5, bx + b.lean * 5 + sway, gy - b.h)

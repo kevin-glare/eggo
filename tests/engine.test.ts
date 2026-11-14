@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, DEV_CONFIG } from '../src/game/config'
 import { rollAppearance } from '../src/game/appearance'
-import { averageStats, createPet, desire, getMood, tick } from '../src/game/engine'
+import { averageStats, createPet, desire, getMood, neglectLevel, tick } from '../src/game/engine'
 import type { PetState } from '../src/game/types'
 import { DAY, HOUR, MINUTE, hatchedPet, makePet } from './helpers'
 
@@ -223,5 +223,21 @@ describe('desire', () => {
   it('яйцо ничего не хочет', () => {
     const egg = makePet(DEFAULT_CONFIG, {}, { fullness: 10 })
     expect(desire(egg, DEFAULT_CONFIG)).toBeNull()
+  })
+})
+
+describe('neglectLevel — запущенность сцены', () => {
+  const withNeglect = (neglectMs: number) => hatchedPet(DEFAULT_CONFIG, { neglectMs })
+
+  it('ухоженный питомец — ноль', () => {
+    expect(neglectLevel(withNeglect(0), DEFAULT_CONFIG)).toBe(0)
+  })
+
+  it('пороги берутся из конфига: 3/8/12 ч — луг вянет ступенями', () => {
+    const cfg = DEFAULT_CONFIG.neglect
+    expect(neglectLevel(withNeglect(cfg.warnMs - 1), DEFAULT_CONFIG)).toBe(0)
+    expect(neglectLevel(withNeglect(cfg.warnMs), DEFAULT_CONFIG)).toBe(1)
+    expect(neglectLevel(withNeglect(cfg.badMs), DEFAULT_CONFIG)).toBe(2)
+    expect(neglectLevel(withNeglect(cfg.criticalMs), DEFAULT_CONFIG)).toBe(3)
   })
 })

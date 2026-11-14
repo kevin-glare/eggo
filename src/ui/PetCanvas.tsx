@@ -33,6 +33,8 @@ interface PetCanvasProps {
   eggProgress: number
   /** 0..3 — насколько питомец грязный (из чистоты); undefined = чист */
   dirtLevel?: DirtLevel
+  /** 0..3 — запущенность сцены (из neglectMs): луг вянет; undefined = ухожен */
+  neglectLevel?: 0 | 1 | 2 | 3
   /** чего питомец хочет прямо сейчас — пузырёк над головой; null = скрыт */
   desire?: DesireKind | null
   /** активная просьба — пузырёк показывает её вместо пассивного желания */
@@ -207,6 +209,7 @@ export default function PetCanvas({
   appearance,
   eggProgress,
   dirtLevel = 0,
+  neglectLevel = 0,
   desire,
   request,
   skyHourOverride,
@@ -223,7 +226,7 @@ export default function PetCanvas({
   const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, cake, feeding, fullness })
   propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, cake, feeding, fullness }
   const visRef = useRef<PetVisualState>(createVisualState())
-  const sceneRef = useRef({ energy: 0.7, warm: 0.9 })
+  const sceneRef = useRef({ energy: 0.7, warm: 0.9, neglect: 0 })
   const particlesRef = useRef<Particle[]>([])
   const prevStageRef = useRef(stage)
   // блуждание: пока питомец «занят» (действие, тап, вылупление) — бежит в центр
@@ -381,6 +384,11 @@ export default function PetCanvas({
   useEffect(() => {
     gsap.to(visRef.current, { dirtAlpha: dirtIntensity(dirtLevel), duration: 1.2, ease: 'sine.out', overwrite: 'auto' })
   }, [dirtLevel])
+
+  // пренебрежение вянет лугом: рыжий налёт и сухие травинки нарастают плавно
+  useEffect(() => {
+    gsap.to(sceneRef.current, { neglect: (neglectLevel ?? 0) / 3, duration: 1.4, ease: 'sine.out', overwrite: 'auto' })
+  }, [neglectLevel])
 
   // праздник: конфетти в цветах питомца (награда за задания дня и т.п.)
   useEffect(() => {
