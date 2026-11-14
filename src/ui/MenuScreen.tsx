@@ -6,6 +6,7 @@ import { setLang, useLang, useStrings } from './i18n'
 import InvitePanel from './InvitePanel'
 import HelpPanel from './HelpPanel'
 import PetBadge from './PetBadge'
+import Toggle from './Toggle'
 import { useDialogFocus } from './useDialogFocus'
 import { isSoundOn, playSound, setSoundOn } from './sound'
 import { track } from '../metrika'
@@ -162,6 +163,8 @@ export default function MenuScreen({
         {/* тост тумблера пушей: внутри меню, где его не накрывает оверлей */}
         {notifNotice && <div className="menu-toast">{notifNotice}</div>}
         <div className="menu-body">
+          {/* ключ = подэкран: смена вьюхи переигрывает слайд-анимацию */}
+          <div className="menu-pane" key={view}>
           {view === 'root' ? (
             <>
               <div className="menu-profile">
@@ -223,16 +226,16 @@ export default function MenuScreen({
                       {notifEnabled ? '🔔' : '🔕'}
                     </span>
                     <span className="menu-row-label">{notifEnabled ? str.menuNotifOn : str.menuNotifOff}</span>
-                    <span className={notifEnabled ? 'menu-row-state on' : 'menu-row-state'} aria-hidden="true" />
+                    <Toggle on={notifEnabled} label={notifEnabled ? str.menuNotifOn : str.menuNotifOff} />
                   </button>
                 )}
                 <button type="button" className="menu-row" onClick={tap(toggleSound)}>
                   <span className="menu-row-icon" aria-hidden="true">
                     {soundOn ? '🔊' : '🔇'}
                   </span>
-                  <span className="menu-row-label">{soundOn ? str.menuSoundOn : str.menuSoundOff}</span>
-                  <span className={soundOn ? 'menu-row-state on' : 'menu-row-state'} aria-hidden="true" />
-                </button>
+                    <span className="menu-row-label">{soundOn ? str.menuSoundOn : str.menuSoundOff}</span>
+                    <Toggle on={soundOn} label={soundOn ? str.menuSoundOn : str.menuSoundOff} />
+                  </button>
                 <button type="button" className="menu-row" onClick={tap(switchLang)}>
                   <span className="menu-row-icon" aria-hidden="true">
                     🌐
@@ -316,6 +319,7 @@ export default function MenuScreen({
               )}
             </div>
           )}
+          </div>
         </div>
       </section>
     </div>

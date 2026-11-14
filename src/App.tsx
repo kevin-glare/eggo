@@ -254,14 +254,11 @@ export default function App() {
               celebrate={celebrate}
               cake={anniversary}
             />
-            {/* тост всплывает на небе, в верхней части сцены;
-                нотис тумблера пушей показываем, пока слот тоста свободен */}
+            {/* тосты всплывают на небе, в верхней части сцены, колонкой:
+                игровой и нотис тумблера пушей не конкурируют за слот */}
             <div className="toast-slot" aria-live="polite">
-              {notice ? (
-                <div className="toast">{notice}</div>
-              ) : (
-                notifNotice && <div className="toast">{notifNotice}</div>
-              )}
+              {notice && <div className="toast">{notice}</div>}
+              {notifNotice && <div className="toast secondary">{notifNotice}</div>}
             </div>
             <div className="mood">{str.mood[mood]}</div>
           </div>
