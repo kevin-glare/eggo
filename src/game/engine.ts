@@ -30,7 +30,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     xp: 0,
     achievements: [],
     dish: null,
-    cosmetics: { owned: [], activeAccessory: null, decor: { meadow: null, sea: null } },
+    cosmetics: { owned: [], accessories: { head: null, face: null, neck: null }, decor: { meadow: null, sea: null } },
     services: { feedUntil: 0, washUntil: 0, sleepUntil: 0, lastFeedAt: 0, lastWashAt: 0 },
   }
 }

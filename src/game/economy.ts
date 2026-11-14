@@ -48,8 +48,8 @@ export function buyItem(state: PetState, id: string, config: GameConfig): BuyRes
   if (item.kind === 'decor' && item.decorSlot !== undefined) {
     cosmetics.decor = { ...cosmetics.decor, [item.decorSlot]: id }
   }
-  if (item.kind === 'accessory') {
-    cosmetics.activeAccessory = id
+  if (item.kind === 'accessory' && item.accSlot !== undefined) {
+    cosmetics.accessories = { ...cosmetics.accessories, [item.accSlot]: id }
   }
   return { ok: true, state: { ...state, stars: state.stars - item.price, cosmetics } }
 }
@@ -58,7 +58,9 @@ export type ActivateReason = 'unknown-item' | 'not-owned'
 
 /**
  * Включить или выключить купленную косметику: декор — тумблер слота,
- * аксессуар — надеть/снять. Покупка активирует сама, это для переключений.
+ * аксессуар — надеть/снять в своём слоте (голова/лицо/шея независимы,
+ * на макушке кепка и корона делят место). Покупка активирует сама,
+ * это для переключений.
  */
 export function activateItem(
   state: PetState,
@@ -72,9 +74,9 @@ export function activateItem(
     const active = state.cosmetics.decor[item.decorSlot] === id ? null : id
     return { ok: true, state: { ...state, cosmetics: { ...state.cosmetics, decor: { ...state.cosmetics.decor, [item.decorSlot]: active } } } }
   }
-  if (item.kind === 'accessory') {
-    const active = state.cosmetics.activeAccessory === id ? null : id
-    return { ok: true, state: { ...state, cosmetics: { ...state.cosmetics, activeAccessory: active } } }
+  if (item.kind === 'accessory' && item.accSlot !== undefined) {
+    const active = state.cosmetics.accessories[item.accSlot] === id ? null : id
+    return { ok: true, state: { ...state, cosmetics: { ...state.cosmetics, accessories: { ...state.cosmetics.accessories, [item.accSlot]: active } } } }
   }
   return { ok: false, state }
 }

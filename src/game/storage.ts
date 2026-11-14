@@ -4,7 +4,7 @@ import { stageForAge, tick } from './engine'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
 import { applyAutoServices } from './services'
-import type { PetCosmetics, PetRequest, PetState, RequestKind, Stats } from './types'
+import type { PetAccessorySlots, PetCosmetics, PetRequest, PetState, RequestKind, Stats } from './types'
 import { MINIGAME_IDS } from './minigames'
 import type { MinigameId } from './minigames/types'
 
@@ -69,19 +69,43 @@ function normalizeAchievements(raw: unknown): string[] {
   return [...new Set(raw.filter((x): x is string => typeof x === 'string'))]
 }
 
-/** Магазин появился позже сейва v1: пустой кошелёк косметики и блюда. */
+/**
+ * Магазин появился позже сейва v1: пустой кошелёк косметики и блюда.
+ * Промежуточный формат с одним надетым аксессуаром (activeAccessory)
+ * раскладывается по слотам по id: очки → лицо, бандана → шея, остальное
+ * головное → голова.
+ */
 function normalizeCosmetics(raw: unknown): PetCosmetics {
+  const empty = (): PetAccessorySlots => ({ head: null, face: null, neck: null })
   if (typeof raw !== 'object' || raw === null) {
-    return { owned: [], activeAccessory: null, decor: { meadow: null, sea: null } }
+    return { owned: [], accessories: empty(), decor: { meadow: null, sea: null } }
   }
-  const c = raw as Partial<PetCosmetics>
+  const c = raw as Partial<PetCosmetics> & { activeAccessory?: unknown }
   const slot = (v: unknown): string | null => (typeof v === 'string' ? v : null)
   const decor = (typeof c.decor === 'object' && c.decor !== null ? c.decor : {}) as Partial<PetCosmetics['decor']>
+  const rawAcc = (typeof c.accessories === 'object' && c.accessories !== null ? c.accessories : {}) as Partial<PetAccessorySlots>
+  const accessories: PetAccessorySlots = {
+    head: slot(rawAcc.head),
+    face: slot(rawAcc.face),
+    neck: slot(rawAcc.neck),
+  }
+  // старый сейв: надетый аксессуар ещё не разложен по слотам
+  const legacy = slot(c.activeAccessory)
+  if (legacy !== null && accessories.head === null && accessories.face === null && accessories.neck === null) {
+    accessories[legacySlotOf(legacy)] = legacy
+  }
   return {
     owned: normalizeAchievements(c.owned),
-    activeAccessory: slot(c.activeAccessory),
+    accessories,
     decor: { meadow: slot(decor.meadow), sea: slot(decor.sea) },
   }
+}
+
+/** Слот по id аксессуара старого формата (id стабильны: acc-cap, acc-glasses...). */
+function legacySlotOf(id: string): 'head' | 'face' | 'neck' {
+  if (id === 'acc-glasses') return 'face'
+  if (id === 'acc-bandana') return 'neck'
+  return 'head'
 }
 
 /** Штамп времени автосервиса: число ≥ 0, иначе 0. */

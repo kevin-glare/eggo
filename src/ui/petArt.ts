@@ -190,7 +190,7 @@ export function drawPet(
   tMs: number,
   eggProgress: number,
   dirtLevel: DirtLevel = 0,
-  accessory: string | null = null,
+  accessories: string[] = [],
 ): void {
   const cx = SCENE_W / 2 + v.wanderX
   const bob = v.bob + v.jumpY
@@ -232,7 +232,7 @@ export function drawPet(
   if (stage === 'egg') {
     drawEgg(ctx, eggProgress, EGG_PALETTE)
   } else {
-    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v, tMs, dirtLevel, accessory)
+    drawCreature(ctx, stage === 'adult' ? ADULT : BABY, look, palette, mood, v, tMs, dirtLevel, accessories)
   }
   ctx.restore()
 }
@@ -246,7 +246,7 @@ function drawCreature(
   v: PetVisualState,
   tMs: number,
   dirtLevel: DirtLevel,
-  accessory: string | null,
+  accessories: string[],
 ): void {
   const blink = v.blink
   const dirtAlpha = v.dirtAlpha
@@ -339,7 +339,7 @@ function drawCreature(
   if (mood === 'sick') drawSweat(ctx, rx * 0.6, cy - ry * 0.85, tMs)
   if (v.dizzy > 0.02) drawDizzyStars(ctx, cy, ry, tMs, v.dizzy)
   drawFlies(ctx, cy, ry, dirtLevel, dirtAlpha, tMs)
-  if (accessory !== null) drawAccessory(ctx, d, rx, ry, cy, faceScale, p, accessory)
+  for (const acc of accessories) drawAccessory(ctx, d, rx, ry, cy, faceScale, p, acc)
 }
 
 /**

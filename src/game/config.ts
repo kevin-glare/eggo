@@ -19,6 +19,8 @@ export interface ShopItemConfig {
   bonusPerFood?: number
   /** слот декора сцены (kind: 'decor') */
   decorSlot?: 'meadow' | 'sea'
+  /** слот аксессуара (kind: 'accessory'): в одном слоте носят один предмет */
+  accSlot?: 'head' | 'face' | 'neck'
 }
 
 export interface GameConfig {
@@ -266,10 +268,10 @@ export const DEFAULT_CONFIG: GameConfig = {
     items: [
       { id: 'dish-cake', kind: 'dish', price: 8, emoji: '🍰', bonusPerFood: 4 },
       { id: 'dish-feast', kind: 'dish', price: 15, emoji: '🍱', bonusPerFood: 8 },
-      { id: 'acc-cap', kind: 'accessory', price: 25, emoji: '🧢' },
-      { id: 'acc-bandana', kind: 'accessory', price: 30, emoji: '🧣' },
-      { id: 'acc-glasses', kind: 'accessory', price: 35, emoji: '👓' },
-      { id: 'acc-crown', kind: 'accessory', price: 60, emoji: '👑' },
+      { id: 'acc-cap', kind: 'accessory', price: 25, emoji: '🧢', accSlot: 'head' },
+      { id: 'acc-bandana', kind: 'accessory', price: 30, emoji: '🧣', accSlot: 'neck' },
+      { id: 'acc-glasses', kind: 'accessory', price: 35, emoji: '👓', accSlot: 'face' },
+      { id: 'acc-crown', kind: 'accessory', price: 60, emoji: '👑', accSlot: 'head' },
       { id: 'dec-flower', kind: 'decor', price: 10, emoji: '🌸', decorSlot: 'meadow' },
       { id: 'dec-mushroom', kind: 'decor', price: 15, emoji: '🍄', decorSlot: 'meadow' },
       { id: 'dec-house', kind: 'decor', price: 30, emoji: '🏠', decorSlot: 'meadow' },

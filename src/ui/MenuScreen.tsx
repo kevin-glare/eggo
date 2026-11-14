@@ -242,7 +242,11 @@ export default function MenuScreen({
                   stage={pet.stage}
                   mood={mood}
                   appearance={pet.appearance}
-                  accessory={pet.cosmetics.activeAccessory}
+                  accessories={[
+                    pet.cosmetics.accessories.head,
+                    pet.cosmetics.accessories.face,
+                    pet.cosmetics.accessories.neck,
+                  ].filter((x): x is string => x !== null)}
                   className="menu-avatar"
                 />
                 {renaming ? (
@@ -443,7 +447,7 @@ export default function MenuScreen({
                           {items.map((it) => {
                             const title = str.shopItem[it.id]?.title ?? it.id
                             const active = it.kind === 'dish' && pet.dish === it.id
-                            const worn = it.kind === 'accessory' && pet.cosmetics.activeAccessory === it.id
+                            const worn = it.kind === 'accessory' && it.accSlot !== undefined && pet.cosmetics.accessories[it.accSlot] === it.id
                             const decorOn =
                               it.kind === 'decor' &&
                               it.decorSlot !== undefined &&

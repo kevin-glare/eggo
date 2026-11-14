@@ -19,12 +19,22 @@ export interface Stats {
 
 export type StatKey = keyof Stats
 
+/** Слоты аксессуаров: по одному из каждого — голова, лицо, шея одновременно. */
+export interface PetAccessorySlots {
+  /** голова: кепка или корона (макушка одна на двоих) */
+  head: string | null
+  /** лицо: очки */
+  face: string | null
+  /** шея: шарф-бандана */
+  neck: string | null
+}
+
 /** Косметика питомца и сцены: покупается в магазине, рисуется поверх генов. */
 export interface PetCosmetics {
   /** купленные товары: id из config.shop.items */
   owned: string[]
-  /** надетый аксессуар; null — без аксессуара */
-  activeAccessory: string | null
+  /** надетые аксессуары по слотам */
+  accessories: PetAccessorySlots
   /** активный декор сцены по слотам; null — слот пуст */
   decor: { meadow: string | null; sea: string | null }
 }

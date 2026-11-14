@@ -3,6 +3,7 @@ import { DEFAULT_CONFIG, DEV_CONFIG } from '../src/game/config'
 import { rollAppearance } from '../src/game/appearance'
 import { tick } from '../src/game/engine'
 import { catchUp, deserialize, mergeRemoteSave, mergeStates, serialize } from '../src/game/storage'
+import type { PetCosmetics } from '../src/game/types'
 import { DAY, HOUR, TEST_APPEARANCE, hatchedPet, makePet } from './helpers'
 
 describe('serialize / deserialize', () => {
@@ -146,14 +147,34 @@ describe('serialize / deserialize', () => {
   it('старый сейв без магазина → блюдо не подано, косметика пуста', () => {
     const pet = hatchedPet(DEFAULT_CONFIG, {
       dish: 'dish-cake',
-      cosmetics: { owned: ['x'], activeAccessory: 'x', decor: { meadow: 'y', sea: null } },
+      cosmetics: { owned: ['x'], accessories: { head: 'x', face: null, neck: null }, decor: { meadow: 'y', sea: null } },
     })
     const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
     delete data.pet.dish
     delete data.pet.cosmetics
     const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.dish).toBeNull()
-    expect(restored?.cosmetics).toEqual({ owned: [], activeAccessory: null, decor: { meadow: null, sea: null } })
+    expect(restored?.cosmetics).toEqual({ owned: [], accessories: { head: null, face: null, neck: null }, decor: { meadow: null, sea: null } })
+  })
+
+  it('промежуточный сейв с одним надетым аксессуаром раскладывается по слотам', () => {
+    // сейв эпохи «один аксессуар»: activeAccessory вместо accessories
+    const legacy = {
+      owned: ['acc-glasses', 'acc-bandana'],
+      activeAccessory: 'acc-glasses',
+      decor: { meadow: null, sea: null },
+    }
+    const pet = hatchedPet(DEFAULT_CONFIG, { cosmetics: legacy as unknown as PetCosmetics })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.cosmetics.accessories).toEqual({ head: null, face: 'acc-glasses', neck: null })
+    // головной аксессуар старого формата едет в голову
+    const cap = { ...legacy, activeAccessory: 'acc-cap' }
+    const petCap = deserialize(
+      JSON.stringify({ version: 1, pet: { ...JSON.parse(serialize(hatchedPet(DEFAULT_CONFIG))).pet, cosmetics: cap } }),
+      TEST_APPEARANCE,
+    )
+    expect(petCap?.cosmetics.accessories.head).toBe('acc-cap')
   })
 })
 
@@ -237,17 +258,17 @@ describe('mergeStates — слияние состояний одного пит�
     const a = hatchedPet(DEFAULT_CONFIG, {
       lastTickAt: 5 * HOUR,
       lastEventAt: 5 * HOUR,
-      cosmetics: { owned: ['hat'], activeAccessory: 'hat', decor: { meadow: 'flower', sea: null } },
+      cosmetics: { owned: ['hat'], accessories: { head: 'hat', face: null, neck: null }, decor: { meadow: 'flower', sea: null } },
     })
     const b = hatchedPet(DEFAULT_CONFIG, {
       lastTickAt: 5 * HOUR,
       lastEventAt: 2 * HOUR,
-      cosmetics: { owned: ['flower'], activeAccessory: null, decor: { meadow: null, sea: null } },
+      cosmetics: { owned: ['flower'], accessories: { head: null, face: null, neck: null }, decor: { meadow: null, sea: null } },
     })
     const merged = mergeStates(a, b, DEFAULT_CONFIG)
     expect(merged.cosmetics.owned).toEqual(['hat', 'flower'])
     // активация — событие: свежая сторона решает, что надето и что на лугу
-    expect(merged.cosmetics.activeAccessory).toBe('hat')
+    expect(merged.cosmetics.accessories.head).toBe('hat')
     expect(merged.cosmetics.decor.meadow).toBe('flower')
   })
 

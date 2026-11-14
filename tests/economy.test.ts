@@ -69,12 +69,12 @@ describe('buyItem', () => {
   it('косметика: покупка кладёт в owned и активирует; повторно не продаём', () => {
     const cfg: GameConfig = {
       ...CFG,
-      shop: { ...CFG.shop, items: [...CFG.shop.items, { id: 'acc-hat', kind: 'accessory', price: 25, emoji: '🧢' }] },
+      shop: { ...CFG.shop, items: [...CFG.shop.items, { id: 'acc-hat', kind: 'accessory', price: 25, emoji: '🧢', accSlot: 'head' }] },
     }
     const res = buyItem(hatchedPet(CFG, { stars: 30 }), 'acc-hat', cfg)
     expect(res.ok).toBe(true)
     expect(res.state.cosmetics.owned).toEqual(['acc-hat'])
-    expect(res.state.cosmetics.activeAccessory).toBe('acc-hat')
+    expect(res.state.cosmetics.accessories.head).toBe('acc-hat')
     expect(buyItem(res.state, 'acc-hat', cfg).reason).toBe('already-owned')
   })
 
@@ -103,7 +103,7 @@ describe('activateItem', () => {
   }
 
   it('декор — тумблер слота: включение и снятие', () => {
-    const pet = hatchedPet(CFG, { cosmetics: { owned: ['dec-flower'], activeAccessory: null, decor: { meadow: null, sea: null } } })
+    const pet = hatchedPet(CFG, { cosmetics: { owned: ['dec-flower'], accessories: { head: null, face: null, neck: null }, decor: { meadow: null, sea: null } } })
     const on = activateItem(pet, 'dec-flower', cfgWithDeco)
     expect(on.ok).toBe(true)
     expect(on.state.cosmetics.decor.meadow).toBe('dec-flower')
@@ -111,11 +111,18 @@ describe('activateItem', () => {
     expect(off.state.cosmetics.decor.meadow).toBeNull()
   })
 
-  it('аксессуар — надеть/снять', () => {
-    const pet = hatchedPet(CFG, { cosmetics: { owned: ['x'], activeAccessory: 'x', decor: { meadow: null, sea: null } } })
-    const res = activateItem(pet, 'x', { ...CFG, shop: { ...CFG.shop, items: [...CFG.shop.items, { id: 'x', kind: 'accessory', price: 1, emoji: '🧢' }] } })
+  it('аксессуар — надеть/снять в своём слоте', () => {
+    const res = activateItem(hatchedPet(CFG, { cosmetics: { owned: ['acc-glasses'], accessories: { head: null, face: 'acc-glasses', neck: null }, decor: { meadow: null, sea: null } } }), 'acc-glasses', CFG)
     expect(res.ok).toBe(true)
-    expect(res.state.cosmetics.activeAccessory).toBeNull()
+    expect(res.state.cosmetics.accessories.face).toBeNull()
+    const on = activateItem(res.state, 'acc-glasses', CFG)
+    expect(on.state.cosmetics.accessories.face).toBe('acc-glasses')
+  })
+
+  it('очки и шарф носятся одновременно — слоты независимы', () => {
+    const pet = hatchedPet(CFG, { cosmetics: { owned: ['acc-glasses', 'acc-bandana'], accessories: { head: null, face: 'acc-glasses', neck: 'acc-bandana' }, decor: { meadow: null, sea: null } } })
+    expect(pet.cosmetics.accessories.face).toBe('acc-glasses')
+    expect(pet.cosmetics.accessories.neck).toBe('acc-bandana')
   })
 
   it('некупленную косметику не активирует', () => {

@@ -218,6 +218,12 @@ export default function App() {
     dishItem?.bonusPerFood !== undefined
       ? { ...config.feeding, perFood: config.feeding.perFood + dishItem.bonusPerFood }
       : config.feeding
+  // надетые аксессуары: список в порядке отрисовки — голова, лицо, шея
+  const wornAccessories = [
+    pet.cosmetics.accessories.head,
+    pet.cosmetics.accessories.face,
+    pet.cosmetics.accessories.neck,
+  ].filter((x): x is string => x !== null)
   // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
   const isCreating = pet.name === null
 
@@ -260,7 +266,7 @@ export default function App() {
               appearance={pet.appearance}
               eggProgress={eggProgress}
               dirtLevel={dirtLevel(pet.stats.cleanliness)}
-              accessory={pet.cosmetics.activeAccessory}
+              accessories={wornAccessories}
               decor={pet.cosmetics.decor}
               neglectLevel={neglectLevel(pet, config)}
               desire={desireKind}
