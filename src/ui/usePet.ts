@@ -14,6 +14,7 @@ import {
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { dayGame } from '../game/dailyChallenge'
+import { evaluateAchievements } from '../game/achievements'
 import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
@@ -229,6 +230,20 @@ useEffect(() => {
     setNotice(str.weeksOfFriendship(weeks))
     setCelebrate((n) => n + 1)
   }, [pet])
+
+  // достижения: пороги поверх существующих полей; новые открываются в сейв
+  // и празднуются. Слияние девайсов — union, штамп события не нужен
+  useEffect(() => {
+    if (pet === null) return
+    const fresh = evaluateAchievements(pet, config, Date.now()).filter((id) => !pet.achievements.includes(id))
+    if (fresh.length === 0) return
+    setPet({ ...pet, achievements: [...pet.achievements, ...fresh] })
+    forceSyncRef.current = true
+    const title = str.achievements[fresh[0]!]?.title ?? fresh[0]!
+    setNotice(str.achievementUnlocked(title))
+    setCelebrate((n) => n + 1)
+    hapticSuccess()
+  }, [pet, config, str])
 
   const apply = useCallback(
     (action: (p: PetState, c: GameConfig) => ActionResult, successText: string, questId?: QuestId) => {

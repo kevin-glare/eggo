@@ -178,6 +178,28 @@ export const ru = {
   levelUp: (title: string) => `💖 Дружба крепнет: вы теперь «${title}»!`,
   friendshipAria: 'Уровень дружбы',
 
+  // --- достижения: ключи = стабильные id из game/achievements ---
+  menuAchievements: 'Достижения',
+  achievementsCount: (n: number, total: number) => `${n} из ${total}`,
+  achievementUnlocked: (title: string) => `🏅 Достижение: ${title}!`,
+  achievements: {
+    'streak-7': { title: '🔥 Неделя в ритме' },
+    'streak-14': { title: '🔥 Две недели подряд' },
+    'streak-30': { title: '🔥 Месяц заботы' },
+    'age-7': { title: '🎂 Недельный питомец' },
+    'age-30': { title: '🎂 Месяц вместе' },
+    'score-100': { title: '🎯 Сотня очков' },
+    'all-games': { title: '🎮 Попробовал всё' },
+    'weeks-2': { title: '✨ Две недели дружбы' },
+    'weeks-6': { title: '✨ Полтора месяца дружбы' },
+    'ref-1': { title: '🤝 Первый друг' },
+    'ref-3': { title: '🤝 Компания друзей' },
+    'lvl-3': { title: '💖 Крепкая дружба' },
+    'lvl-5': { title: '💖 Неразлучные' },
+    'stars-100': { title: '🌟 Сотня звёздочек' },
+    'stars-300': { title: '🌟 Звёздный капитал' },
+  } as Record<string, { title: string }>,
+
   // --- просьбы питомца ---
   requestHint: '💡 Эгго что-то просит! Успей — эффект будет двойным',
   requestBonus: (name: string) => `✨ Просьба выполнена — ${name} в восторге!`,

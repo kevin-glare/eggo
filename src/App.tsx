@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
 import { dayGame } from './game/dailyChallenge'
+import { allAchievementIds } from './game/achievements'
 import { friendshipLevel } from './game/friendship'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
 import { dayKey } from './game/quests'
@@ -204,6 +205,8 @@ export default function App() {
     str.friendshipTitles[
       Math.min(friendshipLevel(pet.xp, config), str.friendshipTitles.length) - 1
     ] ?? ''
+  // каталог достижений стабилен от конфига: порядок строк и счётчик «N из M»
+  const achievementIds = allAchievementIds(config)
   // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
   const isCreating = pet.name === null
 
@@ -371,6 +374,8 @@ export default function App() {
           onRename={renamePet}
           nameMaxLength={config.nameMaxLength}
           friendshipTitle={friendshipTitle}
+          achievementIds={achievementIds}
+          unlockedAchievements={pet.achievements}
           mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}

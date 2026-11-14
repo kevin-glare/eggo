@@ -87,6 +87,23 @@ export interface GameConfig {
     /** пороги уровней: 0 — старт; уровень = 1 + число пройденных ненулевых порогов */
     levels: number[]
   }
+  /** достижения: пороги в существующих полях состояния (id строятся из них) */
+  achievements: {
+    /** серия дней: дни-вехи */
+    streakDays: number[]
+    /** возраст питомца в днях */
+    ageDays: number[]
+    /** лучший счёт любой мини-игры */
+    minigameBest: number
+    /** недели дружбы от createdAt */
+    friendshipWeeks: number[]
+    /** звёзды дружбы от приглашённых */
+    referralTier: number[]
+    /** уровни дружбы */
+    friendshipLevel: number[]
+    /** накопленные звёздочки */
+    starsEarned: number[]
+  }
   /** мини-игры кнопки «Играть»: числа баланса ядер и наград */
   minigames: {
     /** «Память»: пары в первом ряду, время и рост рядов (партия бесконечна, конец — таймер) */
@@ -224,6 +241,16 @@ export const DEFAULT_CONFIG: GameConfig = {
     xpPerMinigame: 8,
     xpPerClaim: 15,
     levels: [0, 100, 300, 700, 1400, 2500],
+  },
+  // достижения: пороги поверх уже существующих полей сейва
+  achievements: {
+    streakDays: [7, 14, 30],
+    ageDays: [7, 30],
+    minigameBest: 100,
+    friendshipWeeks: [2, 6],
+    referralTier: [1, 3],
+    friendshipLevel: [3, 5],
+    starsEarned: [100, 300],
   },
   // мини-игры: партии бесконечны («до первой ошибки»), счёт неограничен,
   // рекорды всегда бьются; новый рекорд даёт бонус к счастью (база — play())

@@ -69,4 +69,6 @@ export interface PetState {
   stars: number
   /** накопленный опыт дружбы: растёт от заботы; у старых сейвов 0 (нормализуется) */
   xp: number
+  /** открытые достижения (стабильные id из game/achievements); у старых сейвов пусто (нормализуется) */
+  achievements: string[]
 }

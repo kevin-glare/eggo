@@ -59,6 +59,15 @@ function normalizeMinigameBest(raw: unknown): Partial<Record<MinigameId, number>
   return out
 }
 
+/**
+ * Достижения появились позже сейва v1: отсутствие или поломка нормализуется
+ * в пустой список. Дубликаты схлопываются, мусор отбрасывается.
+ */
+function normalizeAchievements(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  return [...new Set(raw.filter((x): x is string => typeof x === 'string'))]
+}
+
 interface SaveData {
   version: number
   pet: PetState
@@ -101,6 +110,7 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       stars: typeof pet.stars === 'number' && pet.stars >= 0 ? Math.floor(pet.stars) : 0,
       // опыт дружбы появился позже сейва v1: отсутствие — всё ещё знакомые
       xp: typeof pet.xp === 'number' && pet.xp >= 0 ? Math.floor(pet.xp) : 0,
+      achievements: normalizeAchievements(pet.achievements),
     }
   } catch {
     return null
@@ -187,6 +197,8 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     overfedUntil: Math.max(caughtNewer.overfedUntil, caughtOlder.overfedUntil),
     // опыт дружбы только растёт — максимум с любого девайса не теряется
     xp: Math.max(caughtNewer.xp, caughtOlder.xp),
+    // достижения копятся: объединение каталогов с двух девайсов
+    achievements: [...new Set([...caughtNewer.achievements, ...caughtOlder.achievements])],
     lastTickAt: timeline,
   }
 }

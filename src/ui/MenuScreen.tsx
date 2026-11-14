@@ -13,7 +13,7 @@ import { track } from '../metrika'
 import { hapticTap, tg } from '../telegram'
 
 /** Подэкраны меню: корень с рядами и карточки-объяснения поверх главного экрана. */
-type MenuView = 'root' | 'invite' | 'help'
+type MenuView = 'root' | 'invite' | 'help' | 'achievements'
 
 interface MenuScreenProps {
   open: boolean
@@ -26,6 +26,10 @@ interface MenuScreenProps {
   nameMaxLength: number
   /** звание уровня дружбы питомца (вычисляется в App по config) */
   friendshipTitle: string
+  /** полный каталог достижений — порядок строк подэкрана */
+  achievementIds: string[]
+  /** открытые достижения питомца */
+  unlockedAchievements: string[]
   /** настроение питомца — рисуется в мини-арте */
   mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
@@ -62,6 +66,8 @@ export default function MenuScreen({
   onRename,
   nameMaxLength,
   friendshipTitle,
+  achievementIds,
+  unlockedAchievements,
   mood,
   notifSupported,
   notifEnabled,
@@ -293,6 +299,25 @@ export default function MenuScreen({
                   type="button"
                   className="menu-row"
                   onClick={tap(() => {
+                    track('achievements-open')
+                    setView('achievements')
+                  })}
+                >
+                  <span className="menu-row-icon" aria-hidden="true">
+                    🏅
+                  </span>
+                  <span className="menu-row-label">{str.menuAchievements}</span>
+                  <span className="mg-chip">
+                    {str.achievementsCount(unlockedAchievements.length, achievementIds.length)}
+                  </span>
+                  <span className="menu-row-chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="menu-row"
+                  onClick={tap(() => {
                     track('help-open')
                     setView('help')
                   })}
@@ -320,6 +345,20 @@ export default function MenuScreen({
               </div>
               {view === 'invite' ? (
                 <InvitePanel invited={invited} stars={pet.appearance.refMark} milestones={milestones} onShare={onShare} />
+              ) : view === 'achievements' ? (
+                <div className="menu-ach">
+                  {achievementIds.map((id) => {
+                    const open = unlockedAchievements.includes(id)
+                    return (
+                      <div key={id} className={open ? 'menu-ach-row open' : 'menu-ach-row'}>
+                        <span className="menu-ach-icon" aria-hidden="true">
+                          {open ? '🏅' : '🔒'}
+                        </span>
+                        <span className="menu-ach-title">{str.achievements[id]?.title ?? id}</span>
+                      </div>
+                    )
+                  })}
+                </div>
               ) : (
                 <HelpPanel />
               )}

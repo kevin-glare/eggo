@@ -134,6 +134,28 @@ export const en: Strings = {
   levelUp: (title: string) => `💖 Your friendship grows: you are now “${title}”!`,
   friendshipAria: 'Friendship level',
 
+  // --- achievements: keys = stable ids from game/achievements ---
+  menuAchievements: 'Achievements',
+  achievementsCount: (n: number, total: number) => `${n} of ${total}`,
+  achievementUnlocked: (title: string) => `🏅 Achievement: ${title}!`,
+  achievements: {
+    'streak-7': { title: '🔥 Week in rhythm' },
+    'streak-14': { title: '🔥 Two weeks straight' },
+    'streak-30': { title: '🔥 A month of care' },
+    'age-7': { title: '🎂 One-week pet' },
+    'age-30': { title: '🎂 A month together' },
+    'score-100': { title: '🎯 Century score' },
+    'all-games': { title: '🎮 Tried them all' },
+    'weeks-2': { title: '✨ Two weeks of friendship' },
+    'weeks-6': { title: '✨ Six weeks of friendship' },
+    'ref-1': { title: '🤝 First friend' },
+    'ref-3': { title: '🤝 Friend circle' },
+    'lvl-3': { title: '💖 Strong bond' },
+    'lvl-5': { title: '💖 Inseparable' },
+    'stars-100': { title: '🌟 Hundred stars' },
+    'stars-300': { title: '🌟 Star capital' },
+  } as Record<string, { title: string }>,
+
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
   requestBonus: (name: string) => `✨ Request fulfilled — ${name} is delighted!`,
