@@ -62,6 +62,7 @@ export default function App() {
     toggleSleep,
     startGame,
     advanceTime,
+    renamePet,
     reset,
   } = usePet(config)
   // служебные кнопки шапки: состояние тумблера пушей живёт на сервере
@@ -363,6 +364,8 @@ export default function App() {
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
           pet={pet}
+          onRename={renamePet}
+          nameMaxLength={config.nameMaxLength}
           mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}

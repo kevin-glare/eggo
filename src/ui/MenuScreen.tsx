@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ActionResult } from '../game/actions'
 import type { PetState } from '../game/types'
 import type { Mood } from '../game/types'
 import { setLang, useLang, useStrings } from './i18n'
@@ -18,6 +19,10 @@ interface MenuScreenProps {
   onClose: () => void
   /** питомец для карточки-профиля и мини-арта */
   pet: PetState
+  /** переименование: ActionResult с reason для ошибки формы; null — питомца нет */
+  onRename: (name: string) => ActionResult | null
+  /** предел длины имени из config.nameMaxLength */
+  nameMaxLength: number
   /** настроение питомца — рисуется в мини-арте */
   mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
@@ -51,6 +56,8 @@ export default function MenuScreen({
   open,
   onClose,
   pet,
+  onRename,
+  nameMaxLength,
   mood,
   notifSupported,
   notifEnabled,
@@ -68,6 +75,26 @@ export default function MenuScreen({
   const str = useStrings()
   const lang = useLang()
   const [view, setView] = useState<MenuView>('root')
+  // переименование: инлайн-форма в карточке профиля
+  const [renaming, setRenaming] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  const [renameError, setRenameError] = useState<string | null>(null)
+
+  const startRename = () => {
+    setDraftName(pet.name ?? '')
+    setRenameError(null)
+    setRenaming(true)
+  }
+
+  const submitRename = () => {
+    const result = onRename(draftName)
+    if (result?.ok) {
+      setRenaming(false)
+      playSound('ding')
+      return
+    }
+    setRenameError(str.reason[result?.reason ?? 'invalid-name'])
+  }
   // звук: локальная настройка устройства, как язык
   const [soundOn, setSoundOnState] = useState(isSoundOn())
   const panelRef = useRef<HTMLElement>(null)
@@ -139,7 +166,47 @@ export default function MenuScreen({
             <>
               <div className="menu-profile">
                 <PetBadge stage={pet.stage} mood={mood} appearance={pet.appearance} className="menu-avatar" />
-                <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                {renaming ? (
+                  <form
+                    className="menu-rename"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      submitRename()
+                    }}
+                  >
+                    <input
+                      className="menu-rename-input"
+                      value={draftName}
+                      maxLength={nameMaxLength}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      aria-label={str.renameAria}
+                      autoFocus
+                    />
+                    <button type="submit" className="menu-rename-btn save" aria-label={str.renameSave}>
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      className="menu-rename-btn"
+                      onClick={tap(() => setRenaming(false))}
+                      aria-label={str.renameCancel}
+                    >
+                      ✕
+                    </button>
+                  </form>
+                ) : (
+                  <>
+                    <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                    <button
+                      type="button"
+                      className="menu-rename-btn"
+                      onClick={tap(startRename)}
+                      aria-label={str.renameAria}
+                    >
+                      ✏️
+                    </button>
+                  </>
+                )}
                 <div className="menu-profile-right">
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">
@@ -147,6 +214,7 @@ export default function MenuScreen({
                   </p>
                 </div>
               </div>
+              {renameError && <p className="menu-rename-error">{renameError}</p>}
               <p className="menu-section">{str.menuSettings}</p>
               <nav className="menu-rows">
                 {notifSupported && (

@@ -154,3 +154,12 @@ export function namePet(state: PetState, rawName: string, config: GameConfig): A
   if (name.length === 0 || name.length > config.nameMaxLength) return fail(state, 'invalid-name')
   return ok({ ...state, name })
 }
+
+/** Переименовать питомца: та же валидация, что при создании; безымянному нечего менять. */
+export function renamePet(state: PetState, rawName: string, config: GameConfig): ActionResult {
+  if (state.name === null) return fail(state, 'not-hatched')
+  const name = rawName.trim()
+  if (name.length === 0 || name.length > config.nameMaxLength) return fail(state, 'invalid-name')
+  if (name === state.name) return ok(state)
+  return ok({ ...state, name })
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from '../src/game/config'
-import { feed, namePet, pet, play, startSleep, wake, wash } from '../src/game/actions'
+import { feed, namePet, pet, play, renamePet, startSleep, wake, wash } from '../src/game/actions'
 import { hatchedPet, makePet } from './helpers'
 
 describe('feed', () => {
@@ -187,6 +187,41 @@ describe('namePet', () => {
     const pet = makePet(DEFAULT_CONFIG, { name: null })
     namePet(pet, 'Шустрик', DEFAULT_CONFIG)
     expect(pet.name).toBeNull()
+  })
+})
+
+describe('renamePet', () => {
+  it('меняет имя и обрезает пробелы', () => {
+    const result = renamePet(makePet(DEFAULT_CONFIG, { name: 'Тест' }), '  Шустрик  ', DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state.name).toBe('Шустрик')
+  })
+
+  it('отклоняет пустое и слишком длинное имя', () => {
+    const named = makePet(DEFAULT_CONFIG)
+    expect(renamePet(named, '   ', DEFAULT_CONFIG).reason).toBe('invalid-name')
+    const long = 'а'.repeat(DEFAULT_CONFIG.nameMaxLength + 1)
+    expect(renamePet(named, long, DEFAULT_CONFIG).reason).toBe('invalid-name')
+    expect(named.name).toBe('Тест')
+  })
+
+  it('безымянному переименование не нужно — отказ not-hatched', () => {
+    const result = renamePet(makePet(DEFAULT_CONFIG, { name: null }), 'Шустрик', DEFAULT_CONFIG)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBe('not-hatched')
+  })
+
+  it('то же самое имя — успех без пересоздания состояния', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест' })
+    const result = renamePet(pet, 'Тест', DEFAULT_CONFIG)
+    expect(result.ok).toBe(true)
+    expect(result.state).toBe(pet)
+  })
+
+  it('не мутирует исходное состояние', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест' })
+    renamePet(pet, 'Шустрик', DEFAULT_CONFIG)
+    expect(pet.name).toBe('Тест')
   })
 })
 

@@ -125,6 +125,9 @@ export const en: Strings = {
   pickTitle: 'What shall we play?',
   pickRandom: 'Random',
   pickDayTitle: 'Game of the day — a new record earns double bonus',
+  renameAria: 'Rename pet',
+  renameSave: 'Save name',
+  renameCancel: 'Keep the name',
 
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',

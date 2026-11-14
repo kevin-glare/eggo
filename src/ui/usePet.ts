@@ -8,6 +8,7 @@ import {
   startSleep,
   wake,
   wash,
+  renamePet as renamePetAction,
   type ActionResult,
 } from '../game/actions'
 import type { GameConfig } from '../game/config'
@@ -390,6 +391,19 @@ useEffect(() => {
     setNotice(str.newGame)
   }, [config])
 
+  /** Переименовать из меню: null — питомца ещё нет; отказ несёт reason для формы. */
+  const renamePet = useCallback((rawName: string): ActionResult | null => {
+    const current = petRef.current
+    if (current === null) return null
+    const result = renamePetAction(current, rawName, config)
+    if (result.ok) {
+      // переименование — событие игрока: штамп для мультидевайс-слияния
+      setPet({ ...result.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+    }
+    return result
+  }, [config])
+
   return {
     pet,
     notice,
@@ -406,6 +420,7 @@ useEffect(() => {
     toggleSleep,
     startGame,
     advanceTime,
+    renamePet,
     reset,
   }
 }
