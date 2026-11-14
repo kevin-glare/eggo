@@ -141,23 +141,33 @@ describe('награды мини-игр', () => {
   it('первый счёт — уже рекорд, ноль — нет', () => {
     const pet = hatchedPet(config)
     expect(pet.minigameBest).toEqual({})
-    const first = recordMinigameScore(pet, 'memory', 42)
+    const first = recordMinigameScore(pet, 'memory', 42, config)
     expect(first.isRecord).toBe(true)
     expect(first.state.minigameBest.memory).toBe(42)
-    expect(recordMinigameScore(pet, 'memory', 0).isRecord).toBe(false)
+    expect(recordMinigameScore(pet, 'memory', 0, config).isRecord).toBe(false)
+  })
+
+  it('новый рекорд платит звёздочками; ноль — нет', () => {
+    const pet = hatchedPet(config)
+    const first = recordMinigameScore(pet, 'memory', 42, config)
+    expect(first.stars).toBe(config.shop.recordStars)
+    expect(first.state.stars).toBe(pet.stars + config.shop.recordStars)
+    expect(recordMinigameScore(pet, 'memory', 0, config).stars).toBe(0)
+    expect(recordMinigameScore(pet, 'memory', 0, config).state).toBe(pet)
   })
 
   it('рекорд обновляется только строгим превышением', () => {
     const pet = hatchedPet(config, { minigameBest: { memory: 50 } })
-    expect(recordMinigameScore(pet, 'memory', 50).isRecord).toBe(false)
-    const better = recordMinigameScore(pet, 'memory', 51)
+    expect(recordMinigameScore(pet, 'memory', 50, config).isRecord).toBe(false)
+    const better = recordMinigameScore(pet, 'memory', 51, config)
     expect(better.isRecord).toBe(true)
     expect(better.state.minigameBest.memory).toBe(51)
+    expect(better.stars).toBe(config.shop.recordStars)
   })
 
   it('рекорд одной игры не трогает другую', () => {
     const pet = hatchedPet(config, { minigameBest: { memory: 50 } })
-    const next = recordMinigameScore(pet, 'runner' as MinigameId, 10).state
+    const next = recordMinigameScore(pet, 'runner' as MinigameId, 10, config).state
     expect(next.minigameBest.memory).toBe(50)
     expect(next.minigameBest.runner).toBe(10)
   })

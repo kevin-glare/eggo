@@ -98,7 +98,8 @@ export const en: Strings = {
   mgNewRecord: '🏆 New record!',
   mgBonus: (n: number) => `Eggo is thrilled: +${n} happiness`,
   mgLost: 'Eggo is sad but believes in you!',
-  mgRecordToast: (n: number) => `🏆 New record: ${n}!`,
+  mgRecordToast: (n: number, stars: number) =>
+    stars > 0 ? `🏆 New record: ${n} — +${stars} ⭐!` : `🏆 New record: ${n}!`,
   mgTime: (s: number) => `${s} s`,
   mgMatched: 'pair matched',
   mgCardHidden: 'Hidden card',
@@ -143,7 +144,10 @@ export const en: Strings = {
   inviteMilestone: (n: number) => `Star for ${n} ${n === 1 ? 'friend' : 'friends'}`,
   inviteCount: (n: number) => `Friends joined: ${n}`,
   inviteShare: 'Share the link',
-  inviteReward: (n: number) => `✨ Your pet earned ${n} friendship star${n === 1 ? '' : 's'} — thank you!`,
+  inviteReward: (n: number, stars: number) =>
+    stars > 0
+      ? `✨ Your pet earned ${n} friendship star${n === 1 ? '' : 's'} and +${stars} ⭐ — thank you!`
+      : `✨ Your pet earned ${n} friendship star${n === 1 ? '' : 's'} — thank you!`,
 
   // --- menu screen ---
   menuAria: 'Menu',

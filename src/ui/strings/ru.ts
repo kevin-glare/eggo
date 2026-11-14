@@ -142,7 +142,8 @@ export const ru = {
   mgNewRecord: '🏆 Новый рекорд!',
   mgBonus: (n: number) => `Эгго в восторге: +${n} к счастью`,
   mgLost: 'Эгго грустит, но верит в тебя!',
-  mgRecordToast: (n: number) => `🏆 Новый рекорд: ${n}!`,
+  mgRecordToast: (n: number, stars: number) =>
+    stars > 0 ? `🏆 Новый рекорд: ${n} — +${stars} ⭐!` : `🏆 Новый рекорд: ${n}!`,
   mgTime: (s: number) => `${s} с`,
   mgMatched: 'пара собрана',
   mgCardHidden: 'Закрытая карточка',
@@ -188,7 +189,10 @@ export const ru = {
   inviteMilestone: (n: number) => `Звезда за ${n} ${pluralFriends(n)}`,
   inviteCount: (n: number) => `Уже позвал: ${n}`,
   inviteShare: 'Поделиться ссылкой',
-  inviteReward: (n: number) => `✨ У питомца ${n} ${pluralStars(n)} дружбы — спасибо!`,
+  inviteReward: (n: number, stars: number) =>
+    stars > 0
+      ? `✨ У питомца ${n} ${pluralStars(n)} дружбы и +${stars} ⭐ — спасибо!`
+      : `✨ У питомца ${n} ${pluralStars(n)} дружбы — спасибо!`,
 
   // --- экран меню ---
   menuAria: 'Меню',

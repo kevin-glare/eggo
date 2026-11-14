@@ -209,11 +209,11 @@ useEffect(() => {
     if (pet === null || invited === null) return
     const reward = applyReferralReward(pet, invited, config)
     if (reward.tier <= pet.appearance.refMark) return
-    setPet({ ...reward.state, lastEventAt: Date.now() })
-    forceSyncRef.current = true
-    setNotice(str.inviteReward(reward.tier))
-    setCelebrate((n) => n + 1)
-    hapticSuccess()
+      setPet({ ...reward.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+      setNotice(str.inviteReward(reward.tier, reward.stars))
+      setCelebrate((n) => n + 1)
+      hapticSuccess()
   }, [invited, pet, config])
 
   // праздник дружбы: тост и конфетти один раз на юбилейный день
@@ -279,7 +279,7 @@ useEffect(() => {
       const base = playPet()
       const current = base?.state ?? petRef.current
       if (current === null) return { isRecord: false, bonus: 0 }
-      const rec = recordMinigameScore(current, id, outcome.score)
+      const rec = recordMinigameScore(current, id, outcome.score, config)
       const bonus = minigameBonus(outcome.won, rec.isRecord, config)
       let next = rec.state
       if (bonus > 0) next = applyMinigameBonus(next, bonus)
@@ -289,7 +289,7 @@ useEffect(() => {
       }
       if (!outcome.won) setNotice(str.mgLost)
       else if (rec.isRecord) {
-        setNotice(str.mgRecordToast(outcome.score))
+        setNotice(str.mgRecordToast(outcome.score, rec.stars))
         setCelebrate((n) => n + 1)
       }
       return { isRecord: rec.isRecord, bonus }

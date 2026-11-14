@@ -19,19 +19,29 @@ describe('referralTier', () => {
 })
 
 describe('applyReferralReward', () => {
-  it('выдаёт звёзды, когда порог пересечён; остальные гены не тронуты', () => {
+  it('выдаёт звёзды и звёздочки, когда порог пересечён; остальные гены не тронуты', () => {
     const pet = hatchedPet(CFG)
     const reward = applyReferralReward(pet, 1, CFG)
     expect(reward.tier).toBe(1)
     expect(reward.state.appearance).toEqual({ ...pet.appearance, refMark: 1 })
+    expect(reward.stars).toBe(CFG.shop.referralStars[1])
+    expect(reward.state.stars).toBe(pet.stars + CFG.shop.referralStars[1]!)
   })
 
-  it('идемпотентна: повторный пересчёт не меняет состояние', () => {
+  it('идемпотентна: повторный пересчёт не меняет состояние и не платит', () => {
     const pet = hatchedPet(CFG)
     const first = applyReferralReward(pet, 3, CFG)
     const again = applyReferralReward(first.state, 3, CFG)
     expect(again.state).toBe(first.state)
     expect(again.tier).toBe(2)
+    expect(again.stars).toBe(0)
+  })
+
+  it('скачок через два порога платит за оба', () => {
+    const pet = hatchedPet(CFG)
+    const reward = applyReferralReward(pet, 10, CFG)
+    expect(reward.tier).toBe(3)
+    expect(reward.stars).toBe(CFG.shop.referralStars[1]! + CFG.shop.referralStars[3]! + CFG.shop.referralStars[10]!)
   })
 
   it('меньше заработанного звёзд не отбирает', () => {

@@ -69,6 +69,10 @@ export interface GameConfig {
     questStars: number
     /** звёздочек за веху серии дней: день → награда */
     streakStars: Record<number, number>
+    /** звёздочек за новый личный рекорд в мини-игре */
+    recordStars: number
+    /** звёздочек за порог приглашённых: приглашённые → награда */
+    referralStars: Record<number, number>
   }
   /** мини-игры кнопки «Играть»: числа баланса ядер и наград */
   minigames: {
@@ -192,10 +196,12 @@ export const DEFAULT_CONFIG: GameConfig = {
     milestones: [1, 3, 10],
   },
   streak: { milestones: [3, 7, 14, 30] },
-  // звёздочки: за полный набор заданий дня и за вехи серии дней
+  // звёздочки: за задания дня, вехи серии, новые рекорды и приглашённых
   shop: {
     questStars: 3,
     streakStars: { 3: 5, 7: 10, 14: 20, 30: 50 },
+    recordStars: 2,
+    referralStars: { 1: 5, 3: 15, 10: 40 },
   },
   // мини-игры: «Память» — 6 пар за минуту; победа даёт бонус к счастью,
   // новый рекорд — ещё немного сверху (база — обычный play())

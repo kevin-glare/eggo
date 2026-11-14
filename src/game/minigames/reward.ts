@@ -1,11 +1,12 @@
 import type { GameConfig } from '../config'
+import { earnStars } from '../economy'
 import type { PetState } from '../types'
 import type { MinigameId } from './types'
 
 /**
  * Награда мини-игр. База — обычный play() (радость, усталость, просьба ×2,
  * квест) — его применяет usePet после партии. Здесь только добавка:
- * бонус к счастью за победу и запись рекорда.
+ * бонус к счастью за победу, запись рекорда и звёздочки за рекорд.
  */
 
 /** Бонус к счастью за партию: за победу плюс за новый рекорд. */
@@ -26,18 +27,21 @@ export function applyMinigameBonus(state: PetState, bonus: number): PetState {
 /**
  * Записать счёт партии. Рекорд — строго больше прежнего (и больше нуля):
  * счёт 0 не должен занимать место в сейве. Слияние между девайсами — по
- * максимуму (mergeStates), поэтому рекорд не теряется.
+ * максимуму (mergeStates), поэтому рекорд не теряется. Новый рекорд —
+ * звёздочки в кошелёк (config.shop.recordStars).
  */
 export function recordMinigameScore(
   state: PetState,
   id: MinigameId,
   score: number,
-): { state: PetState; isRecord: boolean } {
+  config: GameConfig,
+): { state: PetState; isRecord: boolean; stars: number } {
   const best = state.minigameBest[id]
   const isRecord = score > 0 && score > (best ?? 0)
-  if (!isRecord) return { state, isRecord: false }
+  if (!isRecord) return { state, isRecord: false, stars: 0 }
   return {
-    state: { ...state, minigameBest: { ...state.minigameBest, [id]: score } },
+    state: earnStars({ ...state, minigameBest: { ...state.minigameBest, [id]: score } }, config.shop.recordStars),
     isRecord: true,
+    stars: config.shop.recordStars,
   }
 }
