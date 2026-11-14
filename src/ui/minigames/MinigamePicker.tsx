@@ -56,6 +56,18 @@ export default function MinigamePicker({ best, dayGameId, onPick, onClose }: Min
       >
         <header className="mg-head">
           <p className="mg-title">{str.pickTitle}</p>
+          {/* закрыть — как в меню: без выбора награды не трогаем */}
+          <button
+            type="button"
+            className="tool-btn"
+            onClick={() => {
+              hapticTap()
+              onClose()
+            }}
+            aria-label={str.menuClose}
+          >
+            ✕
+          </button>
         </header>
         <div className="picker-list">
           <button type="button" className="picker-tile random" onClick={() => pick('random')}>

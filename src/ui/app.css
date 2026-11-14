@@ -524,6 +524,11 @@ body {
   min-width: 0;
 }
 
+.menu-head-tools {
+  display: flex;
+  gap: 8px;
+}
+
 .menu-title {
   margin: 2px 0 0;
   font-family: var(--font-display);
@@ -703,12 +708,6 @@ body {
   font-size: 12.5px;
   color: var(--muted);
   white-space: nowrap;
-}
-
-/* подэкран: возврат прижат к правому краю */
-.menu-sub-head {
-  display: flex;
-  justify-content: flex-end;
 }
 
 /* достижения: список вех, закрытые приглушены */

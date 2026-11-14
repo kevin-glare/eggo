@@ -228,9 +228,17 @@ export default function MenuScreen({
       >
         <div className="menu-head">
           <p className="menu-title">{str.menuAria}</p>
-          <button type="button" className="tool-btn" onClick={tap(onClose)} aria-label={str.menuClose}>
-            ✕
-          </button>
+          {/* на подэкранах — возврат левее закрытия всего меню */}
+          <div className="menu-head-tools">
+            {view !== 'root' && (
+              <button type="button" className="tool-btn" onClick={tap(back)} aria-label={str.menuBack}>
+                ←
+              </button>
+            )}
+            <button type="button" className="tool-btn" onClick={tap(onClose)} aria-label={str.menuClose}>
+              ✕
+            </button>
+          </div>
         </div>
         {/* тосты внутри меню: нотис пушей и результат покупки */}
         {notifNotice && <div className="menu-toast">{notifNotice}</div>}
@@ -376,12 +384,6 @@ export default function MenuScreen({
             </>
           ) : (
             <div className="menu-sub">
-              {/* возврат — компактной кнопкой у правого края */}
-              <div className="menu-sub-head">
-                <button type="button" className="tool-btn" onClick={tap(back)} aria-label={str.menuBack}>
-                  ←
-                </button>
-              </div>
               {view === 'shop' ? (
                 <div className="shop">
                   {(['dish', 'accessory', 'decor'] as const).map((kind) => {
