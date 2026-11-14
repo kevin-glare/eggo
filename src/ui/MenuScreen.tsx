@@ -110,30 +110,35 @@ export default function MenuScreen({
   useEffect(() => {
     if (open) setView(openView)
   }, [open, openView])
-  // переименование: инлайн-форма в карточке профиля
+  // смена имени за звёздочки: инлайн-форма в разделе магазина «Имя питомца»
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState('')
-  const [renameError, setRenameError] = useState<string | null>(null)
 
   const startRename = () => {
     setDraftName(pet.name ?? '')
-    setRenameError(null)
     setRenaming(true)
   }
 
   const submitRename = () => {
     const result = onRename(draftName)
+    setShopNoticeFlash(result?.ok ? str.renameDone : str.reason[result?.reason ?? 'invalid-name'])
     if (result?.ok) {
       setRenaming(false)
-      playSound('ding')
-      return
+      playSound('win')
+    } else {
+      hapticWarning()
     }
-    setRenameError(str.reason[result?.reason ?? 'invalid-name'])
   }
 
   // магазин: тост результата покупки внутри меню (слот нотиса пушей свободен)
   const [shopNotice, setShopNotice] = useState<string | null>(null)
   const shopNoticeRef = useRef<number>(0)
+
+  const setShopNoticeFlash = (text: string) => {
+    setShopNotice(text)
+    window.clearTimeout(shopNoticeRef.current)
+    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+  }
 
   const handleBuy = (id: string) => {
     const item = shopItems.find((it) => it.id === id)
@@ -141,27 +146,21 @@ export default function MenuScreen({
     const res = onBuy(id)
     if (res.ok) playSound('win')
     else hapticWarning()
-    setShopNotice(res.ok ? str.shopBought(item?.emoji ? `${item.emoji} ${title}` : title) : res.reason === 'dish-active' ? str.shopDishActive : str.shopNoStars)
-    window.clearTimeout(shopNoticeRef.current)
-    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+    setShopNoticeFlash(res.ok ? str.shopBought(item?.emoji ? `${item.emoji} ${title}` : title) : res.reason === 'dish-active' ? str.shopDishActive : str.shopNoStars)
   }
 
   const buyServiceRow = (id: ServiceId | 'nanny', title: string) => {
     const res = onBuyService(id)
     if (res.ok) playSound('win')
     else hapticWarning()
-    setShopNotice(res.ok ? str.shopBought(title) : str.shopNoStars)
-    window.clearTimeout(shopNoticeRef.current)
-    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+    setShopNoticeFlash(res.ok ? str.shopBought(title) : str.shopNoStars)
   }
 
   const buyVitaminRow = () => {
     const res = onVitamin()
     if (res.ok) playSound('win')
     else hapticWarning()
-    setShopNotice(res.ok ? str.shopBought(str.svcVitamin) : res.reason === 'healthy' ? str.serviceHealthy : str.shopNoStars)
-    window.clearTimeout(shopNoticeRef.current)
-    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+    setShopNoticeFlash(res.ok ? str.shopBought(str.svcVitamin) : res.reason === 'healthy' ? str.serviceHealthy : str.shopNoStars)
   }
 
   /** Сколько часов осталось у пропуска сервиса; null — не активен. */
@@ -253,50 +252,7 @@ export default function MenuScreen({
                   ].filter((x): x is string => x !== null)}
                   className="menu-avatar"
                 />
-                {renaming ? (
-                  <form
-                    className="menu-rename"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      submitRename()
-                    }}
-                  >
-                    <input
-                      className="menu-rename-input"
-                      value={draftName}
-                      maxLength={nameMaxLength}
-                      onChange={(e) => setDraftName(e.target.value)}
-                      aria-label={str.renameAria}
-                      autoFocus
-                    />
-                    <span className="menu-rename-price" aria-hidden="true">
-                      {str.renamePriceHint(renamePrice)}
-                    </span>
-                    <button type="submit" className="menu-rename-btn save" aria-label={str.renameSave}>
-                      ✓
-                    </button>
-                    <button
-                      type="button"
-                      className="menu-rename-btn"
-                      onClick={tap(() => setRenaming(false))}
-                      aria-label={str.renameCancel}
-                    >
-                      ✕
-                    </button>
-                  </form>
-                ) : (
-                  <>
-                    <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
-                    <button
-                      type="button"
-                      className="menu-rename-btn"
-                      onClick={tap(startRename)}
-                      aria-label={str.renameAria}
-                    >
-                      ✏️
-                    </button>
-                  </>
-                )}
+                <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
                 <div className="menu-profile-right">
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">
@@ -304,7 +260,6 @@ export default function MenuScreen({
                   </p>
                 </div>
               </div>
-              {renameError && <p className="menu-rename-error">{renameError}</p>}
               <p className="menu-section">{str.menuSettings}</p>
               <nav className="menu-rows">
                 {notifSupported && (
@@ -517,6 +472,51 @@ export default function MenuScreen({
                         ⭐ {servicePrices.nanny}
                       </button>
                     </div>
+                  </div>
+                  <p className="menu-section">{str.shopNameSection}</p>
+                  <div className="shop-row">
+                    <span className="shop-row-emoji" aria-hidden="true">
+                      ✏️
+                    </span>
+                    {renaming ? (
+                      <form
+                        className="menu-rename"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          submitRename()
+                        }}
+                      >
+                        <input
+                          className="menu-rename-input"
+                          value={draftName}
+                          maxLength={nameMaxLength}
+                          onChange={(e) => setDraftName(e.target.value)}
+                          aria-label={str.renameAria}
+                          autoFocus
+                        />
+                        <span className="menu-rename-price" aria-hidden="true">
+                          {str.renamePriceHint(renamePrice)}
+                        </span>
+                        <button type="submit" className="menu-rename-btn save" aria-label={str.renameSave}>
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          className="menu-rename-btn"
+                          onClick={tap(() => setRenaming(false))}
+                          aria-label={str.renameCancel}
+                        >
+                          ✕
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <span className="shop-row-title">{str.shopRenameTitle}</span>
+                        <button type="button" className="shop-buy" onClick={tap(startRename)}>
+                          ⭐ {renamePrice}
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : view === 'invite' ? (

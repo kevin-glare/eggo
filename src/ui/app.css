@@ -622,12 +622,6 @@ body {
   color: var(--accent-ink);
 }
 
-.menu-rename-error {
-  margin: 6px 14px 0;
-  color: var(--danger);
-  font-size: 12px;
-}
-
 /* правая колонка профиля: стадия над возрастом, без рамок */
 .menu-profile-right {
   flex: none;
