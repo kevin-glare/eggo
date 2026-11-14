@@ -85,4 +85,6 @@ export interface PetState {
   dish: string | null
   /** купленная косметика и её активация; у старых сейвов пусто (нормализуется) */
   cosmetics: PetCosmetics
+  /** активные автосервисы: дедлайны пропусков и кулдауны сработки (реальное время); у старых сейвов нули (нормализуется) */
+  services: { feedUntil: number; washUntil: number; sleepUntil: number; lastFeedAt: number; lastWashAt: number }
 }

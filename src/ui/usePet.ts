@@ -16,6 +16,7 @@ import { createPet, tick } from '../game/engine'
 import { dayGame } from '../game/dailyChallenge'
 import { evaluateAchievements } from '../game/achievements'
 import { buyItem, type BuyReason } from '../game/economy'
+import { buyService as buyServiceAction, useVitamin as useVitaminAction, type ServiceId, type VitaminReason } from '../game/services'
 import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
@@ -398,6 +399,30 @@ useEffect(() => {
     return { ok: res.ok, reason: res.reason }
   }, [config])
 
+  /** Купить суточный пропуск автосервиса («няня» — все три). */
+  const buyService = useCallback((id: ServiceId | 'nanny'): { ok: boolean; reason?: 'no-stars' } => {
+    const current = petRef.current
+    if (current === null) return { ok: false, reason: 'no-stars' }
+    const res = buyServiceAction(current, id, config, Date.now())
+    if (res.ok) {
+      setPet({ ...res.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+    }
+    return { ok: res.ok, reason: res.reason }
+  }, [config])
+
+  /** Витамин из магазина: лечит сразу; здоровому не нужен. */
+  const useVitaminItem = useCallback((): { ok: boolean; reason?: VitaminReason } => {
+    const current = petRef.current
+    if (current === null) return { ok: false, reason: 'healthy' }
+    const res = useVitaminAction(current, config)
+    if (res.ok) {
+      setPet({ ...res.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+    }
+    return { ok: res.ok, reason: res.reason }
+  }, [config])
+
   // первая заработанная звёздочка: намекаем, что её можно потратить
   useEffect(() => {
     if (pet === null || pet.stars <= 0 || isHintDone('stars')) return
@@ -481,6 +506,8 @@ useEffect(() => {
     advanceTime,
     renamePet,
     buy,
+    buyService,
+    useVitaminItem,
     reset,
   }
 }

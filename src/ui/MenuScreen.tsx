@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ActionResult } from '../game/actions'
 import type { ShopItemConfig } from '../game/config'
 import type { BuyReason } from '../game/economy'
+import type { ServiceId } from '../game/services'
 import type { PetState } from '../game/types'
 import type { Mood } from '../game/types'
 import { setLang, useLang, useStrings } from './i18n'
@@ -36,6 +37,12 @@ interface MenuScreenProps {
   shopItems: ShopItemConfig[]
   /** покупка: отказ несёт reason для тоста в меню */
   onBuy: (id: string) => { ok: boolean; reason?: BuyReason }
+  /** цены автосервисов из config.services.prices */
+  servicePrices: { feed: number; wash: number; sleep: number; vitamin: number; nanny: number }
+  /** покупка суточного пропуска («няня» — все три) */
+  onBuyService: (id: ServiceId | 'nanny') => { ok: boolean; reason?: 'no-stars' }
+  /** витамин: лечит сразу; здоровому не нужен */
+  onVitamin: () => { ok: boolean; reason?: 'healthy' | 'no-stars' }
   /** настроение питомца — рисуется в мини-арте */
   mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
@@ -76,6 +83,9 @@ export default function MenuScreen({
   unlockedAchievements,
   shopItems,
   onBuy,
+  servicePrices,
+  onBuyService,
+  onVitamin,
   mood,
   notifSupported,
   notifEnabled,
@@ -127,6 +137,30 @@ export default function MenuScreen({
     setShopNotice(res.ok ? str.shopBought(item?.emoji ? `${item.emoji} ${title}` : title) : res.reason === 'dish-active' ? str.shopDishActive : str.shopNoStars)
     window.clearTimeout(shopNoticeRef.current)
     shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+  }
+
+  const buyServiceRow = (id: ServiceId | 'nanny', title: string) => {
+    const res = onBuyService(id)
+    if (res.ok) playSound('win')
+    else hapticWarning()
+    setShopNotice(res.ok ? str.shopBought(title) : str.shopNoStars)
+    window.clearTimeout(shopNoticeRef.current)
+    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+  }
+
+  const buyVitaminRow = () => {
+    const res = onVitamin()
+    if (res.ok) playSound('win')
+    else hapticWarning()
+    setShopNotice(res.ok ? str.shopBought(str.svcVitamin) : res.reason === 'healthy' ? str.serviceHealthy : str.shopNoStars)
+    window.clearTimeout(shopNoticeRef.current)
+    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
+  }
+
+  /** Сколько часов осталось у пропуска сервиса; null — не активен. */
+  const serviceLeftHours = (until: number): number | null => {
+    const ms = until - Date.now()
+    return ms > 0 ? Math.ceil(ms / 3_600_000) : null
   }
   // звук: локальная настройка устройства, как язык
   const [soundOn, setSoundOnState] = useState(isSoundOn())
@@ -423,6 +457,51 @@ export default function MenuScreen({
                       </div>
                     )
                   })}
+                  <p className="menu-section">{str.shopServices}</p>
+                  <div className="shop-rows">
+                    {(
+                      [
+                        { id: 'feed' as const, emoji: '🍽', title: str.svcFeed, price: servicePrices.feed, until: pet.services.feedUntil },
+                        { id: 'wash' as const, emoji: '🧼', title: str.svcWash, price: servicePrices.wash, until: pet.services.washUntil },
+                        { id: 'sleep' as const, emoji: '🌙', title: str.svcSleep, price: servicePrices.sleep, until: pet.services.sleepUntil },
+                      ]
+                    ).map((svc) => {
+                      const left = serviceLeftHours(svc.until)
+                      return (
+                        <div key={svc.id} className="shop-row">
+                          <span className="shop-row-emoji" aria-hidden="true">
+                            {svc.emoji}
+                          </span>
+                          <span className="shop-row-title">{svc.title}</span>
+                          {left !== null ? (
+                            <span className="mg-chip">{str.serviceLeft(left)}</span>
+                          ) : (
+                            <button type="button" className="shop-buy" onClick={tap(() => buyServiceRow(svc.id, svc.title))}>
+                              ⭐ {svc.price}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <div className="shop-row">
+                      <span className="shop-row-emoji" aria-hidden="true">
+                        💊
+                      </span>
+                      <span className="shop-row-title">{str.svcVitamin}</span>
+                      <button type="button" className="shop-buy" onClick={tap(buyVitaminRow)}>
+                        ⭐ {servicePrices.vitamin}
+                      </button>
+                    </div>
+                    <div className="shop-row">
+                      <span className="shop-row-emoji" aria-hidden="true">
+                        🧑‍🍼
+                      </span>
+                      <span className="shop-row-title">{str.svcNanny}</span>
+                      <button type="button" className="shop-buy" onClick={tap(() => buyServiceRow('nanny', str.svcNanny))}>
+                        ⭐ {servicePrices.nanny}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : view === 'invite' ? (
                 <InvitePanel invited={invited} stars={pet.appearance.refMark} milestones={milestones} onShare={onShare} />

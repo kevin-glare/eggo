@@ -67,6 +67,8 @@ export default function App() {
     advanceTime,
     renamePet,
     buy,
+    buyService,
+    useVitaminItem,
     reset,
   } = usePet(config)
   // служебные кнопки шапки: состояние тумблера пушей живёт на сервере
@@ -386,6 +388,9 @@ export default function App() {
           unlockedAchievements={pet.achievements}
           shopItems={config.shop.items}
           onBuy={buy}
+          servicePrices={config.services.prices}
+          onBuyService={buyService}
+          onVitamin={useVitaminItem}
           mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}

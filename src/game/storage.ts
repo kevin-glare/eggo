@@ -3,6 +3,7 @@ import { normalizeAppearance, type PetAppearance } from './appearance'
 import { stageForAge, tick } from './engine'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
+import { applyAutoServices } from './services'
 import type { PetCosmetics, PetRequest, PetState, RequestKind, Stats } from './types'
 import { MINIGAME_IDS } from './minigames'
 import type { MinigameId } from './minigames/types'
@@ -83,6 +84,11 @@ function normalizeCosmetics(raw: unknown): PetCosmetics {
   }
 }
 
+/** Штамп времени автосервиса: число ≥ 0, иначе 0. */
+function stamp(v: unknown): number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0
+}
+
 interface SaveData {
   version: number
   pet: PetState
@@ -129,6 +135,14 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       // магазин появился позже сейва v1: блюда не подано, косметики нет
       dish: typeof pet.dish === 'string' ? pet.dish : null,
       cosmetics: normalizeCosmetics(pet.cosmetics),
+      // автосервисы появились позже сейва v1: пропусков нет
+      services: {
+        feedUntil: stamp(pet.services?.feedUntil),
+        washUntil: stamp(pet.services?.washUntil),
+        sleepUntil: stamp(pet.services?.sleepUntil),
+        lastFeedAt: stamp(pet.services?.lastFeedAt),
+        lastWashAt: stamp(pet.services?.lastWashAt),
+      },
     }
   } catch {
     return null
@@ -148,6 +162,8 @@ export interface PetStorage {
  * Досчитать всё время, пока приложение было закрыто: от lastTickAt до now.
  * Реальный интервал переводится в игровой через timeScale и применяется
  * кусками по catchUpChunkMs — так корректно проходят смена стадии и пороги.
+ * Автосервисы срабатывают по кусочкам реального времени: живой тикер,
+ * оффлайн-возврат и воркер ведут себя одинаково.
  */
 export function catchUp(state: PetState, nowMs: number, config: GameConfig): PetState {
   const realGap = Math.min(Math.max(0, nowMs - state.lastTickAt), config.maxOfflineMs)
@@ -155,10 +171,13 @@ export function catchUp(state: PetState, nowMs: number, config: GameConfig): Pet
 
   let next = state
   let remaining = gameGap
+  let realNow = state.lastTickAt
   while (remaining > 0) {
     const chunk = Math.min(remaining, config.catchUpChunkMs)
     next = tick(next, chunk, config)
     remaining -= chunk
+    realNow += chunk / config.timeScale
+    next = applyAutoServices(next, config, Math.min(nowMs, realNow))
   }
   return { ...next, lastTickAt: nowMs }
 }
@@ -221,6 +240,14 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     cosmetics: {
       ...caughtNewer.cosmetics,
       owned: [...new Set([...caughtNewer.cosmetics.owned, ...caughtOlder.cosmetics.owned])],
+    },
+    // пропуски автосервисов — по максимуму: купленное на одном девайсе работает везде
+    services: {
+      feedUntil: Math.max(caughtNewer.services.feedUntil, caughtOlder.services.feedUntil),
+      washUntil: Math.max(caughtNewer.services.washUntil, caughtOlder.services.washUntil),
+      sleepUntil: Math.max(caughtNewer.services.sleepUntil, caughtOlder.services.sleepUntil),
+      lastFeedAt: Math.max(caughtNewer.services.lastFeedAt, caughtOlder.services.lastFeedAt),
+      lastWashAt: Math.max(caughtNewer.services.lastWashAt, caughtOlder.services.lastWashAt),
     },
     lastTickAt: timeline,
   }

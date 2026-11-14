@@ -104,6 +104,18 @@ export interface GameConfig {
     /** пороги уровней: 0 — старт; уровень = 1 + число пройденных ненулевых порогов */
     levels: number[]
   }
+  /** автосервисы «Помощников»: суточные пропуски на автозаботу */
+  services: {
+    /** длительность пропуска (реальное время) */
+    passMs: number
+    /** кормушка: сыпет fullness при голоде ниже порога, не чаще кулдауна */
+    feed: { threshold: number; cooldownMs: number; fullness: number }
+    /** автомойка: отмывает до restoreTo при грязи ниже порога */
+    wash: { threshold: number; cooldownMs: number; restoreTo: number }
+    /** энергия ниже — питомец укладывается сам */
+    sleepThreshold: number
+    prices: { feed: number; wash: number; sleep: number; vitamin: number; nanny: number }
+  }
   /** достижения: пороги в существующих полях состояния (id строятся из них) */
   achievements: {
     /** серия дней: дни-вехи */
@@ -263,6 +275,15 @@ export const DEFAULT_CONFIG: GameConfig = {
     xpPerMinigame: 8,
     xpPerClaim: 15,
     levels: [0, 100, 300, 700, 1400, 2500],
+  },
+  // «Помощники»: суточные пропуски автозаботы. Машина не закрывает просьбы
+  // и не отмечает квесты — это награда живого игрока
+  services: {
+    passMs: DAY,
+    feed: { threshold: 40, cooldownMs: 4 * HOUR, fullness: 12 },
+    wash: { threshold: 40, cooldownMs: 8 * HOUR, restoreTo: 70 },
+    sleepThreshold: 40,
+    prices: { feed: 12, wash: 8, sleep: 8, vitamin: 10, nanny: 24 },
   },
   // достижения: пороги поверх уже существующих полей сейва
   achievements: {
