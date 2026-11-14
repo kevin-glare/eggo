@@ -260,62 +260,9 @@ export default function MenuScreen({
                   </p>
                 </div>
               </div>
-              <p className="menu-section">{str.menuSettings}</p>
+              {/* порядок пунктов задан владельцем: магазин → достижения →
+                  как играть → позови друга → автор; настройки — внизу */}
               <nav className="menu-rows">
-                {notifSupported && (
-                  <button type="button" className="menu-row" onClick={tap(onToggleNotifications)} disabled={notifBusy}>
-                    <span className="menu-row-icon" aria-hidden="true">
-                      {notifEnabled ? '🔔' : '🔕'}
-                    </span>
-                    <span className="menu-row-label">{notifEnabled ? str.menuNotifOn : str.menuNotifOff}</span>
-                    <Toggle on={notifEnabled} label={notifEnabled ? str.menuNotifOn : str.menuNotifOff} />
-                  </button>
-                )}
-                <button type="button" className="menu-row" onClick={tap(toggleSound)}>
-                  <span className="menu-row-icon" aria-hidden="true">
-                    {soundOn ? '🔊' : '🔇'}
-                  </span>
-                    <span className="menu-row-label">{soundOn ? str.menuSoundOn : str.menuSoundOff}</span>
-                    <Toggle on={soundOn} label={soundOn ? str.menuSoundOn : str.menuSoundOff} />
-                  </button>
-                <button type="button" className="menu-row" onClick={tap(switchLang)}>
-                  <span className="menu-row-icon" aria-hidden="true">
-                    🌐
-                  </span>
-                  <span className="menu-row-label">
-                    {str.menuLang}: {lang === 'ru' ? 'Русский' : 'English'}
-                  </span>
-                </button>
-              </nav>
-              <p className="menu-section">{str.menuMore}</p>
-              <nav className="menu-rows">
-                <button
-                  type="button"
-                  className="menu-row"
-                  onClick={tap(() => {
-                    track('invite-open')
-                    setView('invite')
-                  })}
-                >
-                  <span className="menu-row-icon" aria-hidden="true">
-                    ✨
-                  </span>
-                  <span className="menu-row-label">{str.inviteAria}</span>
-                  <span className="menu-row-chevron" aria-hidden="true">
-                    ›
-                  </span>
-                </button>
-                {authorUrl !== null && (
-                  <button type="button" className="menu-row" onClick={tap(onAuthor)}>
-                    <span className="menu-row-icon" aria-hidden="true">
-                      ✉️
-                    </span>
-                    <span className="menu-row-label">{str.authorAria}</span>
-                    <span className="menu-row-chevron" aria-hidden="true">
-                      ›
-                    </span>
-                  </button>
-                )}
                 <button
                   type="button"
                   className="menu-row"
@@ -368,6 +315,60 @@ export default function MenuScreen({
                     ›
                   </span>
                 </button>
+                <button
+                  type="button"
+                  className="menu-row"
+                  onClick={tap(() => {
+                    track('invite-open')
+                    setView('invite')
+                  })}
+                >
+                  <span className="menu-row-icon" aria-hidden="true">
+                    ✨
+                  </span>
+                  <span className="menu-row-label">{str.inviteAria}</span>
+                  <span className="menu-row-chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+                {authorUrl !== null && (
+                  <button type="button" className="menu-row" onClick={tap(onAuthor)}>
+                    <span className="menu-row-icon" aria-hidden="true">
+                      ✉️
+                    </span>
+                    <span className="menu-row-label">{str.authorAria}</span>
+                    <span className="menu-row-chevron" aria-hidden="true">
+                      ›
+                    </span>
+                  </button>
+                )}
+              </nav>
+              <p className="menu-section">{str.menuSettings}</p>
+              <nav className="menu-rows">
+                <button type="button" className="menu-row" onClick={tap(switchLang)}>
+                  <span className="menu-row-icon" aria-hidden="true">
+                    🌐
+                  </span>
+                  <span className="menu-row-label">
+                    {str.menuLang}: {lang === 'ru' ? 'Русский' : 'English'}
+                  </span>
+                </button>
+                <button type="button" className="menu-row" onClick={tap(toggleSound)}>
+                  <span className="menu-row-icon" aria-hidden="true">
+                    {soundOn ? '🔊' : '🔇'}
+                  </span>
+                  <span className="menu-row-label">{soundOn ? str.menuSoundOn : str.menuSoundOff}</span>
+                  <Toggle on={soundOn} label={soundOn ? str.menuSoundOn : str.menuSoundOff} />
+                </button>
+                {notifSupported && (
+                  <button type="button" className="menu-row" onClick={tap(onToggleNotifications)} disabled={notifBusy}>
+                    <span className="menu-row-icon" aria-hidden="true">
+                      {notifEnabled ? '🔔' : '🔕'}
+                    </span>
+                    <span className="menu-row-label">{notifEnabled ? str.menuNotifOn : str.menuNotifOff}</span>
+                    <Toggle on={notifEnabled} label={notifEnabled ? str.menuNotifOn : str.menuNotifOff} />
+                  </button>
+                )}
               </nav>
               <p className="menu-footer">
                 Eggo {str.menuVersion} {version}

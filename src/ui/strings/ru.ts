@@ -277,7 +277,6 @@ export const ru = {
   menuClose: 'Закрыть',
   menuBack: 'Назад',
   menuSettings: 'Настройки',
-  menuMore: 'Ещё',
   menuNotifOn: 'Уведомления включены',
   menuNotifOff: 'Уведомления выключены',
   menuSoundOn: 'Звук включён',

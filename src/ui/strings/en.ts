@@ -232,7 +232,6 @@ export const en: Strings = {
   menuClose: 'Close',
   menuBack: 'Back',
   menuSettings: 'Settings',
-  menuMore: 'More',
   menuNotifOn: 'Notifications on',
   menuNotifOff: 'Notifications off',
   menuSoundOn: 'Sound on',
