@@ -17,7 +17,6 @@ import BubblesGame from './BubblesGame'
 /** Показ результата: счёт, рекорд и бонус — уже применённые в usePet. */
 export interface MinigameResultView {
   score: number
-  won: boolean
   isRecord: boolean
   bonus: number
 }

@@ -42,11 +42,11 @@ export default function MemoryGame({ config, running, onOver }: MemoryGameProps)
   useEffect(() => {
     if (!state.over || overRef.current) return
     overRef.current = true
-    const outcome: MinigameOutcome = { score: memoryScore(state), won: state.won }
+    const outcome: MinigameOutcome = { score: memoryScore(state) }
     const timer = window.setTimeout(() => onOverRef.current(outcome), SETTLE_MS)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.over, state.won])
+  }, [state.over])
 
   const flip = useCallback(
     (index: number) => {
@@ -58,18 +58,22 @@ export default function MemoryGame({ config, running, onOver }: MemoryGameProps)
       // вторая карточка решает пару: совпала — дзынь
       const first = state.open[0]
       if (first !== undefined && state.cards[first]?.kind === card.kind) playSound('ding')
-      setState((s) => flipMemory(s, index, balance))
+      setState((s) => flipMemory(s, index, balance, Math.random))
     },
     [balance, running, state.cards],
   )
 
   const seconds = Math.ceil(state.timeLeftMs / 1000)
-  const pairsLeft = balance.pairs - state.matchedPairs
+  const pairsLeft = state.cards.length / 2 - state.cards.filter((c) => c.matched).length / 2
 
   return (
     <div className="mg-memory">
       <div className="mg-timer" role="timer" aria-label={str.mgTime(seconds)}>
-        <div className="mg-timer-fill" style={{ width: `${(state.timeLeftMs / balance.timeLimitMs) * 100}%` }} />
+        {/* собранные ряды продлевают время — полоса не переполняется */}
+        <div
+          className="mg-timer-fill"
+          style={{ width: `${Math.min(100, (state.timeLeftMs / balance.timeLimitMs) * 100)}%` }}
+        />
       </div>
       <div className="mg-grid">
         {state.cards.map((card, index) => {
@@ -93,7 +97,10 @@ export default function MemoryGame({ config, running, onOver }: MemoryGameProps)
           )
         })}
       </div>
-      <p className="mg-note">{pairsLeft > 0 ? str.mgPairsLeft(pairsLeft) : ''}</p>
+      <p className="mg-note">
+        {str.mgLevel(state.level)}
+        {pairsLeft > 0 ? ` · ${str.mgPairsLeft(pairsLeft)}` : ''}
+      </p>
     </div>
   )
 }

@@ -1,14 +1,21 @@
 /**
- * «Память»: найди все пары карточек, пока не вышло время.
- * Чистое ядро: состояние → новое состояние. Случайность (перетасовка)
- * приходит снаружи через rng — тесты детерминированы.
+ * «Память»: находи пары карточек. Партия бесконечна: собранный ряд
+ * добавляет время и открывает следующий — на пару больше. Чистое ядро:
+ * состояние → новое состояние. Случайность (перетасовка) приходит
+ * снаружи через rng — тесты детерминированы.
  */
 
 export interface MemoryBalance {
-  /** сколько пар на поле */
+  /** сколько пар на поле в первом ряду */
   pairs: number
-  /** время на всю партию, мс */
+  /** стартовое время партии, мс */
   timeLimitMs: number
+  /** сколько мс добавляет собранный ряд */
+  levelBonusMs: number
+  /** сколько пар прибавляется за каждый следующий ряд */
+  pairsPerLevel: number
+  /** предел пар на поле */
+  pairsMax: number
 }
 
 export interface MemoryCard {
@@ -24,38 +31,50 @@ export interface MemoryState {
   open: number[]
   /** мс до закрытия несовпавшей пары; null — ничего не ждёт закрытия */
   closeInMs: number | null
+  /** собранных пар за всю партию (счёт = ×10) */
   matchedPairs: number
+  /** номер ряда, с 1 */
+  level: number
   timeLeftMs: number
   over: boolean
-  won: boolean
 }
 
 /** Сколько мс игрок видит несовпавшую пару, прежде чем карточки закроются. */
 const MISMATCH_SHOW_MS = 700
 
-export function createMemory(balance: MemoryBalance, rng: () => number): MemoryState {
+/** Сколько пар на поле в этом ряду: рост ограничен pairsMax. */
+export function memoryLevelPairs(balance: MemoryBalance, level: number): number {
+  return Math.min(balance.pairsMax, balance.pairs + (level - 1) * balance.pairsPerLevel)
+}
+
+/** Перетасованная колода на pairs пар (Фишер—Йетс). */
+function makeDeck(pairs: number, rng: () => number): MemoryCard[] {
   const kinds: number[] = []
-  for (let k = 0; k < balance.pairs; k++) kinds.push(k, k)
-  // перетасовка Фишера—Йетса
+  for (let k = 0; k < pairs; k++) kinds.push(k, k)
   for (let i = kinds.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     const t = kinds[i]!
     kinds[i] = kinds[j]!
     kinds[j] = t
   }
+  return kinds.map((kind) => ({ kind, flipped: false, matched: false }))
+}
+
+export function createMemory(balance: MemoryBalance, rng: () => number): MemoryState {
   return {
-    cards: kinds.map((kind) => ({ kind, flipped: false, matched: false })),
+    cards: makeDeck(memoryLevelPairs(balance, 1), rng),
     open: [],
     closeInMs: null,
     matchedPairs: 0,
+    level: 1,
     timeLeftMs: balance.timeLimitMs,
     over: false,
-    won: false,
   }
 }
 
-/** Открыть карточку: одна — просто открывается; вторая — решает пару. */
-export function flipMemory(state: MemoryState, index: number, balance: MemoryBalance): MemoryState {
+/** Открыть карточку: одна — просто открывается; вторая — решает пару
+ *  (rng нужен, когда пара закрывает ряд — разыгрывается новая колода). */
+export function flipMemory(state: MemoryState, index: number, balance: MemoryBalance, rng: () => number): MemoryState {
   if (state.over || state.closeInMs !== null) return state
   const card = state.cards[index]
   if (!card || card.matched || card.flipped) return state
@@ -71,8 +90,20 @@ export function flipMemory(state: MemoryState, index: number, balance: MemoryBal
       i === index || i === firstIndex ? { ...c, flipped: true, matched: true } : c,
     )
     const matchedPairs = state.matchedPairs + 1
-    const won = matchedPairs === balance.pairs
-    return { ...opened, cards, open: [], matchedPairs, won, over: won }
+    const levelPairs = cards.length / 2
+    const levelMatched = cards.filter((c) => c.matched).length / 2
+    if (levelMatched < levelPairs) return { ...opened, cards, open: [], matchedPairs }
+    // ряд собран: новый ряд больше, время продлевается — партия бесконечна
+    const nextLevel = state.level + 1
+    return {
+      cards: makeDeck(memoryLevelPairs(balance, nextLevel), rng),
+      open: [],
+      closeInMs: null,
+      matchedPairs,
+      level: nextLevel,
+      timeLeftMs: state.timeLeftMs + balance.levelBonusMs,
+      over: false,
+    }
   }
   // мимо: пара остаётся видимой на миг, время тикает — ходов не штрафуем
   return { ...opened, closeInMs: MISMATCH_SHOW_MS }
@@ -87,13 +118,13 @@ export function stepMemory(state: MemoryState, dtMs: number): MemoryState {
     next = closeInMs <= 0 ? closePair(state) : { ...state, closeInMs }
   }
   const timeLeftMs = Math.max(0, next.timeLeftMs - dtMs)
-  if (timeLeftMs === 0) return { ...next, timeLeftMs, over: true, won: false }
+  if (timeLeftMs === 0) return { ...next, timeLeftMs, over: true }
   return { ...next, timeLeftMs }
 }
 
-/** Счёт: 10 за пару, при полной победе — плюс секунды, оставшиеся на таймере. */
+/** Счёт: 10 за каждую собранную пару. */
 export function memoryScore(state: MemoryState): number {
-  return state.matchedPairs * 10 + (state.won ? Math.ceil(state.timeLeftMs / 1000) : 0)
+  return state.matchedPairs * 10
 }
 
 function withCard(state: MemoryState, index: number, patch: Partial<MemoryCard>, open: number[]): MemoryState {

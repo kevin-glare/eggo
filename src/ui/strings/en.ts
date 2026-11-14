@@ -104,12 +104,13 @@ export const en: Strings = {
   mgMatched: 'pair matched',
   mgCardHidden: 'Hidden card',
   mgPairsLeft: (n: number) => `Pairs left: ${n}`,
+  mgLevel: (n: number) => `Level ${n}`,
   game: {
-    memory: { title: '🧠 Memory', hint: 'Flip the cards and match every pair before time runs out' },
+    memory: { title: '🧠 Memory', hint: 'Flip cards and match pairs — every cleared level adds time' },
     runner: { title: '🏃 Runner', hint: 'Tap above — jump. Hold the bottom — duck' },
     flappy: { title: '🎈 Flight', hint: 'Tap anywhere — the pet flaps' },
     snake: { title: '🐍 Snake', hint: 'Swipe or arrows — eat and don’t bite yourself or hit the walls' },
-    bubbles: { title: '🫧 Bubbles', hint: 'Pop groups of three or more alike' },
+    bubbles: { title: '🫧 Bubbles', hint: 'Pop groups of three — bigger groups score a bonus' },
   },
   // on-canvas hints shown during the first seconds of a round
   mgHint: {

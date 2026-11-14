@@ -76,8 +76,8 @@ export interface GameConfig {
   }
   /** мини-игры кнопки «Играть»: числа баланса ядер и наград */
   minigames: {
-    /** «Память»: пары карточек и время на всю партию; победа — собрать всё до нуля */
-    memory: { pairs: number; timeLimitMs: number }
+    /** «Память»: пары в первом ряду, время и рост рядов (партия бесконечна, конец — таймер) */
+    memory: { pairs: number; timeLimitMs: number; levelBonusMs: number; pairsPerLevel: number; pairsMax: number }
     /** «Побег»: физика бега до столкновения (прыжок, гравитация, разгон) */
     runner: {
       speedStart: number
@@ -100,8 +100,8 @@ export interface GameConfig {
     }
     /** «Змейка»: темп хода и размер клетки (поле выводится из экрана); конец — столкновение */
     snake: { moveMs: number; moveMin: number; moveStep: number; cellPx: number }
-    /** «Пузыри»: очков до победы, темп подъёма, правила групп и размер клетки */
-    bubbles: { winScore: number; riseMs: number; colors: number; minGroup: number; cellPx: number }
+    /** «Пузыри»: темп и разгон подъёма, правила групп и размер клетки (конец — переполнение) */
+    bubbles: { riseMs: number; riseMinMs: number; riseStepMs: number; colors: number; minGroup: number; cellPx: number }
     /** награда сверх базовой радости play(): новый рекорд */
     reward: { recordBonus: number }
   }
@@ -205,7 +205,8 @@ export const DEFAULT_CONFIG: GameConfig = {
   // мини-игры: партии бесконечны («до первой ошибки»), счёт неограничен,
   // рекорды всегда бьются; новый рекорд даёт бонус к счастью (база — play())
   minigames: {
-    memory: { pairs: 6, timeLimitMs: 60_000 },
+    // «Память»: 6 пар на старте, собранный ряд +30 с и на пару больше (до 8)
+    memory: { pairs: 6, timeLimitMs: 60_000, levelBonusMs: 30_000, pairsPerLevel: 1, pairsMax: 8 },
     // «Побег»: старт 200 px/с и +6 px/с²; прыжок 420 px/с против гравитации
     // 1050 — окно над камнем (до 31 px) ~0.65 с; препятствия каждые 200–300 px
     runner: { speedStart: 200, speedGain: 6, jumpV: 420, gravity: 1050, spacingMin: 200, spacingMax: 300, duckMs: 650 },
@@ -214,9 +215,9 @@ export const DEFAULT_CONFIG: GameConfig = {
     // «Змейка»: ход раз в 160 мс и быстрее на 4 мс за кусок, не быстрее 90;
     // клетка 26 px — поле выводится из реального размера канваса
     snake: { moveMs: 160, moveMin: 90, moveStep: 4, cellPx: 26 },
-    // «Пузыри»: очки за группы; ряд каждые 6.5 с, группы от 3;
-    // клетка 40 px — сетка выводится из реального размера канваса
-    bubbles: { winScore: 300, riseMs: 6_500, colors: 4, minGroup: 3, cellPx: 40 },
+    // «Пузыри»: ряд каждые 6.5 с и быстрее на 250 мс за ряд (не быстрее 2.5 с),
+    // старт 5 рядов, группы от 3; группа от 5 — бонус +50%
+    bubbles: { riseMs: 6_500, riseMinMs: 2_500, riseStepMs: 250, colors: 4, minGroup: 3, cellPx: 40 },
     reward: { recordBonus: 4 },
   },
   // кормление-ловля: 8 еды × ~5-6 пойманных ≈ прежняя сытость +25..40 за сессию

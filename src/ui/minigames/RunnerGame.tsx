@@ -68,8 +68,7 @@ export default function RunnerGame({ config, appearance, running, onOver }: Runn
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
-      // партия бесконечна: «победа» осталась только в играх с финальной целью
-      const outcome: MinigameOutcome = { score: runnerScore(s), won: false }
+      const outcome: MinigameOutcome = { score: runnerScore(s) }
       window.setTimeout(() => onOverRef.current(outcome), SETTLE_MS)
     }
   }, running)

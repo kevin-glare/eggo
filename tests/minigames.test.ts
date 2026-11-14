@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, type GameConfig } from '../src/game/config'
-import { createMemory, flipMemory, memoryScore, stepMemory, type MemoryState } from '../src/game/minigames/memory'
+import {
+  createMemory,
+  flipMemory,
+  memoryLevelPairs,
+  memoryScore,
+  stepMemory,
+  type MemoryState,
+} from '../src/game/minigames/memory'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from '../src/game/minigames'
 import { applyMinigameBonus, minigameBonus, recordMinigameScore } from '../src/game/minigames/reward'
 import type { MinigameId } from '../src/game/minigames/types'
@@ -38,9 +45,9 @@ describe('memory — ядро «Памяти»', () => {
     const s = createMemory(MEM, mulberry32(3))
     const [a, b] = sameKindPair(s)
     expect(a).not.toBe(b)
-    const opened = flipMemory(s, a, MEM)
+    const opened = flipMemory(s, a, MEM, mulberry32(3))
     expect(opened.cards[a]!.flipped).toBe(true)
-    const matched = flipMemory(opened, b, MEM)
+    const matched = flipMemory(opened, b, MEM, mulberry32(3))
     expect(matched.cards[a]!.matched).toBe(true)
     expect(matched.cards[b]!.matched).toBe(true)
     expect(matched.matchedPairs).toBe(1)
@@ -50,7 +57,7 @@ describe('memory — ядро «Памяти»', () => {
   it('несовпавшая пара закрывается сама через миг', () => {
     const s = createMemory(MEM, mulberry32(5))
     const [a, b] = differentKindPair(s)
-    let next = flipMemory(flipMemory(s, a, MEM), b, MEM)
+    let next = flipMemory(flipMemory(s, a, MEM, mulberry32(5)), b, MEM, mulberry32(5))
     expect(next.closeInMs).not.toBeNull()
     next = stepMemory(next, 700)
     expect(next.cards[a]!.flipped).toBe(false)
@@ -61,30 +68,38 @@ describe('memory — ядро «Памяти»', () => {
   it('пока несовпавшая пара не закрылась, новые тапы игнорируются', () => {
     const s = createMemory(MEM, mulberry32(5))
     const [a, b] = differentKindPair(s)
-    const open = flipMemory(flipMemory(s, a, MEM), b, MEM)
+    const open = flipMemory(flipMemory(s, a, MEM, mulberry32(5)), b, MEM, mulberry32(5))
     const [c] = differentKindPair(open)
-    expect(flipMemory(open, c!, MEM)).toBe(open)
+    expect(flipMemory(open, c!, MEM, mulberry32(5))).toBe(open)
   })
 
   it('время вышло — партия проиграна', () => {
     let s = createMemory(MEM, mulberry32(9))
     s = stepMemory(s, MEM.timeLimitMs + 1)
     expect(s.over).toBe(true)
-    expect(s.won).toBe(false)
     expect(memoryScore(s)).toBe(0)
   })
 
-  it('все пары собраны — победа и бонус за оставшееся время', () => {
-    let s = createMemory(MEM, mulberry32(11))
-    s = stepMemory(s, 10_000) // 50 секунд в запасе
-    while (!s.over) {
+  it('ряд собран — новый ряд больше, время продлено, счёт копится', () => {
+    const rng = mulberry32(11)
+    let s = createMemory(MEM, rng)
+    const pairs0 = s.cards.length / 2
+    const t0 = s.timeLeftMs
+    for (let i = 0; i < pairs0; i++) {
       const [a, b] = sameKindPair(s)
-      s = flipMemory(s, a, MEM)
-      if (!s.over) s = flipMemory(s, b, MEM)
+      s = flipMemory(s, a, MEM, rng)
+      s = flipMemory(s, b, MEM, rng)
     }
-    expect(s.won).toBe(true)
-    expect(s.matchedPairs).toBe(MEM.pairs)
-    expect(memoryScore(s)).toBe(MEM.pairs * 10 + 50)
+    expect(s.level).toBe(2)
+    expect(s.cards).toHaveLength((pairs0 + MEM.pairsPerLevel) * 2)
+    expect(s.timeLeftMs).toBe(t0 + MEM.levelBonusMs)
+    expect(s.over).toBe(false)
+    expect(memoryScore(s)).toBe(pairs0 * 10)
+  })
+
+  it('рост пар ограничен pairsMax', () => {
+    expect(memoryLevelPairs(MEM, 1)).toBe(MEM.pairs)
+    expect(memoryLevelPairs(MEM, 99)).toBe(MEM.pairsMax)
   })
 
   /** Индексы двух карточек одного вида (раскладка известна из seeded-состояния). */

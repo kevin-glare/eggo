@@ -7,8 +7,7 @@
 /** Идентификаторы мини-игр: реестр, рекорды в сейве, строки i18n. */
 export type MinigameId = 'memory' | 'runner' | 'flappy' | 'snake' | 'bubbles'
 
-/** Итог сыгранной партии: счёт и флаг победы (порог победы — в config.minigames). */
+/** Итог сыгранной партии: счёт (партии бесконечны — «до первой ошибки»). */
 export interface MinigameOutcome {
   score: number
-  won: boolean
 }

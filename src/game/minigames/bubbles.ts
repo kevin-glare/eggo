@@ -1,14 +1,17 @@
 /**
- * «Пузыри»: поле поднимается снизу, лопай группы из трёх и больше
- * одинаковых. Никакой физики — сетка и столбы. Чистое ядро, rng снаружи
- * (цвета новых рядов), тесты детерминированы.
+ * «Пузыри»: поле поднимается снизу всё быстрее, лопай группы из трёх
+ * и больше одинаковых — большие группы дают бонус. Партия бесконечна:
+ * конец — переполнение поля. Никакой физики — сетка и столбы. Чистое
+ * ядро, rng снаружи (цвета новых рядов), тесты детерминированы.
  */
 
 export interface BubblesBalance {
-  /** очков до победы (по 10 за пузырь) */
-  winScore: number
-  /** мс между подъёмами нового ряда */
+  /** мс между подъёмами нового ряда на старте */
   riseMs: number
+  /** на сколько мс ускоряется подъём после каждого ряда */
+  riseStepMs: number
+  /** мс между подъёмами на максимуме скорости */
+  riseMinMs: number
   /** сколько цветов на поле */
   colors: number
   /** минимальная группа для лопания */
@@ -29,18 +32,24 @@ export interface BubblesState {
   grid: BubblesGrid
   /** ряд за рядом поднимаемся: отсчитываем до нового ряда */
   riseMsLeft: number
+  /** сколько рядов уже поднялось: по нему растёт скорость */
+  rises: number
   score: number
   over: boolean
-  won: boolean
+}
+
+/** Текущий интервал подъёма: ускоряется с каждым рядом до riseMinMs. */
+export function bubblesRiseMs(state: BubblesState, balance: BubblesBalance): number {
+  return Math.max(balance.riseMinMs, balance.riseMs - state.rises * balance.riseStepMs)
 }
 
 export function createBubbles(balance: BubblesBalance, size: BubblesGridSize, rng: () => number): BubblesState {
   const grid = new Int8Array(size.cols * size.rows).fill(-1)
-  // старт: три нижних ряда заполнены, чтобы было что лопать сразу
-  for (let row = size.rows - 3; row < size.rows; row++) {
+  // старт: пять нижних рядов заполнены — сразу есть что лопать
+  for (let row = size.rows - 5; row < size.rows; row++) {
     fillRow(grid, row, balance, size, rng)
   }
-  return { size, grid, riseMsLeft: balance.riseMs, score: 0, over: false, won: false }
+  return { size, grid, riseMsLeft: balance.riseMs, rises: 0, score: 0, over: false }
 }
 
 export function cellAt(state: BubblesState, x: number, y: number): number {
@@ -65,9 +74,10 @@ export function tapBubble(
   for (const i of group) grid[i] = -1
   // пузыри над лопнувшими опускаются в своих столбах
   for (let col = 0; col < state.size.cols; col++) compactColumn(grid, col, state.size)
-  const score = state.score + group.length * 10
-  const won = score >= balance.winScore
-  return { state: { ...state, grid, score, over: won, won }, popped: group.length }
+  // по 10 за пузырь; группа от пяти — бонус +50%
+  const gained = group.length * 10 + (group.length >= 5 ? group.length * 5 : 0)
+  const score = state.score + gained
+  return { state: { ...state, grid, score, over: false }, popped: group.length }
 }
 
 export function stepBubbles(state: BubblesState, dtMs: number, balance: BubblesBalance, rng: () => number): BubblesState {
@@ -75,6 +85,7 @@ export function stepBubbles(state: BubblesState, dtMs: number, balance: BubblesB
   const { cols, rows } = state.size
   const grid = Int8Array.from(state.grid)
   let riseMsLeft = state.riseMsLeft - dtMs
+  let rises = state.rises
   let over = false
   while (riseMsLeft <= 0 && !over) {
     // всё поднимается на ряд: верхний ряд выдавливается — проигрыш
@@ -88,10 +99,11 @@ export function stepBubbles(state: BubblesState, dtMs: number, balance: BubblesB
       }
     }
     fillRow(grid, rows - 1, balance, state.size, rng)
-    riseMsLeft += balance.riseMs
+    rises += 1
+    riseMsLeft += bubblesRiseMs({ ...state, rises }, balance)
   }
-  if (over) return { ...state, grid, riseMsLeft: 0, over: true, won: false }
-  return { ...state, grid, riseMsLeft }
+  if (over) return { ...state, grid, riseMsLeft: 0, rises, over: true }
+  return { ...state, grid, riseMsLeft, rises }
 }
 
 /** Счёт партиями по 10 за пузырь. */

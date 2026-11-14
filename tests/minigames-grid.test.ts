@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from '../src/game/config'
 import { createSnake, moveInterval, snakeScore, stepSnake, turnSnake } from '../src/game/minigames/snake'
-import { bubblesScore, cellAt, createBubbles, stepBubbles, tapBubble } from '../src/game/minigames/bubbles'
+import { bubblesRiseMs, bubblesScore, cellAt, createBubbles, stepBubbles, tapBubble } from '../src/game/minigames/bubbles'
 
 const SN = DEFAULT_CONFIG.minigames.snake
 const BB = DEFAULT_CONFIG.minigames.bubbles
@@ -103,9 +103,9 @@ describe('snake — ядро «Змейки»', () => {
 })
 
 describe('bubbles — ядро «Пузырей»', () => {
-  it('старт: три нижних ряда заполнены', () => {
+  it('старт: пять нижних рядов заполнены — сразу есть что лопать', () => {
     const s = createBubbles(BB, BSIZE, () => 0.25)
-    for (let row = BSIZE.rows - 3; row < BSIZE.rows; row++)
+    for (let row = BSIZE.rows - 5; row < BSIZE.rows; row++)
       for (let col = 0; col < BSIZE.cols; col++) expect(cellAt(s, col, row)).toBeGreaterThanOrEqual(0)
     expect(cellAt(s, 0, 0)).toBe(-1)
   })
@@ -114,7 +114,7 @@ describe('bubbles — ядро «Пузырей»', () => {
     // поле с единственным пузырём цвета 0
     const grid = new Int8Array(BSIZE.cols * BSIZE.rows).fill(-1)
     grid[(BSIZE.rows - 1) * BSIZE.cols] = 0
-    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, score: 0, over: false, won: false }
+    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, rises: 0, score: 0, over: false }
     const { state, popped } = tapBubble(s, BB, 0, BSIZE.rows - 1)
     expect(popped).toBe(0)
     expect(state.grid[(BSIZE.rows - 1) * BSIZE.cols]).toBe(0)
@@ -127,12 +127,21 @@ describe('bubbles — ядро «Пузырей»', () => {
     grid[(BSIZE.rows - 2) * BSIZE.cols] = 1
     grid[(BSIZE.rows - 3) * BSIZE.cols] = 1
     grid[(BSIZE.rows - 4) * BSIZE.cols] = 2
-    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, score: 0, over: false, won: false }
+    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, rises: 0, score: 0, over: false }
     const { state, popped } = tapBubble(s, BB, 0, BSIZE.rows - 1)
     expect(popped).toBe(3)
     expect(bubblesScore(state)).toBe(30)
     expect(cellAt(state, 0, BSIZE.rows - 1)).toBe(2) // верхний опустился
     expect(cellAt(state, 0, BSIZE.rows - 4)).toBe(-1)
+  })
+
+  it('группа от пяти — бонус +50% к очкам', () => {
+    const grid = new Int8Array(BSIZE.cols * BSIZE.rows).fill(-1)
+    for (let i = 0; i < 5; i += 1) grid[(BSIZE.rows - 1) * BSIZE.cols + i] = 0
+    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, rises: 0, score: 0, over: false }
+    const next = tapBubble(s, BB, 0, BSIZE.rows - 1)
+    expect(next.popped).toBe(5)
+    expect(bubblesScore(next.state)).toBe(5 * 10 + 5 * 5)
   })
 
   it('диагональные не считаются одной группой', () => {
@@ -141,25 +150,16 @@ describe('bubbles — ядро «Пузырей»', () => {
     grid[r * BSIZE.cols] = 3
     grid[(r - 1) * BSIZE.cols + 1] = 3
     grid[(r - 2) * BSIZE.cols + 2] = 3
-    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, score: 0, over: false, won: false }
+    const s = { size: BSIZE, grid, riseMsLeft: BB.riseMs, rises: 0, score: 0, over: false }
     // группа из одного — не лопается вовсе
     expect(tapBubble(s, BB, 0, r).popped).toBe(0)
   })
 
-  it('поле поднимается; достав до верхней кромки — проигрыш', () => {
+  it('поле поднимается всё быстрее; достав до верхней кромки — проигрыш', () => {
     let s = createBubbles(BB, BSIZE, () => 0.25)
+    const first = bubblesRiseMs(s, BB)
     for (let i = 0; i < BSIZE.rows * 3 && !s.over; i += 1) s = stepBubbles(s, BB.riseMs + 10, BB, () => 0.25)
     expect(s.over).toBe(true)
-    expect(s.won).toBe(false)
-  })
-
-  it('winScore очков — победа на месте', () => {
-    const s = { ...createBubbles(BB, BSIZE, () => 0.25), score: BB.winScore }
-    expect(s.won).toBe(false)
-    const grid = new Int8Array(BSIZE.cols * BSIZE.rows).fill(-1)
-    for (let i = 0; i < 3; i += 1) grid[(BSIZE.rows - 1) * BSIZE.cols + i] = 0
-    const next = tapBubble({ ...s, grid }, BB, 0, BSIZE.rows - 1)
-    expect(next.state.won).toBe(true)
-    expect(next.state.over).toBe(true)
+    expect(bubblesRiseMs(s, BB)).toBeLessThan(first)
   })
 })

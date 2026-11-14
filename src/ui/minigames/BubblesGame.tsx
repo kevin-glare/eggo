@@ -75,7 +75,7 @@ export default function BubblesGame({ config, running, onOver }: BubblesGameProp
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
-      const outcome: MinigameOutcome = { score: bubblesScore(s), won: s.won }
+      const outcome: MinigameOutcome = { score: bubblesScore(s) }
       window.setTimeout(() => onOverRef.current(outcome), SETTLE_MS)
     }
   }, running)
