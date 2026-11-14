@@ -40,6 +40,16 @@ export function missYou(state: PetState, config: GameConfig, now: number): boole
   return now - state.lastTickAt >= config.notifications.missYouAfterMs
 }
 
+/**
+ * Разовая конвертация: огоньки стрика, накопленные до появления валюты,
+ * превращаются в звёздочки 1:1 — никто не теряет накопленное. Один раз
+ * на питомца: счётчик выданного живёт в сейве (streakStarsGiven).
+ */
+export function convertStreakStars(state: PetState): PetState {
+  if (state.streakStarsGiven > 0 || state.streakDays <= 0) return state
+  return { ...earnStars(state, state.streakDays), streakStarsGiven: state.streakDays }
+}
+
 /** Праздник дружбы — раз в неделю от момента создания. */
 export const FRIENDSHIP_WEEK_MS = 7 * 24 * 3_600_000
 

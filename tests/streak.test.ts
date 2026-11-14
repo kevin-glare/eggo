@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from '../src/game/config'
 import { dayKey } from '../src/game/quests'
-import { missYou, touchStreak } from '../src/game/streak'
+import { convertStreakStars, missYou, touchStreak } from '../src/game/streak'
 import { DAY, HOUR, makePet } from './helpers'
 
 const NOW = Date.UTC(2026, 9, 28, 12, 0, 0)
@@ -121,5 +121,31 @@ describe('friendshipDay', () => {
   it('не мутирует состояние и не зависит от lastTickAt', () => {
     const pet = makePet(DEFAULT_CONFIG, { createdAt: CREATED, lastTickAt: NOW })
     expect(friendshipDay(pet, CREATED + 7 * DAY)).toBe(1)
+  })
+})
+
+describe('convertStreakStars — разовая конвертация огоньков стрика', () => {
+  it('накопленные дни превращаются в звёздочки 1:1', () => {
+    const pet = makePet(DEFAULT_CONFIG, { streakDays: 12, stars: 5 })
+    const converted = convertStreakStars(pet)
+    expect(converted.stars).toBe(5 + 12)
+    expect(converted.streakStarsGiven).toBe(12)
+  })
+
+  it('проводится один раз: повторный вызов ничего не меняет', () => {
+    const pet = makePet(DEFAULT_CONFIG, { streakDays: 12, stars: 17, streakStarsGiven: 12 })
+    expect(convertStreakStars(pet)).toBe(pet)
+  })
+
+  it('без стрика конвертировать нечего', () => {
+    const pet = makePet(DEFAULT_CONFIG, { streakDays: 0 })
+    expect(convertStreakStars(pet)).toBe(pet)
+  })
+
+  it('не мутирует исходное состояние', () => {
+    const pet = makePet(DEFAULT_CONFIG, { streakDays: 8, stars: 0 })
+    convertStreakStars(pet)
+    expect(pet.stars).toBe(0)
+    expect(pet.streakStarsGiven).toBe(0)
   })
 })

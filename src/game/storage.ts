@@ -119,6 +119,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       // сейвы до мультидевайс-слияния: события не штамповались — считаем их старыми
       lastEventAt: typeof pet.lastEventAt === 'number' && pet.lastEventAt >= 0 ? pet.lastEventAt : 0,
       streakDays: typeof pet.streakDays === 'number' && pet.streakDays >= 0 ? Math.floor(pet.streakDays) : 0,
+      // конвертация огоньков стрика появилась позже: не проведена — счётчик в нуле
+      streakStarsGiven: typeof pet.streakStarsGiven === 'number' && pet.streakStarsGiven >= 0 ? Math.floor(pet.streakStarsGiven) : 0,
       lastVisitDayKey: typeof pet.lastVisitDayKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(pet.lastVisitDayKey)
         ? pet.lastVisitDayKey
         : null,
@@ -249,6 +251,8 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
       lastFeedAt: Math.max(caughtNewer.services.lastFeedAt, caughtOlder.services.lastFeedAt),
       lastWashAt: Math.max(caughtNewer.services.lastWashAt, caughtOlder.services.lastWashAt),
     },
+    // конвертация огоньков проведена, если проведена хотя бы на одном девайсе
+    streakStarsGiven: Math.max(caughtNewer.streakStarsGiven, caughtOlder.streakStarsGiven),
     lastTickAt: timeline,
   }
 }

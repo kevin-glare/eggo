@@ -64,7 +64,7 @@ export default function MinigamePicker({ best, dayGameId, onPick, onClose }: Min
           {MINIGAME_IDS.map((id) => (
             <button key={id} type="button" className="picker-tile" onClick={() => pick(id)}>
               <span className="picker-name">{str.game[id].title}</span>
-              {id === dayGameId && <span className="picker-day" title={str.pickDayTitle}>🔥 ×2</span>}
+              {id === dayGameId && <span className="picker-day" title={str.pickDayTitle}>🎯 ×2</span>}
               {best[id] !== undefined && <span className="mg-chip">{str.mgBest(best[id]!)}</span>}
             </button>
           ))}

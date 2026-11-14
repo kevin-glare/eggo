@@ -8,6 +8,7 @@ export const en: Strings = {
   loading: 'Loading your pet…',
   ageLabel: 'Age:',
   streakTitle: 'Days in a row',
+  streakConverted: '⭐ Your accumulated streak days became stars!',
   stage: {
     egg: '🥚 Egg',
     baby: '🐣 Baby',
@@ -50,7 +51,7 @@ export const en: Strings = {
   named: (name: string) => `🎉 ${name} is a great name!`,
   eggAppeared: '🥚 An egg appeared!',
   daysInRow: (n: number, stars: number) =>
-    stars > 0 ? `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row — +${stars} ⭐!` : `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row!`,
+    stars > 0 ? `📅 ${n} ${n === 1 ? 'day' : 'days'} in a row — +${stars} ⭐!` : `📅 ${n} ${n === 1 ? 'day' : 'days'} in a row!`,
   weeksOfFriendship: (n: number) => `🎂 ${n} ${n === 1 ? 'week' : 'weeks'} of friendship!`,
   claimReward: (bonus: number) => `🎁 Daily quests done: +${bonus} ⭐ into your wallet!`,
   claimAlready: '🎁 Reward already claimed',
@@ -139,9 +140,9 @@ export const en: Strings = {
   achievementsCount: (n: number, total: number) => `${n} of ${total}`,
   achievementUnlocked: (title: string) => `🏅 Achievement: ${title}!`,
   achievements: {
-    'streak-7': { title: '🔥 Week in rhythm' },
-    'streak-14': { title: '🔥 Two weeks straight' },
-    'streak-30': { title: '🔥 A month of care' },
+    'streak-7': { title: '📅 Week in rhythm' },
+    'streak-14': { title: '📅 Two weeks straight' },
+    'streak-30': { title: '📅 A month of care' },
     'age-7': { title: '🎂 One-week pet' },
     'age-30': { title: '🎂 A month together' },
     'score-100': { title: '🎯 Century score' },
@@ -265,7 +266,7 @@ export const en: Strings = {
       lines: [
         '💡 Eggo is asking for something? Do it in time — the effect is doubled',
         '🎯 Daily quests: the reward goes to the weakest stat',
-        '🔥 Visit every day — streak days and friendship celebrations',
+        '📅 Visit every day — streak days and friendship celebrations',
         '✨ Friends via your link — friendship stars for your pet',
       ],
     },

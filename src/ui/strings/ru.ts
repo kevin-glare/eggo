@@ -48,6 +48,7 @@ export const ru = {
   loading: 'Загружаем питомца…',
   ageLabel: 'Возраст:',
   streakTitle: 'Дней подряд',
+  streakConverted: '⭐ Накопленные огоньки стали звёздочками!',
   stage: {
     egg: '🥚 Яйцо',
     baby: '🐣 Малыш',
@@ -91,7 +92,7 @@ export const ru = {
   named: (name: string) => `🎉 ${name} — отличное имя!`,
   eggAppeared: '🥚 Появилось яйцо!',
   daysInRow: (n: number, stars: number) =>
-    stars > 0 ? `🔥 ${n} ${pluralDays(n)} подряд — +${stars} ⭐!` : `🔥 ${n} ${pluralDays(n)} подряд!`,
+    stars > 0 ? `📅 ${n} ${pluralDays(n)} подряд — +${stars} ⭐!` : `📅 ${n} ${pluralDays(n)} подряд!`,
   weeksOfFriendship: (n: number) => `🎂 ${n} ${pluralWeeks(n)} дружбы!`,
   claimReward: (bonus: number) => `🎁 Задания дня выполнены: +${bonus} ⭐ в кошелёк!`,
   claimAlready: '🎁 Награда уже получена',
@@ -183,9 +184,9 @@ export const ru = {
   achievementsCount: (n: number, total: number) => `${n} из ${total}`,
   achievementUnlocked: (title: string) => `🏅 Достижение: ${title}!`,
   achievements: {
-    'streak-7': { title: '🔥 Неделя в ритме' },
-    'streak-14': { title: '🔥 Две недели подряд' },
-    'streak-30': { title: '🔥 Месяц заботы' },
+    'streak-7': { title: '📅 Неделя в ритме' },
+    'streak-14': { title: '📅 Две недели подряд' },
+    'streak-30': { title: '📅 Месяц заботы' },
     'age-7': { title: '🎂 Недельный питомец' },
     'age-30': { title: '🎂 Месяц вместе' },
     'score-100': { title: '🎯 Сотня очков' },
@@ -310,7 +311,7 @@ export const ru = {
       lines: [
         '💡 Эгго что-то просит? Успей за окно — эффект будет двойным',
         '🎯 Задания дня: награда уходит слабейшему показателю',
-        '🔥 Заходи каждый день — серия дней и праздник дружбы',
+        '📅 Заходи каждый день — серия дней и праздник дружбы',
         '✨ Друзья по твоей ссылке — звёзды дружбы питомцу',
       ],
     },

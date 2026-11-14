@@ -235,7 +235,7 @@ export default function App() {
           <header className="header">
             <h1 className="stage-title">
               {pet.name ?? str.stage[pet.stage]}
-              {pet.streakDays >= 2 && <span className="streak" title={str.streakTitle}>🔥{pet.streakDays}</span>}
+              {pet.streakDays >= 2 && <span className="streak" title={str.streakTitle}>📅{pet.streakDays}</span>}
             </h1>
             <div className="header-tools">
               <button

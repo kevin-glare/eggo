@@ -19,7 +19,7 @@ import { activateItem, buyItem, type BuyReason } from '../game/economy'
 import { buyService as buyServiceAction, useVitamin as useVitaminAction, type ServiceId, type VitaminReason } from '../game/services'
 import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
-import { friendshipDay, missYou, touchStreak } from '../game/streak'
+import { convertStreakStars, friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import type { MinigameId, MinigameOutcome } from '../game/minigames/types'
@@ -246,6 +246,16 @@ useEffect(() => {
     setCelebrate((n) => n + 1)
     hapticSuccess()
   }, [pet, config, str])
+
+  // разовая конвертация: огоньки стрика, накопленные до валюты, — в звёздочки
+  useEffect(() => {
+    if (pet === null) return
+    const converted = convertStreakStars(pet)
+    if (converted === pet) return
+    setPet({ ...converted, lastEventAt: Date.now() })
+    forceSyncRef.current = true
+    setNotice(str.streakConverted)
+  }, [pet, str])
 
   const apply = useCallback(
     (action: (p: PetState, c: GameConfig) => ActionResult, successText: string, questId?: QuestId) => {

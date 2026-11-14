@@ -20,6 +20,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     appearance,
     daily: null,
     streakDays: 0,
+    streakStarsGiven: 0,
     lastVisitDayKey: null,
     request: null,
     nextRequestAt: now + config.requests.firstDelayMs,
