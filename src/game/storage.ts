@@ -99,6 +99,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       overfedUntil: typeof pet.overfedUntil === 'number' && pet.overfedUntil >= 0 ? pet.overfedUntil : 0,
       // звёздочки появились позже сейва v1: отсутствие — кошелёк пуст
       stars: typeof pet.stars === 'number' && pet.stars >= 0 ? Math.floor(pet.stars) : 0,
+      // опыт дружбы появился позже сейва v1: отсутствие — всё ещё знакомые
+      xp: typeof pet.xp === 'number' && pet.xp >= 0 ? Math.floor(pet.xp) : 0,
     }
   } catch {
     return null
@@ -183,6 +185,8 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     minigameBest: mergeMinigameBest(caughtNewer.minigameBest, caughtOlder.minigameBest),
     // перерыв после объедения тоже по максимуму: отсиденный на другом девайсе
     overfedUntil: Math.max(caughtNewer.overfedUntil, caughtOlder.overfedUntil),
+    // опыт дружбы только растёт — максимум с любого девайса не теряется
+    xp: Math.max(caughtNewer.xp, caughtOlder.xp),
     lastTickAt: timeline,
   }
 }

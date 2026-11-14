@@ -134,6 +134,14 @@ describe('serialize / deserialize', () => {
     const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.stars).toBe(0)
   })
+
+  it('старый сейв без опыта дружбы → xp: 0', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, { xp: 320 })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.xp
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.xp).toBe(0)
+  })
 })
 
 describe('catchUp — оффлайн-время', () => {
@@ -203,6 +211,13 @@ describe('mergeStates — слияние состояний одного пит�
     const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 5 * HOUR, lastEventAt: 2 * HOUR, stars: 3 })
     expect(mergeStates(a, b, DEFAULT_CONFIG).stars).toBe(12)
     expect(mergeStates(b, a, DEFAULT_CONFIG).stars).toBe(12)
+  })
+
+  it('опыт дружбы — по максимуму: большое XP со старого события не теряется', () => {
+    const a = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 5 * HOUR, lastEventAt: 2 * HOUR, xp: 300 })
+    const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 5 * HOUR, lastEventAt: 5 * HOUR, xp: 50 })
+    expect(mergeStates(a, b, DEFAULT_CONFIG).xp).toBe(300)
+    expect(mergeStates(b, a, DEFAULT_CONFIG).xp).toBe(300)
   })
 
   it('болезнь, досчитанная на одной из сторон, не снимается слиянием задним числом', () => {

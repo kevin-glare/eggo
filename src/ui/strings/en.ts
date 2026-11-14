@@ -129,6 +129,11 @@ export const en: Strings = {
   renameSave: 'Save name',
   renameCancel: 'Keep the name',
 
+  // --- friendship level ---
+  friendshipTitles: ['Acquaintance', 'Buddy', 'Companion', 'Friend', 'Best friend', 'Soulmate'],
+  levelUp: (title: string) => `💖 Your friendship grows: you are now “${title}”!`,
+  friendshipAria: 'Friendship level',
+
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
   requestBonus: (name: string) => `✨ Request fulfilled — ${name} is delighted!`,

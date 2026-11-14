@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
 import { dayGame } from './game/dailyChallenge'
+import { friendshipLevel } from './game/friendship'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
 import { dayKey } from './game/quests'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
@@ -198,6 +199,11 @@ export default function App() {
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
   const desireKind = desire(pet, config)
+  // звание дружбы: уровень из таблицы порогов, выше списка не прыгнуть
+  const friendshipTitle =
+    str.friendshipTitles[
+      Math.min(friendshipLevel(pet.xp, config), str.friendshipTitles.length) - 1
+    ] ?? ''
   // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
   const isCreating = pet.name === null
 
@@ -364,6 +370,7 @@ export default function App() {
           pet={pet}
           onRename={renamePet}
           nameMaxLength={config.nameMaxLength}
+          friendshipTitle={friendshipTitle}
           mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}

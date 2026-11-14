@@ -26,6 +26,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     minigameBest: {},
     overfedUntil: 0,
     stars: 0,
+    xp: 0,
   }
 }
 

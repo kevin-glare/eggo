@@ -24,6 +24,8 @@ interface MenuScreenProps {
   onRename: (name: string) => ActionResult | null
   /** предел длины имени из config.nameMaxLength */
   nameMaxLength: number
+  /** звание уровня дружбы питомца (вычисляется в App по config) */
+  friendshipTitle: string
   /** настроение питомца — рисуется в мини-арте */
   mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
@@ -59,6 +61,7 @@ export default function MenuScreen({
   pet,
   onRename,
   nameMaxLength,
+  friendshipTitle,
   mood,
   notifSupported,
   notifEnabled,
@@ -211,6 +214,9 @@ export default function MenuScreen({
                   </>
                 )}
                 <div className="menu-profile-right">
+                  <p className="menu-profile-friendship" aria-label={str.friendshipAria}>
+                    ⭐ {friendshipTitle}
+                  </p>
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">
                     {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>

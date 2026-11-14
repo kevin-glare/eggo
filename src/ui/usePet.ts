@@ -14,6 +14,7 @@ import {
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { dayGame } from '../game/dailyChallenge'
+import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
@@ -248,18 +249,32 @@ useEffect(() => {
         markRequestHintDone()
       }
       // успешное действие отмечается в заданиях дня и в серии дней
+      let milestoneToast: string | null = null
       if (questId) {
         next = recordQuest(next, questId, config, Date.now())
         const streak = touchStreak(next, config, Date.now())
         next = streak.state
         if (streak.milestone !== null) {
-          setNotice(str.daysInRow(streak.milestone, streak.stars))
+          milestoneToast = str.daysInRow(streak.milestone, streak.stars)
           setCelebrate((n) => n + 1)
         }
       }
+      // забота капает в опыт дружбы; перешагнули порог — праздник
+      const prevLevel = friendshipLevel(current.xp, config)
+      next = addXp(next, config.friendship.xpPerAction)
+      const nextLevel = friendshipLevel(next.xp, config)
+      if (nextLevel > prevLevel) setCelebrate((n) => n + 1)
       setPet(next)
       forceSyncRef.current = true
-      setNotice(result.requestBonus === true ? str.requestBonus(current.name ?? str.petFallbackName) : successText)
+      // один тост по старшинству: просьба ×2 > уровень дружбы > веха стрика > текст действия
+      const levelUpToast = nextLevel > prevLevel
+        ? str.levelUp(str.friendshipTitles[Math.min(nextLevel, str.friendshipTitles.length) - 1] ?? '')
+        : null
+      setNotice(
+        result.requestBonus === true
+          ? str.requestBonus(current.name ?? str.petFallbackName)
+          : levelUpToast ?? milestoneToast ?? successText,
+      )
       hapticSuccess()
       return { ...result, state: next }
     },
@@ -286,6 +301,8 @@ useEffect(() => {
       const bonus = minigameBonus(rec.isRecord, dayGame(dayKey(Date.now())) === id, config)
       let next = rec.state
       if (bonus > 0) next = applyMinigameBonus(next, bonus)
+      // партия — тоже забота: опыт дружбы сверху действия play
+      next = addXp(next, config.friendship.xpPerMinigame)
       if (next !== current) {
         setPet({ ...next, lastEventAt: Date.now() })
         forceSyncRef.current = true
@@ -316,8 +333,8 @@ useEffect(() => {
     if (current === null) return false
     const result = claimReward(current, config)
     if (result.ok) {
-      // награда — событие игрока: штамп для мультидевайс-слияния
-      setPet({ ...result.state, lastEventAt: Date.now() })
+      // награда — событие игрока: штамп для мультидевайс-слияния; квест капает в опыт
+      setPet({ ...addXp(result.state, config.friendship.xpPerClaim), lastEventAt: Date.now() })
       forceSyncRef.current = true
       setNotice(str.claimReward(config.shop.questStars))
       setCelebrate((n) => n + 1)
