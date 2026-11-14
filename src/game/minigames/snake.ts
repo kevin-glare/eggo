@@ -1,9 +1,9 @@
 /**
- * «Змейка»: классика — собирая еду, растёшь, не врезайся в себя.
- * Стены проходимы насквозь: ушёл за край — появился с противоположной
- * стороны. Поле-сетка приходит снаружи (в UI выводится из реального
- * размера канваса — игра на весь экран), ход по таймеру, с каждым куском
- * чуть быстрее. Чистое ядро, rng снаружи (новая еда).
+ * «Змейка»: классика — собирая еду, растёшь, не врезайся в себя
+ * и в стены: край поля смертелен. Поле-сетка приходит снаружи (в UI
+ * выводится из реального размера канваса — игра на весь экран), ход
+ * по таймеру, с каждым куском чуть быстрее. Чистое ядро, rng снаружи
+ * (новая еда).
  */
 
 export type SnakeDir = 'up' | 'down' | 'left' | 'right'
@@ -100,9 +100,14 @@ function advance(state: SnakeState, balance: SnakeBalance, rng: () => number): S
   }
   const d = delta[dir]
   const head = state.snake[0]!
-  // сквозь стены: выход за край заворачивает на противоположную сторону
-  const wx = (head.x + d.x + state.grid.cols) % state.grid.cols
-  const wy = (head.y + d.y + state.grid.rows) % state.grid.rows
+  // стены смертельны: шаг за край — конец
+  const nx = head.x + d.x
+  const ny = head.y + d.y
+  if (nx < 0 || nx >= state.grid.cols || ny < 0 || ny >= state.grid.rows) {
+    return { ...state, dir, pendingDir: null, over: true, won: false }
+  }
+  const wx = nx
+  const wy = ny
 
   const eating = wx === state.food.x && wy === state.food.y
   const body = eating ? state.snake : state.snake.slice(0, -1)

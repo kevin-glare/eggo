@@ -39,27 +39,31 @@ describe('snake — ядро «Змейки»', () => {
     expect(s.snake[0]!.y).toBe(mid + 1)
   })
 
-  it('стены проходимы насквозь: ушёл справа — появился слева', () => {
+  it('стена смертельна: шаг за край — конец', () => {
     const narrow = { cols: 6, rows: 6 }
     let s = createSnake(SN, narrow, foodRight)
-    // еда далеко от пути: ведём голову к правому краю и дальше
+    // еда не на пути головы (y головы ≠ y еды): ведём голову к правому краю
     s = { ...s, food: { x: 0, y: 5 } }
-    const startX = s.snake[0]!.x
-    for (let i = 0; i < narrow.cols + 2 && !s.over; i += 1) s = stepSnake(s, SN.moveMs, SN, foodRight)
+    const stepsToWall = narrow.cols - 1 - s.snake[0]!.x
+    for (let i = 0; i < stepsToWall && !s.over; i += 1) s = stepSnake(s, SN.moveMs, SN, foodRight)
+    // голова дошла до последней колонки и ещё жива
     expect(s.over).toBe(false)
-    // голова переехала через правый край и оказалась у левого
-    expect(s.snake[0]!.x).toBe((startX + narrow.cols + 2) % narrow.cols)
+    expect(s.snake[0]!.x).toBe(narrow.cols - 1)
+    // следующий шаг — в стену
+    s = stepSnake(s, SN.moveMs, SN, foodRight)
+    expect(s.over).toBe(true)
+    expect(s.won).toBe(false)
   })
 
-  it('еда у стены съедается «сквозь стену»', () => {
+  it('еда у стены съедается перед ней', () => {
     const narrow = { cols: 6, rows: 6 }
     let s = createSnake(SN, narrow, foodRight)
-    // голова у правого края, тело позади; еда сразу за правым краем (x=0)
-    s = { ...s, snake: [{ x: 4, y: 3 }, { x: 3, y: 3 }, { x: 2, y: 3 }], food: { x: 0, y: 3 } }
-    // два хода: к краю и сквозь него — ртом прямо в еду
-    for (let i = 0; i < 2 && !s.over; i += 1) s = stepSnake(s, SN.moveMs, SN, foodRight)
-    expect(s.score).toBe(1)
-    expect(s.snake[0]!.x).toBe(0)
+    // голова в предпоследней колонке, тело позади; еда — в самой стеновой
+    s = { ...s, snake: [{ x: 4, y: 3 }, { x: 3, y: 3 }, { x: 2, y: 3 }], food: { x: 5, y: 3 } }
+    const next = stepSnake(s, SN.moveMs, SN, foodRight)
+    expect(next.score).toBe(1)
+    expect(next.snake[0]!.x).toBe(5)
+    expect(next.over).toBe(false)
   })
 
   it('еда растит змейку и ускоряет ход', () => {
