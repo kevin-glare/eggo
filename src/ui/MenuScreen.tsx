@@ -298,9 +298,6 @@ export default function MenuScreen({
                   </>
                 )}
                 <div className="menu-profile-right">
-                  <p className="menu-profile-stars" aria-label={str.walletAria}>
-                    ⭐ <span className="num">{pet.stars}</span>
-                  </p>
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">
                     {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>

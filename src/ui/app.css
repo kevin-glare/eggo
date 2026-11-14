@@ -447,6 +447,20 @@ body {
   white-space: nowrap;
 }
 
+/* кошелёк звёздочек в шапке — рядом с именем, золотая пилюля */
+.stars {
+  margin-left: 8px;
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(242, 193, 78, 0.2);
+  border: 1px solid rgba(242, 193, 78, 0.5);
+  font-family: var(--mono);
+  font-size: 0.5em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* Экран меню: полноэкранный оверлей поверх всего (тосты — z-index 10),
    выезжает снизу transform'ом. pointer-events и visibility гасятся у корня,
    чтобы закрытый экран не ловил тапы и не попадал в tab-порядок */
@@ -628,14 +642,6 @@ body {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
-}
-
-.menu-profile-stars {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--gold);
   white-space: nowrap;
 }
 
