@@ -135,7 +135,6 @@ export const en: Strings = {
   // --- friendship level ---
   friendshipTitles: ['Acquaintance', 'Buddy', 'Companion', 'Friend', 'Best friend', 'Soulmate'],
   levelUp: (title: string) => `💖 Your friendship grows: you are now “${title}”!`,
-  friendshipAria: 'Friendship level',
 
   // --- achievements: keys = stable ids from game/achievements ---
   menuAchievements: 'Achievements',

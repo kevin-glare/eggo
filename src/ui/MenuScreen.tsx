@@ -31,8 +31,6 @@ interface MenuScreenProps {
   nameMaxLength: number
   /** цена смены имени из config.shop.renamePrice */
   renamePrice: number
-  /** звание уровня дружбы питомца (вычисляется в App по config) */
-  friendshipTitle: string
   /** полный каталог достижений — порядок строк подэкрана */
   achievementIds: string[]
   /** открытые достижения питомца */
@@ -84,7 +82,6 @@ export default function MenuScreen({
   onRename,
   nameMaxLength,
   renamePrice,
-  friendshipTitle,
   achievementIds,
   unlockedAchievements,
   shopItems,
@@ -303,9 +300,6 @@ export default function MenuScreen({
                 <div className="menu-profile-right">
                   <p className="menu-profile-stars" aria-label={str.walletAria}>
                     ⭐ <span className="num">{pet.stars}</span>
-                  </p>
-                  <p className="menu-profile-friendship" aria-label={str.friendshipAria}>
-                    {friendshipTitle}
                   </p>
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">

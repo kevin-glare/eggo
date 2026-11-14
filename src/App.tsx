@@ -4,7 +4,6 @@ import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
 import { dayGame } from './game/dailyChallenge'
 import { allAchievementIds } from './game/achievements'
-import { friendshipLevel } from './game/friendship'
 import { itemById } from './game/economy'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
 import { dayKey } from './game/quests'
@@ -209,11 +208,6 @@ export default function App() {
   const eggProgress = Math.min(1, pet.ageMs / config.evolution.eggMs)
   const mood = getMood(pet, config)
   const desireKind = desire(pet, config)
-  // звание дружбы: уровень из таблицы порогов, выше списка не прыгнуть
-  const friendshipTitle =
-    str.friendshipTitles[
-      Math.min(friendshipLevel(pet.xp, config), str.friendshipTitles.length) - 1
-    ] ?? ''
   // каталог достижений стабилен от конфига: порядок строк и счётчик «N из M»
   const achievementIds = allAchievementIds(config)
   // активное блюдо из магазина усиливает еду сессии кормления; базовая еда бесплатна
@@ -439,7 +433,6 @@ export default function App() {
           onRename={renamePet}
           nameMaxLength={config.nameMaxLength}
           renamePrice={config.shop.renamePrice}
-          friendshipTitle={friendshipTitle}
           achievementIds={achievementIds}
           unlockedAchievements={pet.achievements}
           shopItems={config.shop.items}

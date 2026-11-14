@@ -179,7 +179,6 @@ export const ru = {
   // --- уровень дружбы ---
   friendshipTitles: ['Знакомый', 'Приятель', 'Товарищ', 'Друг', 'Лучший друг', 'Родная душа'],
   levelUp: (title: string) => `💖 Дружба крепнет: вы теперь «${title}»!`,
-  friendshipAria: 'Уровень дружбы',
 
   // --- достижения: ключи = стабильные id из game/achievements ---
   menuAchievements: 'Достижения',
