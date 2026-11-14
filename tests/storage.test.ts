@@ -142,6 +142,19 @@ describe('serialize / deserialize', () => {
     const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
     expect(restored?.xp).toBe(0)
   })
+
+  it('старый сейв без магазина → блюдо не подано, косметика пуста', () => {
+    const pet = hatchedPet(DEFAULT_CONFIG, {
+      dish: 'dish-cake',
+      cosmetics: { owned: ['x'], activeAccessory: 'x', decor: { meadow: 'y', sea: null } },
+    })
+    const data = JSON.parse(serialize(pet)) as { pet: Record<string, unknown> }
+    delete data.pet.dish
+    delete data.pet.cosmetics
+    const restored = deserialize(JSON.stringify(data), TEST_APPEARANCE)
+    expect(restored?.dish).toBeNull()
+    expect(restored?.cosmetics).toEqual({ owned: [], activeAccessory: null, decor: { meadow: null, sea: null } })
+  })
 })
 
 describe('catchUp — оффлайн-время', () => {
@@ -218,6 +231,24 @@ describe('mergeStates — слияние состояний одного пит�
     const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: 5 * HOUR, lastEventAt: 5 * HOUR, xp: 50 })
     expect(mergeStates(a, b, DEFAULT_CONFIG).xp).toBe(300)
     expect(mergeStates(b, a, DEFAULT_CONFIG).xp).toBe(300)
+  })
+
+  it('косметика: owned объединяется, активные слоты едут со свежим событием', () => {
+    const a = hatchedPet(DEFAULT_CONFIG, {
+      lastTickAt: 5 * HOUR,
+      lastEventAt: 5 * HOUR,
+      cosmetics: { owned: ['hat'], activeAccessory: 'hat', decor: { meadow: 'flower', sea: null } },
+    })
+    const b = hatchedPet(DEFAULT_CONFIG, {
+      lastTickAt: 5 * HOUR,
+      lastEventAt: 2 * HOUR,
+      cosmetics: { owned: ['flower'], activeAccessory: null, decor: { meadow: null, sea: null } },
+    })
+    const merged = mergeStates(a, b, DEFAULT_CONFIG)
+    expect(merged.cosmetics.owned).toEqual(['hat', 'flower'])
+    // активация — событие: свежая сторона решает, что надето и что на лугу
+    expect(merged.cosmetics.activeAccessory).toBe('hat')
+    expect(merged.cosmetics.decor.meadow).toBe('flower')
   })
 
   it('болезнь, досчитанная на одной из сторон, не снимается слиянием задним числом', () => {

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActionResult } from '../game/actions'
+import type { ShopItemConfig } from '../game/config'
+import type { BuyReason } from '../game/economy'
 import type { PetState } from '../game/types'
 import type { Mood } from '../game/types'
 import { setLang, useLang, useStrings } from './i18n'
@@ -10,10 +12,10 @@ import Toggle from './Toggle'
 import { useDialogFocus } from './useDialogFocus'
 import { isSoundOn, playSound, setSoundOn } from './sound'
 import { track } from '../metrika'
-import { hapticTap, tg } from '../telegram'
+import { hapticTap, hapticWarning, tg } from '../telegram'
 
 /** Подэкраны меню: корень с рядами и карточки-объяснения поверх главного экрана. */
-type MenuView = 'root' | 'invite' | 'help' | 'achievements'
+type MenuView = 'root' | 'invite' | 'help' | 'achievements' | 'shop'
 
 interface MenuScreenProps {
   open: boolean
@@ -30,6 +32,10 @@ interface MenuScreenProps {
   achievementIds: string[]
   /** открытые достижения питомца */
   unlockedAchievements: string[]
+  /** каталог магазина из config.shop.items */
+  shopItems: ShopItemConfig[]
+  /** покупка: отказ несёт reason для тоста в меню */
+  onBuy: (id: string) => { ok: boolean; reason?: BuyReason }
   /** настроение питомца — рисуется в мини-арте */
   mood: Mood
   /** уведомления: состояние и переключение — из useNotifications в App */
@@ -68,6 +74,8 @@ export default function MenuScreen({
   friendshipTitle,
   achievementIds,
   unlockedAchievements,
+  shopItems,
+  onBuy,
   mood,
   notifSupported,
   notifEnabled,
@@ -104,6 +112,21 @@ export default function MenuScreen({
       return
     }
     setRenameError(str.reason[result?.reason ?? 'invalid-name'])
+  }
+
+  // магазин: тост результата покупки внутри меню (слот нотиса пушей свободен)
+  const [shopNotice, setShopNotice] = useState<string | null>(null)
+  const shopNoticeRef = useRef<number>(0)
+
+  const handleBuy = (id: string) => {
+    const item = shopItems.find((it) => it.id === id)
+    const title = str.shopItem[id]?.title ?? id
+    const res = onBuy(id)
+    if (res.ok) playSound('win')
+    else hapticWarning()
+    setShopNotice(res.ok ? str.shopBought(item?.emoji ? `${item.emoji} ${title}` : title) : res.reason === 'dish-active' ? str.shopDishActive : str.shopNoStars)
+    window.clearTimeout(shopNoticeRef.current)
+    shopNoticeRef.current = window.setTimeout(() => setShopNotice(null), 2600)
   }
   // звук: локальная настройка устройства, как язык
   const [soundOn, setSoundOnState] = useState(isSoundOn())
@@ -169,8 +192,9 @@ export default function MenuScreen({
             ✕
           </button>
         </div>
-        {/* тост тумблера пушей: внутри меню, где его не накрывает оверлей */}
+        {/* тосты внутри меню: нотис пушей и результат покупки */}
         {notifNotice && <div className="menu-toast">{notifNotice}</div>}
+        {shopNotice && <div className="menu-toast">{shopNotice}</div>}
         <div className="menu-body">
           {/* ключ = подэкран: смена вьюхи переигрывает слайд-анимацию */}
           <div className="menu-pane" key={view}>
@@ -220,8 +244,11 @@ export default function MenuScreen({
                   </>
                 )}
                 <div className="menu-profile-right">
+                  <p className="menu-profile-stars" aria-label={str.walletAria}>
+                    ⭐ <span className="num">{pet.stars}</span>
+                  </p>
                   <p className="menu-profile-friendship" aria-label={str.friendshipAria}>
-                    ⭐ {friendshipTitle}
+                    {friendshipTitle}
                   </p>
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">
@@ -299,6 +326,23 @@ export default function MenuScreen({
                   type="button"
                   className="menu-row"
                   onClick={tap(() => {
+                    track('shop-open')
+                    setView('shop')
+                  })}
+                >
+                  <span className="menu-row-icon" aria-hidden="true">
+                    🛍
+                  </span>
+                  <span className="menu-row-label">{str.menuShop}</span>
+                  <span className="menu-profile-stars num">⭐ {pet.stars}</span>
+                  <span className="menu-row-chevron" aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="menu-row"
+                  onClick={tap(() => {
                     track('achievements-open')
                     setView('achievements')
                   })}
@@ -343,7 +387,44 @@ export default function MenuScreen({
                   ←
                 </button>
               </div>
-              {view === 'invite' ? (
+              {view === 'shop' ? (
+                <div className="shop">
+                  {(['dish', 'accessory', 'decor'] as const).map((kind) => {
+                    const items = shopItems.filter((it) => it.kind === kind)
+                    if (items.length === 0) return null
+                    const section = kind === 'dish' ? str.shopDishes : kind === 'accessory' ? str.shopAccessories : str.shopDecor
+                    return (
+                      <div key={kind}>
+                        <p className="menu-section">{section}</p>
+                        <div className="shop-rows">
+                          {items.map((it) => {
+                            const title = str.shopItem[it.id]?.title ?? it.id
+                            const active = it.kind === 'dish' && pet.dish === it.id
+                            const owned = it.kind !== 'dish' && pet.cosmetics.owned.includes(it.id)
+                            return (
+                              <div key={it.id} className="shop-row">
+                                <span className="shop-row-emoji" aria-hidden="true">
+                                  {it.emoji}
+                                </span>
+                                <span className="shop-row-title">{title}</span>
+                                {active ? (
+                                  <span className="mg-chip">{str.shopActive}</span>
+                                ) : owned ? (
+                                  <span className="mg-chip">{str.shopOwned}</span>
+                                ) : (
+                                  <button type="button" className="shop-buy" onClick={tap(() => handleBuy(it.id))}>
+                                    ⭐ {it.price}
+                                  </button>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : view === 'invite' ? (
                 <InvitePanel invited={invited} stars={pet.appearance.refMark} milestones={milestones} onShare={onShare} />
               ) : view === 'achievements' ? (
                 <div className="menu-ach">

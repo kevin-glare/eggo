@@ -6,6 +6,21 @@ import type { Stats } from './types'
  * Все числа, влияющие на баланс игры. Меняются только здесь —
  * это «пульт управления» ощущением игры.
  */
+/** Товар магазина: блюдо для следующего кормления или косметика.
+ *  id стабильны — входят в сейв (dish/cosmetics) и словари i18n. */
+export interface ShopItemConfig {
+  id: string
+  kind: 'dish' | 'decor' | 'accessory'
+  /** цена в звёздочках */
+  price: number
+  /** эмодзи плитки */
+  emoji: string
+  /** бонус сытости за пойманную еду (kind: 'dish') */
+  bonusPerFood?: number
+  /** слот декора сцены (kind: 'decor') */
+  decorSlot?: 'meadow' | 'sea'
+}
+
 export interface GameConfig {
   /** стартовые статы новорождённого (вылупившегося) питомца */
   initialStats: Stats
@@ -75,6 +90,8 @@ export interface GameConfig {
     recordStars: number
     /** звёздочек за порог приглашённых: приглашённые → награда */
     referralStars: Record<number, number>
+    /** каталог товаров */
+    items: ShopItemConfig[]
   }
   /** уровень дружбы: опыт за заботу и пороги уровней */
   friendship: {
@@ -227,12 +244,17 @@ export const DEFAULT_CONFIG: GameConfig = {
     milestones: [1, 3, 10],
   },
   streak: { milestones: [3, 7, 14, 30] },
-  // звёздочки: за задания дня, вехи серии, новые рекорды и приглашённых
+  // звёздочки: за задания дня, вехи серии, новые рекорды и приглашённых;
+  // блюда — премиум-еда на одну сессию кормления (базовая еда бесплатна)
   shop: {
     questStars: 3,
     streakStars: { 3: 5, 7: 10, 14: 20, 30: 50 },
     recordStars: 2,
     referralStars: { 1: 5, 3: 15, 10: 40 },
+    items: [
+      { id: 'dish-cake', kind: 'dish', price: 8, emoji: '🍰', bonusPerFood: 4 },
+      { id: 'dish-feast', kind: 'dish', price: 15, emoji: '🍱', bonusPerFood: 8 },
+    ],
   },
   // уровень дружбы: ~75 опыта в день заботы; уровни через ~1.5 дня, 4 дня,
   // 9 дней, 3 недели и ~5 недель

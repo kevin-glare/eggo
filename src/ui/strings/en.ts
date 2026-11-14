@@ -80,12 +80,12 @@ export const en: Strings = {
     `✅ “${label}” — ${t}/${t} today. Quests count your care; stats drop on their own.`,
   questExplainProgress: (label: string, p: number, t: number) => `🎯 “${label}” — ${p}/${t} today.`,
   questCellAria: (label: string, p: number, t: number) => `Quest “${label}”: ${p} of ${t} today`,
-  questClaim: 'Claim',
+  questClaim: 'Claim ⭐',
   questClaimed: 'Claimed',
   questClaimAria: 'Claim the daily reward',
   questClaimedAria: 'Reward claimed',
 
-  sceneHint: { feedCatch: 'Tap — Eggo will run for the food!', wash: 'Rub the pet with your finger' },
+  sceneHint: { feedCatch: 'Tap — Eggo will run for the food!', wash: 'Rub the pet with your finger', stars: '⭐ Caring earns stars!' },
 
   // --- minigames (the “Play” button) ---
   mgPause: 'Pause',
@@ -154,6 +154,23 @@ export const en: Strings = {
     'lvl-5': { title: '💖 Inseparable' },
     'stars-100': { title: '🌟 Hundred stars' },
     'stars-300': { title: '🌟 Star capital' },
+  } as Record<string, { title: string }>,
+
+  // --- shop ---
+  menuShop: 'Shop',
+  shopDishes: 'Food',
+  shopAccessories: 'Accessories',
+  shopDecor: 'Scene decor',
+  shopActive: 'Served',
+  shopOwned: 'Owned',
+  shopBought: (title: string) => `🛍 Bought: ${title}`,
+  shopNoStars: '⭐ Not enough stars yet — keep caring!',
+  shopDishActive: '🍽 Feed first — a dish is already served',
+  shopStarsHint: '⭐ Caring earns stars — spend them in the shop',
+  walletAria: 'Star wallet',
+  shopItem: {
+    'dish-cake': { title: 'Cake — extra fullness for one feeding session' },
+    'dish-feast': { title: 'Feast — the heartiest single session' },
   } as Record<string, { title: string }>,
 
   // --- pet requests ---

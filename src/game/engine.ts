@@ -28,6 +28,8 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     stars: 0,
     xp: 0,
     achievements: [],
+    dish: null,
+    cosmetics: { owned: [], activeAccessory: null, decor: { meadow: null, sea: null } },
   }
 }
 

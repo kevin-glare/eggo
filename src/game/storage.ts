@@ -3,7 +3,7 @@ import { normalizeAppearance, type PetAppearance } from './appearance'
 import { stageForAge, tick } from './engine'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
-import type { PetRequest, PetState, RequestKind, Stats } from './types'
+import type { PetCosmetics, PetRequest, PetState, RequestKind, Stats } from './types'
 import { MINIGAME_IDS } from './minigames'
 import type { MinigameId } from './minigames/types'
 
@@ -68,6 +68,21 @@ function normalizeAchievements(raw: unknown): string[] {
   return [...new Set(raw.filter((x): x is string => typeof x === 'string'))]
 }
 
+/** Магазин появился позже сейва v1: пустой кошелёк косметики и блюда. */
+function normalizeCosmetics(raw: unknown): PetCosmetics {
+  if (typeof raw !== 'object' || raw === null) {
+    return { owned: [], activeAccessory: null, decor: { meadow: null, sea: null } }
+  }
+  const c = raw as Partial<PetCosmetics>
+  const slot = (v: unknown): string | null => (typeof v === 'string' ? v : null)
+  const decor = (typeof c.decor === 'object' && c.decor !== null ? c.decor : {}) as Partial<PetCosmetics['decor']>
+  return {
+    owned: normalizeAchievements(c.owned),
+    activeAccessory: slot(c.activeAccessory),
+    decor: { meadow: slot(decor.meadow), sea: slot(decor.sea) },
+  }
+}
+
 interface SaveData {
   version: number
   pet: PetState
@@ -111,6 +126,9 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       // опыт дружбы появился позже сейва v1: отсутствие — всё ещё знакомые
       xp: typeof pet.xp === 'number' && pet.xp >= 0 ? Math.floor(pet.xp) : 0,
       achievements: normalizeAchievements(pet.achievements),
+      // магазин появился позже сейва v1: блюда не подано, косметики нет
+      dish: typeof pet.dish === 'string' ? pet.dish : null,
+      cosmetics: normalizeCosmetics(pet.cosmetics),
     }
   } catch {
     return null
@@ -199,6 +217,11 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     xp: Math.max(caughtNewer.xp, caughtOlder.xp),
     // достижения копятся: объединение каталогов с двух девайсов
     achievements: [...new Set([...caughtNewer.achievements, ...caughtOlder.achievements])],
+    // купленная косметика не сгорает; активные слоты едут со свежим событием
+    cosmetics: {
+      ...caughtNewer.cosmetics,
+      owned: [...new Set([...caughtNewer.cosmetics.owned, ...caughtOlder.cosmetics.owned])],
+    },
     lastTickAt: timeline,
   }
 }

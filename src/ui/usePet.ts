@@ -15,6 +15,7 @@ import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { dayGame } from '../game/dailyChallenge'
 import { evaluateAchievements } from '../game/achievements'
+import { buyItem, type BuyReason } from '../game/economy'
 import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
@@ -26,7 +27,7 @@ import { feedCatch } from '../game/actions'
 import { updateRequest } from '../game/requests'
 import { applyReferralReward } from '../game/referrals'
 import { useStrings } from './i18n'
-import { markRequestHintDone } from './hints'
+import { isHintDone, markHintDone, markRequestHintDone } from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
 
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
@@ -373,10 +374,36 @@ useEffect(() => {
   const finishFeeding = useCallback(
     (caught: number) => {
       const result = apply((p, c) => feedCatch(p, caught, c, Date.now()), str.actionSuccess.feed, 'feed')
-      if (result?.ok && result.state.overfedUntil > Date.now()) setNotice(str.overfed)
+      if (result?.ok) {
+        // премиум-блюдо подано и съедено: слот освобождается до следующей покупки
+        if (result.state.dish !== null) {
+          setPet((p) => (p === null ? p : { ...p, dish: null, lastEventAt: Date.now() }))
+        }
+        if (result.state.overfedUntil > Date.now()) setNotice(str.overfed)
+      }
     },
     [apply, str],
   )
+
+  /** Купить товар магазина: отказ возвращает reason для тоста в меню. */
+  const buy = useCallback((id: string): { ok: boolean; reason?: BuyReason } => {
+    const current = petRef.current
+    if (current === null) return { ok: false, reason: 'unknown-item' }
+    const res = buyItem(current, id, config)
+    if (res.ok) {
+      // покупка — событие игрока: штамп для мультидевайс-слияния
+      setPet({ ...res.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+    }
+    return { ok: res.ok, reason: res.reason }
+  }, [config])
+
+  // первая заработанная звёздочка: намекаем, что её можно потратить
+  useEffect(() => {
+    if (pet === null || pet.stars <= 0 || isHintDone('stars')) return
+    markHintDone('stars')
+    showNotice(str.shopStarsHint)
+  }, [pet, showNotice, str])
 
   /**
    * Дать имя питомцу: без имени игра не начинается.
@@ -453,6 +480,7 @@ useEffect(() => {
     startGame,
     advanceTime,
     renamePet,
+    buy,
     reset,
   }
 }

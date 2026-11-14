@@ -5,6 +5,7 @@ import { feed, play, wash } from './game/actions'
 import { dayGame } from './game/dailyChallenge'
 import { allAchievementIds } from './game/achievements'
 import { friendshipLevel } from './game/friendship'
+import { itemById } from './game/economy'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
 import { dayKey } from './game/quests'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
@@ -65,6 +66,7 @@ export default function App() {
     startGame,
     advanceTime,
     renamePet,
+    buy,
     reset,
   } = usePet(config)
   // служебные кнопки шапки: состояние тумблера пушей живёт на сервере
@@ -207,6 +209,12 @@ export default function App() {
     ] ?? ''
   // каталог достижений стабилен от конфига: порядок строк и счётчик «N из M»
   const achievementIds = allAchievementIds(config)
+  // активное блюдо из магазина усиливает еду сессии кормления; базовая еда бесплатна
+  const dishItem = pet.dish !== null ? itemById(config, pet.dish) : null
+  const feedBalance =
+    dishItem?.bonusPerFood !== undefined
+      ? { ...config.feeding, perFood: config.feeding.perFood + dishItem.bonusPerFood }
+      : config.feeding
   // главный экран: без имени игра не начинается — в том числе старые безымянные сейвы
   const isCreating = pet.name === null
 
@@ -259,7 +267,7 @@ export default function App() {
               }}
               scene={scene}
               onSceneComplete={onSceneComplete}
-              feeding={config.feeding}
+              feeding={feedBalance}
               fullness={pet.stats.fullness}
               celebrate={celebrate}
               cake={anniversary}
@@ -376,6 +384,8 @@ export default function App() {
           friendshipTitle={friendshipTitle}
           achievementIds={achievementIds}
           unlockedAchievements={pet.achievements}
+          shopItems={config.shop.items}
+          onBuy={buy}
           mood={mood}
           notifSupported={notifSupported}
           notifEnabled={notifEnabled}

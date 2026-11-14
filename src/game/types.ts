@@ -19,6 +19,16 @@ export interface Stats {
 
 export type StatKey = keyof Stats
 
+/** Косметика питомца и сцены: покупается в магазине, рисуется поверх генов. */
+export interface PetCosmetics {
+  /** купленные товары: id из config.shop.items */
+  owned: string[]
+  /** надетый аксессуар; null — без аксессуара */
+  activeAccessory: string | null
+  /** активный декор сцены по слотам; null — слот пуст */
+  decor: { meadow: string | null; sea: string | null }
+}
+
 /** Что питомец может попросить: только действия с положительным эффектом. */
 export type RequestKind = 'feed' | 'play' | 'wash'
 
@@ -71,4 +81,8 @@ export interface PetState {
   xp: number
   /** открытые достижения (стабильные id из game/achievements); у старых сейвов пусто (нормализуется) */
   achievements: string[]
+  /** активное блюдо для следующего кормления из магазина; null — базовая еда (нормализуется) */
+  dish: string | null
+  /** купленная косметика и её активация; у старых сейвов пусто (нормализуется) */
+  cosmetics: PetCosmetics
 }

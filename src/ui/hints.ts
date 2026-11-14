@@ -6,7 +6,7 @@
 
 const PREFIX = 'eggo.hint.'
 
-export type HintKind = 'feedCatch' | 'wash'
+export type HintKind = 'feedCatch' | 'wash' | 'stars'
 
 export function isHintDone(kind: HintKind): boolean {
   try {

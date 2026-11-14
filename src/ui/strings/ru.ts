@@ -123,13 +123,13 @@ export const ru = {
     `✅ «${label}» — ${t}/${t} сегодня. Задания считают заботу, а статы падают сами.`,
   questExplainProgress: (label: string, p: number, t: number) => `🎯 «${label}» — ${p}/${t} сегодня.`,
   questCellAria: (label: string, p: number, t: number) => `Задание «${label}»: ${p} из ${t} сегодня`,
-  questClaim: 'Получить',
+  questClaim: 'Забрать ⭐',
   questClaimed: 'Получено',
   questClaimAria: 'Получить награду дня',
   questClaimedAria: 'Награда получена',
 
   // --- подсказки сценок (PetCanvas) ---
-  sceneHint: { feedCatch: 'Тапай — Эгго побежит за едой!', wash: 'Води пальцем по питомцу' },
+  sceneHint: { feedCatch: 'Тапай — Эгго побежит за едой!', wash: 'Води пальцем по питомцу', stars: '⭐ За заботу дают звёздочки!' },
 
   // --- мини-игры (кнопка «Играть») ---
   mgPause: 'Пауза',
@@ -198,6 +198,23 @@ export const ru = {
     'lvl-5': { title: '💖 Неразлучные' },
     'stars-100': { title: '🌟 Сотня звёздочек' },
     'stars-300': { title: '🌟 Звёздный капитал' },
+  } as Record<string, { title: string }>,
+
+  // --- магазин ---
+  menuShop: 'Магазин',
+  shopDishes: 'Еда',
+  shopAccessories: 'Аксессуары',
+  shopDecor: 'Декор сцены',
+  shopActive: 'Подано',
+  shopOwned: 'Куплено',
+  shopBought: (title: string) => `🛍 Куплено: ${title}`,
+  shopNoStars: '⭐ Не хватает звёздочек — заботься дальше!',
+  shopDishActive: '🍽 Сначала покормите — блюдо уже подано',
+  shopStarsHint: '⭐ За заботу дают звёздочки — потрать их в магазине',
+  walletAria: 'Кошелёк звёздочек',
+  shopItem: {
+    'dish-cake': { title: 'Торт — сытнее за один сеанс кормления' },
+    'dish-feast': { title: 'Пир — сытнее всего за один сеанс' },
   } as Record<string, { title: string }>,
 
   // --- просьбы питомца ---
