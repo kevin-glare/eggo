@@ -120,6 +120,10 @@ export const en: Strings = {
     bubbles: '👆 Pop groups of three',
   },
 
+  // --- minigame picker ---
+  pickTitle: 'What shall we play?',
+  pickRandom: 'Random',
+
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
   requestBonus: (name: string) => `✨ Request fulfilled — ${name} is delighted!`,

@@ -19,6 +19,7 @@ import { hapticTap, hapticWarning, referralLink, tg } from './telegram'
 import { useNotifications } from './ui/useNotifications'
 import { usePet } from './ui/usePet'
 import MenuScreen from './ui/MenuScreen'
+import MinigamePicker from './ui/minigames/MinigamePicker'
 import MinigameOverlay, { type MinigameResultView } from './ui/minigames/MinigameOverlay'
 import { version as APP_VERSION } from '../package.json'
 import './ui/app.css'
@@ -76,7 +77,8 @@ export default function App() {
   const [scene, setScene] = useState<PetActionKind | null>(null)
   // полноэкранный экран меню; «Позови друга» и «Как играть» — подэкраны внутри
   const [menuOpen, setMenuOpen] = useState(false)
-  // мини-игра кнопки «Играть»: id запущенной партии и её применённый итог
+  // мини-игра кнопки «Играть»: выбор в пикере, id запущенной партии и её итог
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [minigameId, setMinigameId] = useState<MinigameId | null>(null)
   const [minigameResult, setMinigameResult] = useState<MinigameResultView | null>(null)
   // dev: принудительный выбор мини-игры вместо случайной
@@ -105,14 +107,19 @@ export default function App() {
   }
   const onPlay = () => {
     if (scene !== null || minigameId !== null || pet === null) return
-    // guard'ы — чистым вызовом: отказ с тостом как раньше, успех — мини-игра
+    // guard'ы — чистым вызовом: отказ с тостом как раньше, успех — выбор игры
     if (!play(pet, config).ok) {
       playPet()
       return
     }
+    setPickerOpen(true)
+  }
+  // плитка пикера выбрана: «случайная» уважает dev-форс
+  const launchGame = (id: MinigameId | 'random') => {
     track('minigame-open')
+    setPickerOpen(false)
     setMinigameResult(null)
-    setMinigameId(forcedGame === 'random' ? pickMinigame(AVAILABLE_MINIGAMES) : forcedGame)
+    setMinigameId(id === 'random' ? (forcedGame === 'random' ? pickMinigame(AVAILABLE_MINIGAMES) : forcedGame) : id)
   }
   // партия доиграна: награда применяется один раз, здесь; итог — на экран результата
   const onMinigameFinish = (id: MinigameId, outcome: MinigameOutcome) => {
@@ -317,6 +324,11 @@ export default function App() {
             ))}
           </select>
         </div>
+      )}
+
+      {/* выбор мини-игры: рекорды на плитках, «случайная» сохраняет сюрприз */}
+      {pickerOpen && (
+        <MinigamePicker best={pet.minigameBest} onPick={launchGame} onClose={() => setPickerOpen(false)} />
       )}
 
       {/* мини-игра: полноэкранный оверлей над всем, награда применяется один раз в конце */}
