@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import gsap from 'gsap'
 import { DEFAULT_CONFIG, DEV_CONFIG, type GameConfig } from './game/config'
 import { feed, play, wash } from './game/actions'
+import { dayGame } from './game/dailyChallenge'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from './game/minigames'
+import { dayKey } from './game/quests'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
 import { desire, getMood } from './game/engine'
@@ -326,9 +328,14 @@ export default function App() {
         </div>
       )}
 
-      {/* выбор мини-игры: рекорды на плитках, «случайная» сохраняет сюрприз */}
+      {/* выбор мини-игры: рекорды на плитках, «случайная» сохраняет сюрприз, игра дня — с бейджем ×2 */}
       {pickerOpen && (
-        <MinigamePicker best={pet.minigameBest} onPick={launchGame} onClose={() => setPickerOpen(false)} />
+        <MinigamePicker
+          best={pet.minigameBest}
+          dayGameId={dayGame(dayKey(Date.now()))}
+          onPick={launchGame}
+          onClose={() => setPickerOpen(false)}
+        />
       )}
 
       {/* мини-игра: полноэкранный оверлей над всем, награда применяется один раз в конце */}

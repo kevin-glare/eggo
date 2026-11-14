@@ -12,7 +12,8 @@ import {
 } from '../game/actions'
 import type { GameConfig } from '../game/config'
 import { createPet, tick } from '../game/engine'
-import { claimReward, ensureDaily, recordQuest, type QuestId } from '../game/quests'
+import { dayGame } from '../game/dailyChallenge'
+import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
@@ -280,7 +281,8 @@ useEffect(() => {
       const current = base?.state ?? petRef.current
       if (current === null) return { isRecord: false, bonus: 0 }
       const rec = recordMinigameScore(current, id, outcome.score, config)
-      const bonus = minigameBonus(rec.isRecord, config)
+      // игра дня: рекорд платит двойной бонус
+      const bonus = minigameBonus(rec.isRecord, dayGame(dayKey(Date.now())) === id, config)
       let next = rec.state
       if (bonus > 0) next = applyMinigameBonus(next, bonus)
       if (next !== current) {

@@ -124,6 +124,7 @@ export const en: Strings = {
   // --- minigame picker ---
   pickTitle: 'What shall we play?',
   pickRandom: 'Random',
+  pickDayTitle: 'Game of the day — a new record earns double bonus',
 
   // --- pet requests ---
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',

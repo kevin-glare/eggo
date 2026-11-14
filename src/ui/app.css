@@ -1324,6 +1324,15 @@ body {
   flex: none;
 }
 
+/* бейдж игры дня: 🔥 ×2 */
+.picker-day {
+  flex: none;
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 /* «Случайная» — конфная плитка в акценте, как главные кнопки */
 .picker-tile.random {
   justify-content: center;

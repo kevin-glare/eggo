@@ -102,8 +102,8 @@ export interface GameConfig {
     snake: { moveMs: number; moveMin: number; moveStep: number; cellPx: number }
     /** «Пузыри»: темп и разгон подъёма, правила групп и размер клетки (конец — переполнение) */
     bubbles: { riseMs: number; riseMinMs: number; riseStepMs: number; colors: number; minGroup: number; cellPx: number }
-    /** награда сверх базовой радости play(): новый рекорд */
-    reward: { recordBonus: number }
+    /** награда сверх базовой радости play(): новый рекорд; в игре дня — ×2 */
+    reward: { recordBonus: number; dailyMultiplier: number }
   }
   /** кормление-ловля: темп падения еды, поимка, серии, перекорм */
   feeding: {
@@ -218,7 +218,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     // «Пузыри»: ряд каждые 6.5 с и быстрее на 250 мс за ряд (не быстрее 2.5 с),
     // старт 5 рядов, группы от 3; группа от 5 — бонус +50%
     bubbles: { riseMs: 6_500, riseMinMs: 2_500, riseStepMs: 250, colors: 4, minGroup: 3, cellPx: 40 },
-    reward: { recordBonus: 4 },
+    reward: { recordBonus: 4, dailyMultiplier: 2 },
   },
   // кормление-ловля: 8 еды × ~5-6 пойманных ≈ прежняя сытость +25..40 за сессию
   // в ~15 секунд; несъедобного четверть, ступор 1.2 с; перекорм — 10 минут отдыха

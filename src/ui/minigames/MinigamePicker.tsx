@@ -8,16 +8,18 @@ import { useDialogFocus } from '../useDialogFocus'
 interface MinigamePickerProps {
   /** рекорды игр: у неигранных плитки рекорда нет */
   best: Partial<Record<MinigameId, number>>
+  /** игра дня: на её плитке бейдж 🔥 ×2 */
+  dayGameId: MinigameId
   onPick: (id: MinigameId | 'random') => void
   onClose: () => void
 }
 
 /**
  * Выбор мини-игры кнопкой «Играть»: плитка «Случайная» сохраняет сюрприз,
- * дальше — все игры с рекордами. Паттерн меню: фокус-ловушка, Escape,
- * BackButton; выход без выбора награды не трогает.
+ * дальше — все игры с рекордами и бейджем игры дня. Паттерн меню:
+ * фокус-ловушка, Escape, BackButton; выход без выбора награды не трогает.
  */
-export default function MinigamePicker({ best, onPick, onClose }: MinigamePickerProps) {
+export default function MinigamePicker({ best, dayGameId, onPick, onClose }: MinigamePickerProps) {
   const str = useStrings()
   const panelRef = useRef<HTMLElement>(null)
   useDialogFocus(panelRef, true, onClose)
@@ -62,6 +64,7 @@ export default function MinigamePicker({ best, onPick, onClose }: MinigamePicker
           {MINIGAME_IDS.map((id) => (
             <button key={id} type="button" className="picker-tile" onClick={() => pick(id)}>
               <span className="picker-name">{str.game[id].title}</span>
+              {id === dayGameId && <span className="picker-day" title={str.pickDayTitle}>🔥 ×2</span>}
               {best[id] !== undefined && <span className="mg-chip">{str.mgBest(best[id]!)}</span>}
             </button>
           ))}
