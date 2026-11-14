@@ -332,7 +332,6 @@ export default function App() {
           <ActionsBar
             isEgg={pet.stage === 'egg'}
             sleeping={pet.sleeping}
-            stars={pet.stars}
             onFeed={onFeed}
             onPlay={onPlay}
             onWash={onWash}

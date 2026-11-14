@@ -1177,18 +1177,10 @@ body {
     inset 0 2px 6px rgba(6, 2, 16, 0.45);
 }
 
-/* магазин в ряду действий: золотая подсветка и бейдж кошелька */
+/* магазин в ряду действий: золотая подсветка */
 .actions button.shop {
   background: linear-gradient(180deg, rgba(255, 179, 92, 0.3), rgba(255, 179, 92, 0.12));
   border-color: rgba(255, 179, 92, 0.5);
-}
-
-.actions .shop-stars {
-  font-family: var(--mono);
-  font-size: 10px;
-  line-height: 1;
-  color: var(--gold);
-  white-space: nowrap;
 }
 
 /* на узких экранах подписи мельче, на совсем узких прячутся — иконки говорят сами */

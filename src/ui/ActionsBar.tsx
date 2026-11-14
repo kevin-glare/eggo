@@ -3,8 +3,6 @@ import { useStrings } from './i18n'
 interface ActionsBarProps {
   isEgg: boolean
   sleeping: boolean
-  /** звёздочек в кошельке — бейдж на кнопке магазина */
-  stars: number
   onFeed: () => void
   onPlay: () => void
   onWash: () => void
@@ -16,7 +14,6 @@ interface ActionsBarProps {
 export default function ActionsBar({
   isEgg,
   sleeping,
-  stars,
   onFeed,
   onPlay,
   onWash,
@@ -44,9 +41,6 @@ export default function ActionsBar({
       </button>
       <button type="button" className="shop" onClick={onShop} aria-label={str.action.shop}>
         <span className="icon">🛍</span>
-        <span className="shop-stars" aria-hidden="true">
-          ⭐ {stars}
-        </span>
         <span className="lbl">{str.action.shop}</span>
       </button>
     </nav>
