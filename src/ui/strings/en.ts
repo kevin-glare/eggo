@@ -82,7 +82,7 @@ export const en: Strings = {
     `✅ “${label}” — ${t}/${t} today. Quests count your care; stats drop on their own.`,
   questExplainProgress: (label: string, p: number, t: number) => `🎯 “${label}” — ${p}/${t} today.`,
   questCellAria: (label: string, p: number, t: number) => `Quest “${label}”: ${p} of ${t} today`,
-  questClaim: 'Claim ⭐',
+  questClaim: 'Claim',
   questClaimed: 'Claimed',
   questClaimAria: 'Claim the daily reward',
   questClaimedAria: 'Reward claimed',

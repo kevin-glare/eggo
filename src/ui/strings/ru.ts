@@ -125,7 +125,7 @@ export const ru = {
     `✅ «${label}» — ${t}/${t} сегодня. Задания считают заботу, а статы падают сами.`,
   questExplainProgress: (label: string, p: number, t: number) => `🎯 «${label}» — ${p}/${t} сегодня.`,
   questCellAria: (label: string, p: number, t: number) => `Задание «${label}»: ${p} из ${t} сегодня`,
-  questClaim: 'Забрать ⭐',
+  questClaim: 'Забрать',
   questClaimed: 'Получено',
   questClaimAria: 'Получить награду дня',
   questClaimedAria: 'Награда получена',

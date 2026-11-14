@@ -61,7 +61,7 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
         aria-label={daily.claimed ? str.questClaimedAria : str.questClaimAria}
       >
         <span className="qicon" aria-hidden="true">
-          🎁
+          ⭐
         </span>
         <span className="qword">{daily.claimed ? str.questClaimed : str.questClaim}</span>
       </button>
