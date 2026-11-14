@@ -65,4 +65,6 @@ export interface PetState {
   minigameBest: Partial<Record<MinigameId, number>>
   /** до какого реального момента питомец отдыхает после объедения (мс, epoch); 0 — не объедался */
   overfedUntil: number
+  /** звёздочки в кошельке: награда за квесты, вехи серии, рекорды; тратятся в магазине. У старых сейвов 0 (нормализуется) */
+  stars: number
 }

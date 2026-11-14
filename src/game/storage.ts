@@ -97,6 +97,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       minigameBest: normalizeMinigameBest(pet.minigameBest),
       // перекорм появился позже сейва v1: отсутствие — питомец не объедался
       overfedUntil: typeof pet.overfedUntil === 'number' && pet.overfedUntil >= 0 ? pet.overfedUntil : 0,
+      // звёздочки появились позже сейва v1: отсутствие — кошелёк пуст
+      stars: typeof pet.stars === 'number' && pet.stars >= 0 ? Math.floor(pet.stars) : 0,
     }
   } catch {
     return null
@@ -145,8 +147,8 @@ function newerEvent(a: PetState, b: PetState): PetState {
  *  - обе стороны досчитываются tick'ом до общей временной шкалы;
  *  - статы и возраст берутся по максимуму: «+30 сытости» с одного девайса
  *    не затирается распадом с другого;
- *  - событийные поля (имя, сон, задания, серия) — у стороны с более свежим
- *    событием; ничья — у второго аргумента (на сервере это серверный сейв).
+ *  - событийные поля (имя, сон, задания, серия, звёздочки) — у стороны с более
+ *    свежим событием; ничья — у второго аргумента (на сервере это серверный сейв).
  * Безымянное яйцо не тикает и событий не имеет — именованная сторона всегда главная.
  */
 export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetState {

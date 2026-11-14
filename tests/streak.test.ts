@@ -7,11 +7,12 @@ import { DAY, HOUR, makePet } from './helpers'
 const NOW = Date.UTC(2026, 9, 28, 12, 0, 0)
 
 describe('touchStreak', () => {
-  it('первая активность за долгое время — серия 1, без праздника', () => {
+  it('первая активность за долгое время — серия 1, без праздника и без звёздочек', () => {
     const pet = makePet(DEFAULT_CONFIG, { streakDays: 0, lastVisitDayKey: null })
     const result = touchStreak(pet, DEFAULT_CONFIG, NOW)
     expect(result.extended).toBe(true)
     expect(result.milestone).toBeNull()
+    expect(result.stars).toBe(0)
     expect(result.state.streakDays).toBe(1)
     expect(result.state.lastVisitDayKey).toBe(dayKey(NOW))
   })
@@ -21,6 +22,7 @@ describe('touchStreak', () => {
     const again = touchStreak(pet, DEFAULT_CONFIG, NOW + 3 * HOUR)
     expect(again.extended).toBe(false)
     expect(again.milestone).toBeNull()
+    expect(again.stars).toBe(0)
     expect(again.state.streakDays).toBe(1)
     expect(again.state).toBe(pet) // состояние даже не пересоздаётся
   })
@@ -38,23 +40,29 @@ describe('touchStreak', () => {
     expect(result.state.streakDays).toBe(1)
   })
 
-  it('порог серии — праздник; следующее продление — уже нет', () => {
+  it('порог серии — праздник и звёздочки; следующее продление — уже нет', () => {
     let pet = makePet(DEFAULT_CONFIG, { streakDays: 2, lastVisitDayKey: '2026-10-27' })
     const third = touchStreak(pet, DEFAULT_CONFIG, NOW)
     expect(third.milestone).toBe(3)
+    expect(third.stars).toBe(DEFAULT_CONFIG.shop.streakStars[3])
+    expect(third.state.stars).toBe(pet.stars + DEFAULT_CONFIG.shop.streakStars[3]!)
     const fourth = touchStreak(third.state, DEFAULT_CONFIG, NOW + DAY)
     expect(fourth.milestone).toBeNull()
+    expect(fourth.stars).toBe(0)
+    expect(fourth.state.stars).toBe(third.state.stars)
     expect(fourth.state.streakDays).toBe(4)
   })
 
-  it('пороги берутся из конфига: 7 и 14 празднуются тоже', () => {
+  it('пороги берутся из конфига: 7, 14 и 30 празднуются тоже', () => {
     for (const [before, milestone] of [
       [6, 7],
       [13, 14],
+      [29, 30],
     ] as const) {
       const pet = makePet(DEFAULT_CONFIG, { streakDays: before, lastVisitDayKey: '2026-10-27' })
       const result = touchStreak(pet, DEFAULT_CONFIG, NOW)
       expect(result.milestone).toBe(milestone)
+      expect(result.stars).toBe(DEFAULT_CONFIG.shop.streakStars[milestone])
     }
   })
 

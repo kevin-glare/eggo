@@ -90,9 +90,10 @@ export const ru = {
   hatched: (name: string) => `🎉 ${name} вылупился!`,
   named: (name: string) => `🎉 ${name} — отличное имя!`,
   eggAppeared: '🥚 Появилось яйцо!',
-  daysInRow: (n: number) => `🔥 ${n} ${pluralDays(n)} подряд!`,
+  daysInRow: (n: number, stars: number) =>
+    stars > 0 ? `🔥 ${n} ${pluralDays(n)} подряд — +${stars} ⭐!` : `🔥 ${n} ${pluralDays(n)} подряд!`,
   weeksOfFriendship: (n: number) => `🎂 ${n} ${pluralWeeks(n)} дружбы!`,
-  claimReward: (bonus: number) => `🎁 Задания дня выполнены: +${bonus} к самому слабому показателю!`,
+  claimReward: (bonus: number) => `🎁 Задания дня выполнены: +${bonus} ⭐ в кошелёк!`,
   claimAlready: '🎁 Награда уже получена',
   claimNotReady: '🎯 Сначала выполни задания дня',
   newGame: '🥚 Новая игра — дай имя!',

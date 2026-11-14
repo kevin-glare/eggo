@@ -1,4 +1,5 @@
 import type { GameConfig } from './config'
+import { earnStars } from './economy'
 import { dayKey } from './quests'
 import type { PetState } from './types'
 
@@ -14,19 +15,24 @@ export interface StreakResult {
   extended: boolean
   /** достигнут порог серии — повод для праздника */
   milestone: number | null
+  /** звёздочек начислено за веху серии (0 — не веха) */
+  stars: number
 }
 
 /**
  * Отметить активность дня: вчера — серия растёт, был перерыв — начинается
- * с 1, тот же день — состояние возвращается как есть.
+ * с 1, тот же день — состояние возвращается как есть. Веха серии —
+ * праздник и звёздочки в кошелёк (config.shop.streakStars).
  */
 export function touchStreak(state: PetState, config: GameConfig, now: number): StreakResult {
   const today = dayKey(now)
-  if (state.lastVisitDayKey === today) return { state, extended: false, milestone: null }
+  if (state.lastVisitDayKey === today) return { state, extended: false, milestone: null, stars: 0 }
   const yesterday = dayKey(now - 24 * 3_600_000)
   const days = state.lastVisitDayKey === yesterday ? state.streakDays + 1 : 1
   const milestone = config.streak.milestones.includes(days) ? days : null
-  return { state: { ...state, streakDays: days, lastVisitDayKey: today }, extended: true, milestone }
+  const stars = milestone !== null ? (config.shop.streakStars[milestone] ?? 0) : 0
+  const next = earnStars({ ...state, streakDays: days, lastVisitDayKey: today }, stars)
+  return { state: next, extended: true, milestone, stars }
 }
 
 /** Долго ли не виделись: порог — как у пушей «скучаем» (missYouAfterMs). */

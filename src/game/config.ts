@@ -41,11 +41,9 @@ export interface GameConfig {
   catchUpChunkMs: number
   /** предел длины имени питомца (после обрезки пробелов) */
   nameMaxLength: number
-  /** ежедневные задания: сколько в день, награда и цели */
+  /** ежедневные задания: сколько в день и цели */
   quests: {
     count: number
-    /** + к самому слабому стату за полный набор дня */
-    reward: number
     targets: Record<QuestId, number>
   }
   /** просьбы питомца: активная просьба указывает действие с двойным эффектом */
@@ -65,6 +63,13 @@ export interface GameConfig {
   }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
+  /** звёздочки — валюта заботы: начисления и каталог магазина */
+  shop: {
+    /** звёздочек за полный набор заданий дня */
+    questStars: number
+    /** звёздочек за веху серии дней: день → награда */
+    streakStars: Record<number, number>
+  }
   /** мини-игры кнопки «Играть»: числа баланса ядер и наград */
   minigames: {
     /** «Память»: пары карточек и время на всю партию; победа — собрать всё до нуля */
@@ -173,7 +178,6 @@ export const DEFAULT_CONFIG: GameConfig = {
   nameMaxLength: 16,
   quests: {
     count: 3,
-    reward: 15,
     targets: { feed: 3, play: 2, wash: 2, pet: 3 },
   },
   // просьба живёт в реальном времени: окно 2 часа, потом пауза 3 часа
@@ -187,7 +191,12 @@ export const DEFAULT_CONFIG: GameConfig = {
   referrals: {
     milestones: [1, 3, 10],
   },
-  streak: { milestones: [3, 7, 14] },
+  streak: { milestones: [3, 7, 14, 30] },
+  // звёздочки: за полный набор заданий дня и за вехи серии дней
+  shop: {
+    questStars: 3,
+    streakStars: { 3: 5, 7: 10, 14: 20, 30: 50 },
+  },
   // мини-игры: «Память» — 6 пар за минуту; победа даёт бонус к счастью,
   // новый рекорд — ещё немного сверху (база — обычный play())
   minigames: {

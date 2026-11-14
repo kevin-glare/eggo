@@ -49,9 +49,10 @@ export const en: Strings = {
   hatched: (name: string) => `🎉 ${name} hatched!`,
   named: (name: string) => `🎉 ${name} is a great name!`,
   eggAppeared: '🥚 An egg appeared!',
-  daysInRow: (n: number) => `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row!`,
+  daysInRow: (n: number, stars: number) =>
+    stars > 0 ? `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row — +${stars} ⭐!` : `🔥 ${n} ${n === 1 ? 'day' : 'days'} in a row!`,
   weeksOfFriendship: (n: number) => `🎂 ${n} ${n === 1 ? 'week' : 'weeks'} of friendship!`,
-  claimReward: (bonus: number) => `🎁 Daily quests done: +${bonus} to the weakest stat!`,
+  claimReward: (bonus: number) => `🎁 Daily quests done: +${bonus} ⭐ into your wallet!`,
   claimAlready: '🎁 Reward already claimed',
   claimNotReady: '🎯 Finish the daily quests first',
   newGame: '🥚 New game — name your pet!',

@@ -251,7 +251,7 @@ useEffect(() => {
         const streak = touchStreak(next, config, Date.now())
         next = streak.state
         if (streak.milestone !== null) {
-          setNotice(str.daysInRow(streak.milestone))
+          setNotice(str.daysInRow(streak.milestone, streak.stars))
           setCelebrate((n) => n + 1)
         }
       }
@@ -317,7 +317,7 @@ useEffect(() => {
       // награда — событие игрока: штамп для мультидевайс-слияния
       setPet({ ...result.state, lastEventAt: Date.now() })
       forceSyncRef.current = true
-      setNotice(str.claimReward(config.quests.reward))
+      setNotice(str.claimReward(config.shop.questStars))
       setCelebrate((n) => n + 1)
       hapticSuccess()
     } else {
