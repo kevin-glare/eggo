@@ -10,6 +10,7 @@ export type ActionReason =
   | 'already-clean'
   | 'already-named'
   | 'invalid-name'
+  | 'no-stars'
   | 'overfed'
 
 export interface ActionResult {
@@ -155,11 +156,16 @@ export function namePet(state: PetState, rawName: string, config: GameConfig): A
   return ok({ ...state, name })
 }
 
-/** Переименовать питомца: та же валидация, что при создании; безымянному нечего менять. */
+/**
+ * Переименовать питомца за звёздочки: та же валидация, что при создании;
+ * безымянному нечего менять, то же самое имя — бесплатный no-op. Некорректное
+ * имя отклоняется до списания — звёзды за опечатку не берём.
+ */
 export function renamePet(state: PetState, rawName: string, config: GameConfig): ActionResult {
   if (state.name === null) return fail(state, 'not-hatched')
   const name = rawName.trim()
   if (name.length === 0 || name.length > config.nameMaxLength) return fail(state, 'invalid-name')
   if (name === state.name) return ok(state)
-  return ok({ ...state, name })
+  if (state.stars < config.shop.renamePrice) return fail(state, 'no-stars')
+  return ok({ ...state, name, stars: state.stars - config.shop.renamePrice })
 }

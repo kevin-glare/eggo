@@ -27,6 +27,8 @@ interface MenuScreenProps {
   onRename: (name: string) => ActionResult | null
   /** предел длины имени из config.nameMaxLength */
   nameMaxLength: number
+  /** цена смены имени из config.shop.renamePrice */
+  renamePrice: number
   /** звание уровня дружбы питомца (вычисляется в App по config) */
   friendshipTitle: string
   /** полный каталог достижений — порядок строк подэкрана */
@@ -80,6 +82,7 @@ export default function MenuScreen({
   pet,
   onRename,
   nameMaxLength,
+  renamePrice,
   friendshipTitle,
   achievementIds,
   unlockedAchievements,
@@ -265,6 +268,9 @@ export default function MenuScreen({
                       aria-label={str.renameAria}
                       autoFocus
                     />
+                    <span className="menu-rename-price" aria-hidden="true">
+                      {str.renamePriceHint(renamePrice)}
+                    </span>
                     <button type="submit" className="menu-rename-btn save" aria-label={str.renameSave}>
                       ✓
                     </button>

@@ -392,6 +392,7 @@ export default function App() {
           pet={pet}
           onRename={renamePet}
           nameMaxLength={config.nameMaxLength}
+          renamePrice={config.shop.renamePrice}
           friendshipTitle={friendshipTitle}
           achievementIds={achievementIds}
           unlockedAchievements={pet.achievements}

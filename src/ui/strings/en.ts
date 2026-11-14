@@ -41,6 +41,7 @@ export const en: Strings = {
     'already-clean': '✨ Already sparkling clean',
     'already-named': '🏷️ Already named — no renaming',
     'invalid-name': '✏️ 1 to 16 characters',
+    'no-stars': '⭐ Not enough stars',
     overfed: '😴 Too full — resting, feed later',
   },
   actionSuccess: { feed: '🍗 Yum-yum!', play: '😄 That was fun!', wash: '🛁 Squeaky clean!', pet: '💗 Purr-purr!' },
@@ -129,6 +130,7 @@ export const en: Strings = {
   renameAria: 'Rename pet',
   renameSave: 'Save name',
   renameCancel: 'Keep the name',
+  renamePriceHint: (n: number) => `⭐ ${n} to change the name`,
 
   // --- friendship level ---
   friendshipTitles: ['Acquaintance', 'Buddy', 'Companion', 'Friend', 'Best friend', 'Soulmate'],

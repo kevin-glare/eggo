@@ -191,37 +191,44 @@ describe('namePet', () => {
 })
 
 describe('renamePet', () => {
-  it('меняет имя и обрезает пробелы', () => {
-    const result = renamePet(makePet(DEFAULT_CONFIG, { name: 'Тест' }), '  Шустрик  ', DEFAULT_CONFIG)
+  it('меняет имя и списывает цену из config.shop.renamePrice', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест', stars: 10 })
+    const result = renamePet(pet, 'Шустрик', DEFAULT_CONFIG)
     expect(result.ok).toBe(true)
     expect(result.state.name).toBe('Шустрик')
+    expect(result.state.stars).toBe(10 - DEFAULT_CONFIG.shop.renamePrice)
   })
 
-  it('отклоняет пустое и слишком длинное имя', () => {
-    const named = makePet(DEFAULT_CONFIG)
-    expect(renamePet(named, '   ', DEFAULT_CONFIG).reason).toBe('invalid-name')
-    const long = 'а'.repeat(DEFAULT_CONFIG.nameMaxLength + 1)
-    expect(renamePet(named, long, DEFAULT_CONFIG).reason).toBe('invalid-name')
-    expect(named.name).toBe('Тест')
-  })
-
-  it('безымянному переименование не нужно — отказ not-hatched', () => {
-    const result = renamePet(makePet(DEFAULT_CONFIG, { name: null }), 'Шустрик', DEFAULT_CONFIG)
+  it('без звёздочек — отказ no-stars без смены имени', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест', stars: 0 })
+    const result = renamePet(pet, 'Шустрик', DEFAULT_CONFIG)
     expect(result.ok).toBe(false)
-    expect(result.reason).toBe('not-hatched')
+    expect(result.reason).toBe('no-stars')
+    expect(result.state.name).toBe('Тест')
+    expect(result.state.stars).toBe(0)
   })
 
-  it('то же самое имя — успех без пересоздания состояния', () => {
-    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест' })
+  it('невалидное имя отклоняется до списания — звёзды не тронуты', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест', stars: 10 })
+    expect(renamePet(pet, '   ', DEFAULT_CONFIG).reason).toBe('invalid-name')
+    const long = 'а'.repeat(DEFAULT_CONFIG.nameMaxLength + 1)
+    expect(renamePet(pet, long, DEFAULT_CONFIG).reason).toBe('invalid-name')
+    expect(pet.stars).toBe(10)
+  })
+
+  it('то же самое имя — успех бесплатно без пересоздания состояния', () => {
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест', stars: 5 })
     const result = renamePet(pet, 'Тест', DEFAULT_CONFIG)
     expect(result.ok).toBe(true)
     expect(result.state).toBe(pet)
+    expect(result.state.stars).toBe(5)
   })
 
   it('не мутирует исходное состояние', () => {
-    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест' })
+    const pet = makePet(DEFAULT_CONFIG, { name: 'Тест', stars: 10 })
     renamePet(pet, 'Шустрик', DEFAULT_CONFIG)
     expect(pet.name).toBe('Тест')
+    expect(pet.stars).toBe(10)
   })
 })
 

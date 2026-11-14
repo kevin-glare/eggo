@@ -92,6 +92,8 @@ export interface GameConfig {
     recordStars: number
     /** звёздочек за порог приглашённых: приглашённые → награда */
     referralStars: Record<number, number>
+    /** цена смены имени питомца */
+    renamePrice: number
     /** каталог товаров */
     items: ShopItemConfig[]
   }
@@ -265,6 +267,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     streakStars: { 3: 5, 7: 10, 14: 20, 30: 50 },
     recordStars: 2,
     referralStars: { 1: 5, 3: 15, 10: 40 },
+    renamePrice: 3,
     items: [
       { id: 'dish-cake', kind: 'dish', price: 8, emoji: '🍰', bonusPerFood: 4 },
       { id: 'dish-feast', kind: 'dish', price: 15, emoji: '🍱', bonusPerFood: 8 },

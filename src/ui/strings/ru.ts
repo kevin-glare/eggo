@@ -82,6 +82,7 @@ export const ru = {
     'already-clean': '✨ Уже сияет чистотой',
     'already-named': '🏷️ Имя уже есть — другое не дать',
     'invalid-name': '✏️ От 1 до 16 символов',
+    'no-stars': '⭐ Не хватает звёздочек',
     overfed: '😴 Объелся — отдыхает, покормишь позже',
   } as Record<ActionReason, string>,
   actionSuccess: { feed: '🍗 Ням-ням!', play: '😄 Было весело!', wash: '🛁 Чистота!', pet: '💗 Мур-мур!' },
@@ -173,6 +174,7 @@ export const ru = {
   renameAria: 'Переименовать питомца',
   renameSave: 'Сохранить имя',
   renameCancel: 'Не менять имя',
+  renamePriceHint: (n: number) => `⭐ ${n} за смену имени`,
 
   // --- уровень дружбы ---
   friendshipTitles: ['Знакомый', 'Приятель', 'Товарищ', 'Друг', 'Лучший друг', 'Родная душа'],
