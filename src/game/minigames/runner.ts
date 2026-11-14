@@ -1,15 +1,14 @@
 /**
  * «Побег»: питомец бежит от препятствий — камни перепрыгнуть, чаек
- * переждать пригнувшись. Скорость растёт, счёт — метры. Чистое ядро:
- * rng передаётся снаружи (спавн препятствий), мир приходит снаружи —
+ * переждать пригнувшись. Партия бесконечна: конец — столкновение,
+ * счёт — метры, скорость растёт со временем. Чистое ядро: rng
+ * передаётся снаружи (спавн препятствий), мир приходит снаружи —
  * в UI это реальный размер канваса, игра занимает весь экран.
  */
 
 import type { MinigameWorld } from './world'
 
 export interface RunnerBalance {
-  /** метров до победы (счёт = px/10) */
-  winScore: number
   /** стартовая скорость, px/с */
   speedStart: number
   /** прирост скорости за секунду, px/с² */
@@ -65,7 +64,6 @@ export interface RunnerState {
   /** px до следующего препятствия */
   nextSpawnIn: number
   over: boolean
-  won: boolean
 }
 
 export function createRunner(balance: RunnerBalance, world: MinigameWorld): RunnerState {
@@ -82,7 +80,6 @@ export function createRunner(balance: RunnerBalance, world: MinigameWorld): Runn
     obstacles: [],
     nextSpawnIn: Math.max(300, world.w * 0.5),
     over: false,
-    won: false,
   }
 }
 
@@ -112,7 +109,6 @@ export function stepRunner(
 
   const speed = state.speed + balance.speedGain * s * dt
   const distance = state.distance + speed * dt
-  const won = distance / (10 * s) >= balance.winScore
 
   // присед со свайпа держится balance.duckMs
   let ducking = state.ducking
@@ -175,8 +171,7 @@ export function stepRunner(
     distance,
     obstacles,
     nextSpawnIn,
-    over: over || won,
-    won: won && !over,
+    over,
   }
 }
 

@@ -52,7 +52,7 @@ export default function FlappyGame({ config, appearance, running, onOver }: Flap
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
-      const outcome: MinigameOutcome = { score: s.score, won: s.won }
+      const outcome: MinigameOutcome = { score: s.score, won: false }
       window.setTimeout(() => onOverRef.current(outcome), SETTLE_MS)
     }
   }, running)

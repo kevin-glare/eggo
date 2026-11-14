@@ -78,9 +78,8 @@ export interface GameConfig {
   minigames: {
     /** «Память»: пары карточек и время на всю партию; победа — собрать всё до нуля */
     memory: { pairs: number; timeLimitMs: number }
-    /** «Побег»: метров до победы и физика бега (прыжок, гравитация, разгон) */
+    /** «Побег»: физика бега до столкновения (прыжок, гравитация, разгон) */
     runner: {
-      winScore: number
       speedStart: number
       speedGain: number
       jumpV: number
@@ -89,22 +88,22 @@ export interface GameConfig {
       spacingMax: number
       duckMs: number
     }
-    /** «Полёт»: колонн до победы и физика взмаха */
+    /** «Полёт»: физика взмаха и разгон колонн; конец — столкновение */
     flappy: {
-      winScore: number
       gravity: number
       flapV: number
       pipeSpeed: number
+      speedGain: number
       pipeSpacing: number
       pipeGap: number
       pipeW: number
     }
-    /** «Змейка»: кусков до победы, темп хода и размер клетки (поле выводится из экрана) */
-    snake: { winScore: number; moveMs: number; moveMin: number; moveStep: number; cellPx: number }
+    /** «Змейка»: темп хода и размер клетки (поле выводится из экрана); конец — столкновение */
+    snake: { moveMs: number; moveMin: number; moveStep: number; cellPx: number }
     /** «Пузыри»: очков до победы, темп подъёма, правила групп и размер клетки */
     bubbles: { winScore: number; riseMs: number; colors: number; minGroup: number; cellPx: number }
-    /** награда сверх базовой радости play(): за победу и за новый рекорд */
-    reward: { winBonus: number; recordBonus: number }
+    /** награда сверх базовой радости play(): новый рекорд */
+    reward: { recordBonus: number }
   }
   /** кормление-ловля: темп падения еды, поимка, серии, перекорм */
   feeding: {
@@ -203,22 +202,22 @@ export const DEFAULT_CONFIG: GameConfig = {
     recordStars: 2,
     referralStars: { 1: 5, 3: 15, 10: 40 },
   },
-  // мини-игры: «Память» — 6 пар за минуту; победа даёт бонус к счастью,
-  // новый рекорд — ещё немного сверху (база — обычный play())
+  // мини-игры: партии бесконечны («до первой ошибки»), счёт неограничен,
+  // рекорды всегда бьются; новый рекорд даёт бонус к счастью (база — play())
   minigames: {
     memory: { pairs: 6, timeLimitMs: 60_000 },
-    // «Побег»: 300 м (~12–15 с с разгоном); прыжок 420 px/с против гравитации
+    // «Побег»: старт 200 px/с и +6 px/с²; прыжок 420 px/с против гравитации
     // 1050 — окно над камнем (до 31 px) ~0.65 с; препятствия каждые 200–300 px
-    runner: { winScore: 300, speedStart: 200, speedGain: 6, jumpV: 420, gravity: 1050, spacingMin: 200, spacingMax: 300, duckMs: 650 },
-    // «Полёт»: 10 колонн; взмах 250 против гравитации 900 — мягкое парение
-    flappy: { winScore: 10, gravity: 900, flapV: 250, pipeSpeed: 130, pipeSpacing: 200, pipeGap: 112, pipeW: 46 },
-    // «Змейка»: 12 кусков; ход раз в 160 мс и быстрее на 4 мс за кусок, не быстрее 90;
+    runner: { speedStart: 200, speedGain: 6, jumpV: 420, gravity: 1050, spacingMin: 200, spacingMax: 300, duckMs: 650 },
+    // «Полёт»: колонны 130 px/с и +4 px/с²; взмах 250 против гравитации 900 — мягкое парение
+    flappy: { gravity: 900, flapV: 250, pipeSpeed: 130, speedGain: 4, pipeSpacing: 200, pipeGap: 112, pipeW: 46 },
+    // «Змейка»: ход раз в 160 мс и быстрее на 4 мс за кусок, не быстрее 90;
     // клетка 26 px — поле выводится из реального размера канваса
-    snake: { winScore: 12, moveMs: 160, moveMin: 90, moveStep: 4, cellPx: 26 },
-    // «Пузыри»: 300 очков (30 пузырей) до подъёма поля; ряд каждые 6.5 с, группы от 3;
+    snake: { moveMs: 160, moveMin: 90, moveStep: 4, cellPx: 26 },
+    // «Пузыри»: очки за группы; ряд каждые 6.5 с, группы от 3;
     // клетка 40 px — сетка выводится из реального размера канваса
     bubbles: { winScore: 300, riseMs: 6_500, colors: 4, minGroup: 3, cellPx: 40 },
-    reward: { winBonus: 6, recordBonus: 4 },
+    reward: { recordBonus: 4 },
   },
   // кормление-ловля: 8 еды × ~5-6 пойманных ≈ прежняя сытость +25..40 за сессию
   // в ~15 секунд; несъедобного четверть, ступор 1.2 с; перекорм — 10 минут отдыха

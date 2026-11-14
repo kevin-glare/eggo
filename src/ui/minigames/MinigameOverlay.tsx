@@ -92,10 +92,10 @@ export default function MinigameOverlay({
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
-  // итог партии озвучен: фанфары за победу, тем более за рекорд
+  // итог партии озвучен: фанфары за рекорд
   useEffect(() => {
     if (result === null) return
-    playSound(result.isRecord ? 'record' : result.won ? 'win' : 'lose')
+    playSound(result.isRecord ? 'record' : 'lose')
   }, [result])
 
   const finishRef = useRef(onFinish)
@@ -155,18 +155,15 @@ export default function MinigameOverlay({
 
         {result !== null ? (
           <div className="mg-panel">
-            <PetBadge stage={stage} mood={result.won ? 'happy' : 'sad'} appearance={appearance} className="mg-pet" />
+            <PetBadge stage={stage} mood={result.isRecord ? 'happy' : 'sad'} appearance={appearance} className="mg-pet" />
             <p className="mg-big">{result.score}</p>
             {result.isRecord ? (
               <p className="mg-record">{str.mgNewRecord}</p>
             ) : best !== null ? (
               <p className="mg-note">{str.mgBest(best)}</p>
             ) : null}
-            {result.bonus > 0 ? (
-              <p className="mg-note">{str.mgBonus(result.bonus)}</p>
-            ) : !result.won ? (
-              <p className="mg-note">{str.mgLost}</p>
-            ) : null}
+            {result.bonus > 0 && <p className="mg-note">{str.mgBonus(result.bonus)}</p>}
+            <p className="mg-note">{str.mgGameOver}</p>
             <button type="button" className="mg-btn" onClick={restart}>
               {str.mgAgain}
             </button>

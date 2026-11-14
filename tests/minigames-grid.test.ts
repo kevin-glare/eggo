@@ -52,7 +52,6 @@ describe('snake — ядро «Змейки»', () => {
     // следующий шаг — в стену
     s = stepSnake(s, SN.moveMs, SN, foodRight)
     expect(s.over).toBe(true)
-    expect(s.won).toBe(false)
   })
 
   it('еда у стены съедается перед ней', () => {
@@ -81,13 +80,12 @@ describe('snake — ядро «Змейки»', () => {
     expect(moveInterval(s, SN)).toBe(speedBefore - SN.moveStep)
   })
 
-  it('winScore кусков — победа', () => {
+  it('партия бесконечна: большой счёт не завершает игру', () => {
     let s = createSnake(SN, GRID, foodRight)
-    s = { ...s, score: SN.winScore - 1, snake: [{ x: mid, y: 1 }, { x: mid - 1, y: 1 }, { x: mid - 2, y: 1 }], food: { x: mid + 1, y: 1 } }
+    s = { ...s, score: 99, snake: [{ x: mid, y: 1 }, { x: mid - 1, y: 1 }, { x: mid - 2, y: 1 }], food: { x: mid + 1, y: 1 } }
     const next = stepSnake(s, SN.moveMs, SN, foodRight)
-    expect(next.won).toBe(true)
-    expect(next.over).toBe(true)
-    expect(snakeScore(next)).toBe(SN.winScore)
+    expect(next.over).toBe(false)
+    expect(snakeScore(next)).toBe(100)
   })
 
   it('в собственный хвост — конец', () => {

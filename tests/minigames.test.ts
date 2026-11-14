@@ -124,12 +124,9 @@ describe('pickMinigame', () => {
 describe('награды мини-игр', () => {
   const config: GameConfig = DEFAULT_CONFIG
 
-  it('бонус есть только за победу; рекорд добавляет сверху', () => {
-    expect(minigameBonus(false, false, config)).toBe(0)
-    expect(minigameBonus(true, false, config)).toBe(config.minigames.reward.winBonus)
-    expect(minigameBonus(true, true, config)).toBe(
-      config.minigames.reward.winBonus + config.minigames.reward.recordBonus,
-    )
+  it('бонус к счастью — только за новый рекорд', () => {
+    expect(minigameBonus(false, config)).toBe(0)
+    expect(minigameBonus(true, config)).toBe(config.minigames.reward.recordBonus)
   })
 
   it('бонус прибавляется к счастью с обрезкой сотней', () => {

@@ -9,10 +9,9 @@ import type { MinigameId } from './types'
  * бонус к счастью за победу, запись рекорда и звёздочки за рекорд.
  */
 
-/** Бонус к счастью за партию: за победу плюс за новый рекорд. */
-export function minigameBonus(won: boolean, isRecord: boolean, config: GameConfig): number {
-  if (!won) return 0
-  return config.minigames.reward.winBonus + (isRecord ? config.minigames.reward.recordBonus : 0)
+/** Бонус к счастью за партию: за новый рекорд. */
+export function minigameBonus(isRecord: boolean, config: GameConfig): number {
+  return isRecord ? config.minigames.reward.recordBonus : 0
 }
 
 /** Прибавить бонус к счастью с обрезкой 0..100. */

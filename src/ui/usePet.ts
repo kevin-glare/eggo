@@ -280,15 +280,14 @@ useEffect(() => {
       const current = base?.state ?? petRef.current
       if (current === null) return { isRecord: false, bonus: 0 }
       const rec = recordMinigameScore(current, id, outcome.score, config)
-      const bonus = minigameBonus(outcome.won, rec.isRecord, config)
+      const bonus = minigameBonus(rec.isRecord, config)
       let next = rec.state
       if (bonus > 0) next = applyMinigameBonus(next, bonus)
       if (next !== current) {
         setPet({ ...next, lastEventAt: Date.now() })
         forceSyncRef.current = true
       }
-      if (!outcome.won) setNotice(str.mgLost)
-      else if (rec.isRecord) {
+      if (rec.isRecord) {
         setNotice(str.mgRecordToast(outcome.score, rec.stars))
         setCelebrate((n) => n + 1)
       }

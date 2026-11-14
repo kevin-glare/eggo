@@ -1,16 +1,14 @@
 /**
  * «Змейка»: классика — собирая еду, растёшь, не врезайся в себя
- * и в стены: край поля смертелен. Поле-сетка приходит снаружи (в UI
- * выводится из реального размера канваса — игра на весь экран), ход
- * по таймеру, с каждым куском чуть быстрее. Чистое ядро, rng снаружи
- * (новая еда).
+ * и в стены: край поля смертелен. Партия бесконечна, с каждым куском
+ * ход чуть быстрее. Поле-сетка приходит снаружи (в UI выводится из
+ * реального размера канваса — игра на весь экран). Чистое ядро,
+ * rng снаружи (новая еда).
  */
 
 export type SnakeDir = 'up' | 'down' | 'left' | 'right'
 
 export interface SnakeBalance {
-  /** кусков еды до победы */
-  winScore: number
   /** мс между ходами на старте */
   moveMs: number
   /** мс между ходами на максимуме скорости */
@@ -41,7 +39,6 @@ export interface SnakeState {
   moveMsLeft: number
   score: number
   over: boolean
-  won: boolean
 }
 
 export function createSnake(balance: SnakeBalance, grid: SnakeGrid, rng: () => number): SnakeState {
@@ -55,7 +52,6 @@ export function createSnake(balance: SnakeBalance, grid: SnakeGrid, rng: () => n
     moveMsLeft: balance.moveMs,
     score: 0,
     over: false,
-    won: false,
   }
 }
 
@@ -73,7 +69,7 @@ export function stepSnake(state: SnakeState, dtMs: number, balance: SnakeBalance
   let next = state
   let moveMsLeft = state.moveMsLeft - dtMs
   while (moveMsLeft <= 0 && !next.over) {
-    next = advance(next, balance, rng)
+    next = advance(next, rng)
     moveMsLeft += moveInterval(next, balance)
   }
   if (next.over) return next
@@ -90,7 +86,7 @@ export function moveInterval(state: SnakeState, balance: SnakeBalance): number {
   return Math.max(balance.moveMin, balance.moveMs - state.score * balance.moveStep)
 }
 
-function advance(state: SnakeState, balance: SnakeBalance, rng: () => number): SnakeState {
+function advance(state: SnakeState, rng: () => number): SnakeState {
   const dir = state.pendingDir ?? state.dir
   const delta: Record<SnakeDir, SnakeCell> = {
     up: { x: 0, y: -1 },
@@ -104,7 +100,7 @@ function advance(state: SnakeState, balance: SnakeBalance, rng: () => number): S
   const nx = head.x + d.x
   const ny = head.y + d.y
   if (nx < 0 || nx >= state.grid.cols || ny < 0 || ny >= state.grid.rows) {
-    return { ...state, dir, pendingDir: null, over: true, won: false }
+    return { ...state, dir, pendingDir: null, over: true }
   }
   const wx = nx
   const wy = ny
@@ -112,22 +108,19 @@ function advance(state: SnakeState, balance: SnakeBalance, rng: () => number): S
   const eating = wx === state.food.x && wy === state.food.y
   const body = eating ? state.snake : state.snake.slice(0, -1)
   const hitSelf = body.some((c) => c.x === wx && c.y === wy)
-  if (hitSelf) return { ...state, dir, pendingDir: null, over: true, won: false }
+  if (hitSelf) return { ...state, dir, pendingDir: null, over: true }
 
   const snake = [{ x: wx, y: wy }, ...(eating ? state.snake : body)]
   if (!eating) return { ...state, snake, dir, pendingDir: null }
 
   const score = state.score + 1
-  const won = score >= balance.winScore
   return {
     ...state,
     snake,
     dir,
     pendingDir: null,
-    food: won ? state.food : spawnFood(snake, state.grid, rng),
+    food: spawnFood(snake, state.grid, rng),
     score,
-    over: won,
-    won,
   }
 }
 

@@ -97,7 +97,7 @@ export const en: Strings = {
   mgBest: (n: number) => `Best: ${n}`,
   mgNewRecord: '🏆 New record!',
   mgBonus: (n: number) => `Eggo is thrilled: +${n} happiness`,
-  mgLost: 'Eggo is sad but believes in you!',
+  mgGameOver: 'Game over',
   mgRecordToast: (n: number, stars: number) =>
     stars > 0 ? `🏆 New record: ${n} — +${stars} ⭐!` : `🏆 New record: ${n}!`,
   mgTime: (s: number) => `${s} s`,
@@ -108,7 +108,7 @@ export const en: Strings = {
     memory: { title: '🧠 Memory', hint: 'Flip the cards and match every pair before time runs out' },
     runner: { title: '🏃 Runner', hint: 'Tap above — jump. Hold the bottom — duck' },
     flappy: { title: '🎈 Flight', hint: 'Tap anywhere — the pet flaps' },
-    snake: { title: '🐍 Snake', hint: 'Swipe or arrows — eat and don’t bite yourself' },
+    snake: { title: '🐍 Snake', hint: 'Swipe or arrows — eat and don’t bite yourself or hit the walls' },
     bubbles: { title: '🫧 Bubbles', hint: 'Pop groups of three or more alike' },
   },
   // on-canvas hints shown during the first seconds of a round

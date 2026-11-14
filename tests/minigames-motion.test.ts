@@ -43,21 +43,20 @@ describe('runner — ядро «Побега»', () => {
     // гоним до первого камня и даём ему доехать
     for (let i = 0; i < 4000 && !s.over; i += 1) s = stepRunner(s, 16, RUN, noGull)
     expect(s.over).toBe(true)
-    expect(s.won).toBe(false)
   })
 
-  it('идеальный бот прыгает через все камни и добегает до победы', () => {
+  it('идеальный бот прыгает через камни и забегает далеко за прежнюю цель победы', () => {
     let s = createRunner(RUN, RUNNER_WORLD)
     // «идеальный бот»: прыгает за 0.4 с до камня (точка апогея), как человек
-    for (let i = 0; i < 5000 && !s.over; i += 1) {
+    for (let i = 0; i < 6000 && !s.over; i += 1) {
       const lead = s.speed * 0.4
       const near = s.obstacles.some((o) => o.kind === 'rock' && o.x > RUNNER_PET_X - 8 && o.x - RUNNER_PET_X < lead)
       if (near && s.py === 0) s = jumpRunner(s, RUN)
       else s = stepRunner(s, 16, RUN, noGull)
     }
     expect(s.over).toBe(true)
-    expect(s.won).toBe(true)
-    expect(s.distance).toBeGreaterThanOrEqual(RUN.winScore * 10)
+    // партия бесконечна: прежняя цель 300 м — лишь промежуточный рубеж
+    expect(runnerScore(s)).toBeGreaterThan(300)
   })
 
   it('чайка берёт стоячего, но не пригнувшегося', () => {
@@ -75,7 +74,6 @@ describe('runner — ядро «Побега»', () => {
     let s = createRunner(RUN, RUNNER_WORLD)
     for (let i = 0; i < 4000 && !s.over; i += 1) s = stepRunner(s, 16, RUN, alwaysGull)
     expect(s.over).toBe(true)
-    expect(s.won).toBe(false)
   })
 
   it('скорость растёт со временем', () => {
@@ -84,11 +82,11 @@ describe('runner — ядро «Побега»', () => {
     expect(s.speed).toBeGreaterThan(RUN.speedStart)
   })
 
-  it('победа по метрам: over и won вместе', () => {
-    const s = { ...createRunner(RUN, RUNNER_WORLD), distance: RUN.winScore * 10 + 5 }
+  it('партия бесконечна: дистанция сама по себе не завершает игру', () => {
+    const s = { ...createRunner(RUN, RUNNER_WORLD), distance: 10_500 }
     const next = stepRunner(s, 16, RUN, noGull)
-    expect(next.over).toBe(true)
-    expect(next.won).toBe(true)
+    expect(next.over).toBe(false)
+    expect(runnerScore(next)).toBeGreaterThan(1000)
   })
 
   it('счёт — метры без округления вверх', () => {
@@ -101,7 +99,6 @@ describe('flappy — ядро «Полёта»', () => {
     let s = createFlappy(FLY, FLAPPY_WORLD)
     for (let i = 0; i < 600 && !s.over; i += 1) s = stepFlappy(s, 16, FLY, () => 0.5)
     expect(s.over).toBe(true)
-    expect(s.won).toBe(false)
   })
 
   it('взмах поднимает, гравитация тянет вниз', () => {
@@ -130,12 +127,15 @@ describe('flappy — ядро «Полёта»', () => {
     expect(next.over).toBe(true)
   })
 
-  it('выигрыш: winScore колонн — won без столкновений', () => {
-    const base = createFlappy(FLY, FLAPPY_WORLD)
-    const winner = { ...base, score: FLY.winScore - 1, pipes: [{ x: flappyPetX(FLAPPY_WORLD) - FLY.pipeW - 20, gapY: 200, passed: false }] }
-    const next = stepFlappy(winner, 16, FLY, () => 0.5)
-    expect(next.won).toBe(true)
-    expect(next.over).toBe(true)
+  it('колонны разгоняются со временем', () => {
+    let s = createFlappy(FLY, FLAPPY_WORLD)
+    const start = s.speed
+    for (let i = 0; i < 300 && !s.over; i += 1) {
+      s = stepFlappy(s, 100, FLY, () => 0.5)
+      // держим высоту: партия живёт, скорость копится
+      if (!s.over) s = { ...s, y: FLAPPY_WORLD.h * 0.45, vy: 0 }
+    }
+    expect(s.speed).toBeGreaterThan(start + FLY.speedGain * 10)
   })
 
   it('потолок мягкий: питомец не погибает об него', () => {

@@ -72,7 +72,7 @@ export default function SnakeGame({ config, appearance, running, onOver }: Snake
     draw(canvas, ctx, s)
     if (s.over && !overRef.current) {
       overRef.current = true
-      const outcome: MinigameOutcome = { score: snakeScore(s), won: s.won }
+      const outcome: MinigameOutcome = { score: snakeScore(s), won: false }
       window.setTimeout(() => onOverRef.current(outcome), SETTLE_MS)
     }
   }, running)
