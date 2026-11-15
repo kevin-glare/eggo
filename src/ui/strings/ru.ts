@@ -74,7 +74,7 @@ export const ru = {
   petFallbackName: 'Питомец',
   reason: {
     'not-hatched': '🥚 Питомец ещё не вылупился',
-    sleeping: '🤫 Питомец спит',
+    sleeping: '🤫 Питомец спит — сначала разбуди его',
     'too-tired': '😵 Слишком устал — пусть поспит',
     'already-full': '😋 Уже сыт — не лопнет',
     'already-happy': '😄 Уже счастлив по полной',

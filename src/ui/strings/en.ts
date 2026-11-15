@@ -33,7 +33,7 @@ export const en: Strings = {
   petFallbackName: 'Pet',
   reason: {
     'not-hatched': '🥚 The pet hasn’t hatched yet',
-    sleeping: '🤫 The pet is sleeping',
+    sleeping: '🤫 The pet is sleeping — wake it up first',
     'too-tired': '😵 Too tired — let it sleep',
     'already-full': '😋 Already full — it would burst',
     'already-happy': '😄 Already happy to the brim',
