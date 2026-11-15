@@ -107,7 +107,7 @@ export const en: Strings = {
   mgPairsLeft: (n: number) => `Pairs left: ${n}`,
   mgLevel: (n: number) => `Level ${n}`,
   game: {
-    memory: { title: '🧠 Memory', hint: 'Flip cards and match pairs — every cleared level adds time' },
+    memory: { title: '🧠 Memory', hint: 'Flip cards and match pairs — a cleared level adds time, but the clock ticks faster' },
     runner: { title: '🏃 Runner', hint: 'Tap above — jump. Hold the bottom — duck' },
     flappy: { title: '🎈 Flight', hint: 'Tap anywhere — the pet flaps' },
     snake: { title: '🐍 Snake', hint: 'Swipe or arrows — eat and don’t bite yourself or hit the walls' },

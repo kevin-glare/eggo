@@ -34,9 +34,9 @@ export default function MemoryGame({ config, running, onOver }: MemoryGameProps)
   // таймер партии: стоит на паузе и после конца
   useEffect(() => {
     if (!running || state.over) return
-    const id = window.setInterval(() => setState((s) => (s.over ? s : stepMemory(s, TICK_MS))), TICK_MS)
+    const id = window.setInterval(() => setState((s) => (s.over ? s : stepMemory(s, TICK_MS, balance))), TICK_MS)
     return () => window.clearInterval(id)
-  }, [running, state.over])
+  }, [running, state.over, balance])
 
   // конец партии: дать увидеть последнюю пару, затем отдать итог
   useEffect(() => {

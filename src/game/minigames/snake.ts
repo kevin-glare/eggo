@@ -1,9 +1,9 @@
 /**
  * «Змейка»: классика — собирая еду, растёшь, не врезайся в себя
- * и в стены: край поля смертелен. Партия бесконечна, с каждым куском
- * ход чуть быстрее. Поле-сетка приходит снаружи (в UI выводится из
- * реального размера канваса — игра на весь экран). Чистое ядро,
- * rng снаружи (новая еда).
+ * и в стены: край поля смертелен. Партия бесконечна, со временем
+ * ход ускоряется — чем дольше живёшь, тем быстрее поле.
+ * Поле-сетка приходит снаружи (в UI выводится из реального размера
+ * канваса — игра на весь экран). Чистое ядро, rng снаружи (новая еда).
  */
 
 export type SnakeDir = 'up' | 'down' | 'left' | 'right'
@@ -13,8 +13,8 @@ export interface SnakeBalance {
   moveMs: number
   /** мс между ходами на максимуме скорости */
   moveMin: number
-  /** сколько мс отнимает каждый кусок еды */
-  moveStep: number
+  /** сколько мс разгона за каждую секунду партии */
+  rampPerSec: number
 }
 
 /** Сетка поля в клетках — выводится из размера канваса. */
@@ -37,6 +37,8 @@ export interface SnakeState {
   pendingDir: SnakeDir | null
   food: SnakeCell
   moveMsLeft: number
+  /** сколько миллисекунд партия уже идёт — ключ разгона */
+  elapsedMs: number
   score: number
   over: boolean
 }
@@ -50,6 +52,7 @@ export function createSnake(balance: SnakeBalance, grid: SnakeGrid, rng: () => n
     pendingDir: null,
     food: spawnFood([], grid, rng),
     moveMsLeft: balance.moveMs,
+    elapsedMs: 0,
     score: 0,
     over: false,
   }
@@ -73,7 +76,7 @@ export function stepSnake(state: SnakeState, dtMs: number, balance: SnakeBalance
     moveMsLeft += moveInterval(next, balance)
   }
   if (next.over) return next
-  return { ...next, moveMsLeft }
+  return { ...next, moveMsLeft, elapsedMs: state.elapsedMs + dtMs }
 }
 
 /** Счёт: куски еды. */
@@ -81,9 +84,9 @@ export function snakeScore(state: SnakeState): number {
   return state.score
 }
 
-/** Текущий интервал хода: укорачивается с каждым куском. */
+/** Текущий интервал хода: укорачивается со временем партии, пол на moveMin. */
 export function moveInterval(state: SnakeState, balance: SnakeBalance): number {
-  return Math.max(balance.moveMin, balance.moveMs - state.score * balance.moveStep)
+  return Math.max(balance.moveMin, balance.moveMs - (state.elapsedMs / 1000) * balance.rampPerSec)
 }
 
 function advance(state: SnakeState, rng: () => number): SnakeState {

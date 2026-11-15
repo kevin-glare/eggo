@@ -1,8 +1,9 @@
 /**
  * «Память»: находи пары карточек. Партия бесконечна: собранный ряд
- * добавляет время и открывает следующий — на пару больше. Чистое ядро:
- * состояние → новое состояние. Случайность (перетасовка) приходит
- * снаружи через rng — тесты детерминированы.
+ * добавляет время и открывает следующий — на пару больше, и таймер
+ * тикает быстрее. Чистое ядро: состояние → новое состояние.
+ * Случайность (перетасовка) приходит снаружи через rng — тесты
+ * детерминированы.
  */
 
 export interface MemoryBalance {
@@ -16,6 +17,10 @@ export interface MemoryBalance {
   pairsPerLevel: number
   /** предел пар на поле */
   pairsMax: number
+  /** насколько таймер тикает быстрее за каждый собранный ряд (доля от 1) */
+  timerRamp: number
+  /** потолок скорости тика, ×N от реального времени */
+  timerRateMax: number
 }
 
 export interface MemoryCard {
@@ -45,6 +50,11 @@ const MISMATCH_SHOW_MS = 700
 /** Сколько пар на поле в этом ряду: рост ограничен pairsMax. */
 export function memoryLevelPairs(balance: MemoryBalance, level: number): number {
   return Math.min(balance.pairsMax, balance.pairs + (level - 1) * balance.pairsPerLevel)
+}
+
+/** Во сколько раз таймер тикает быстрее в этом ряду: +timerRamp за ряд, потолок timerRateMax. */
+export function memoryTimerRate(balance: MemoryBalance, level: number): number {
+  return Math.min(balance.timerRateMax, 1 + (level - 1) * balance.timerRamp)
 }
 
 /** Перетасованная колода на pairs пар (Фишер—Йетс). */
@@ -109,15 +119,16 @@ export function flipMemory(state: MemoryState, index: number, balance: MemoryBal
   return { ...opened, closeInMs: MISMATCH_SHOW_MS }
 }
 
-/** Шаг времени: таймер тикает, созревшая несовпавшая пара закрывается. */
-export function stepMemory(state: MemoryState, dtMs: number): MemoryState {
+/** Шаг времени: таймер тикает (в поздних рядах быстрее реального времени),
+ *  созревшая несовпавшая пара закрывается. */
+export function stepMemory(state: MemoryState, dtMs: number, balance: MemoryBalance): MemoryState {
   if (state.over) return state
   let next = state
   if (state.closeInMs !== null) {
     const closeInMs = state.closeInMs - dtMs
     next = closeInMs <= 0 ? closePair(state) : { ...state, closeInMs }
   }
-  const timeLeftMs = Math.max(0, next.timeLeftMs - dtMs)
+  const timeLeftMs = Math.max(0, next.timeLeftMs - dtMs * memoryTimerRate(balance, state.level))
   if (timeLeftMs === 0) return { ...next, timeLeftMs, over: true }
   return { ...next, timeLeftMs }
 }

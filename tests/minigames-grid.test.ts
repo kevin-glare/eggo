@@ -65,7 +65,7 @@ describe('snake — ядро «Змейки»', () => {
     expect(next.over).toBe(false)
   })
 
-  it('еда растит змейку и ускоряет ход', () => {
+  it('еда растит змейку', () => {
     let s = createSnake(SN, GRID, foodRight)
     // голова в центре, еда в углу (cells-1, cells-1): ведём вниз, потом вправо
     const stepsDown = GRID.rows - 1 - mid
@@ -73,11 +73,44 @@ describe('snake — ядро «Змейки»', () => {
     for (let i = 0; i < stepsDown; i += 1) s = stepSnake(s, SN.moveMs, SN, foodRight)
     s = turnSnake(s, 'right')
     const lenBefore = s.snake.length
-    const speedBefore = moveInterval(s, SN)
     for (let i = 0; i < GRID.cols * 2 && s.score === 0; i += 1) s = stepSnake(s, SN.moveMs, SN, foodRight)
     expect(s.score).toBe(1)
     expect(s.snake.length).toBe(lenBefore + 1)
-    expect(moveInterval(s, SN)).toBe(speedBefore - SN.moveStep)
+  })
+
+  it('со временем ход ускоряется, даже если ничего не есть', () => {
+    let s = createSnake(SN, GRID, foodRight)
+    const start = moveInterval(s, SN)
+    for (let i = 0; i < 30; i += 1) {
+      s = stepSnake(s, 1000, SN, foodRight)
+      expect(s.over).toBe(false)
+      // змейку возвращаем в центр, чтобы не врезалась в стену;
+      // время партии (elapsedMs) не трогаем — разгон копится честно
+      s = {
+        ...s,
+        moveMsLeft: SN.moveMs,
+        snake: [{ x: 4, y: mid }, { x: 3, y: mid }, { x: 2, y: mid }],
+        dir: 'right',
+        pendingDir: null,
+      }
+    }
+    expect(moveInterval(s, SN)).toBe(start - 30 * SN.rampPerSec)
+  })
+
+  it('разгон упирается в пол moveMin', () => {
+    let s = createSnake(SN, GRID, foodRight)
+    for (let i = 0; i < 200; i += 1) {
+      s = stepSnake(s, 1000, SN, foodRight)
+      s = {
+        ...s,
+        moveMsLeft: SN.moveMs,
+        snake: [{ x: 4, y: mid }, { x: 3, y: mid }, { x: 2, y: mid }],
+        dir: 'right',
+        pendingDir: null,
+      }
+    }
+    expect(s.over).toBe(false)
+    expect(moveInterval(s, SN)).toBe(SN.moveMin)
   })
 
   it('партия бесконечна: большой счёт не завершает игру', () => {

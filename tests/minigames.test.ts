@@ -5,6 +5,7 @@ import {
   flipMemory,
   memoryLevelPairs,
   memoryScore,
+  memoryTimerRate,
   stepMemory,
   type MemoryState,
 } from '../src/game/minigames/memory'
@@ -59,7 +60,7 @@ describe('memory — ядро «Памяти»', () => {
     const [a, b] = differentKindPair(s)
     let next = flipMemory(flipMemory(s, a, MEM, mulberry32(5)), b, MEM, mulberry32(5))
     expect(next.closeInMs).not.toBeNull()
-    next = stepMemory(next, 700)
+    next = stepMemory(next, 700, MEM)
     expect(next.cards[a]!.flipped).toBe(false)
     expect(next.cards[b]!.flipped).toBe(false)
     expect(next.closeInMs).toBeNull()
@@ -75,9 +76,24 @@ describe('memory — ядро «Памяти»', () => {
 
   it('время вышло — партия проиграна', () => {
     let s = createMemory(MEM, mulberry32(9))
-    s = stepMemory(s, MEM.timeLimitMs + 1)
+    s = stepMemory(s, MEM.timeLimitMs + 1, MEM)
     expect(s.over).toBe(true)
     expect(memoryScore(s)).toBe(0)
+  })
+
+  it('в первом ряду таймер тикает в реальном времени, дальше — быстрее', () => {
+    const s1 = stepMemory(createMemory(MEM, mulberry32(9)), 1000, MEM)
+    expect(MEM.timeLimitMs - s1.timeLeftMs).toBe(1000)
+    // ряд 2 (ставим напрямую): тик = ×(1 + timerRamp)
+    const lvl2 = { ...createMemory(MEM, mulberry32(9)), level: 2 }
+    const s2 = stepMemory(lvl2, 1000, MEM)
+    expect(MEM.timeLimitMs - s2.timeLeftMs).toBeCloseTo(1000 * (1 + MEM.timerRamp))
+  })
+
+  it('скорость тика растёт на timerRamp за ряд и упирается в timerRateMax', () => {
+    expect(memoryTimerRate(MEM, 1)).toBe(1)
+    expect(memoryTimerRate(MEM, 2)).toBeCloseTo(1 + MEM.timerRamp)
+    expect(memoryTimerRate(MEM, 99)).toBe(MEM.timerRateMax)
   })
 
   it('ряд собран — новый ряд больше, время продлено, счёт копится', () => {
