@@ -7,6 +7,8 @@ import type { PetState, Stage } from './types'
  * Результат отсортирован по важности: воркер шлёт первое, остальное — позже.
  * Ночью по местному времени игрока пуш не будит: беда уходит молча,
  * радостное и «скучаем» придерживаются до утра (delivery = 'hold').
+ * Спящий питомец: уход во сне заблокирован, поэтому советы заботы начинаются
+ * с будильника («Разбудить»), а «вымотался» во сне бедой не считается.
  */
 
 /** Что уже отправляли: ключ уведомления → время отправки (мс, epoch). */
@@ -69,11 +71,12 @@ export function pendingNotifications(
   // беда (critical) кричит всегда
   const active = nowMs - lastSeenAt < config.notifications.activityWindowMs
 
-  // «в беде»: критическая шкала или болезнь — самая срочная новость
+  // «в беде»: критическая шкала или болезнь — самая срочная новость.
+  // «вымотался» во сне бедой не считаем: энергия растёт сама, будить вредно.
   const reasons: string[] = []
   if (pet.stats.fullness < config.criticalThreshold) reasons.push('голодает')
   if (pet.stats.happiness < config.criticalThreshold) reasons.push('грустит')
-  if (pet.stats.energy < config.criticalThreshold) reasons.push('совсем вымотался')
+  if (!pet.sleeping && pet.stats.energy < config.criticalThreshold) reasons.push('совсем вымотался')
   if (pet.stats.cleanliness < config.criticalThreshold) reasons.push('испачкался')
   if ((pet.sick || reasons.length > 0) && cooldownPassed(sent, 'critical', nowMs, config.notifications.criticalCooldownMs)) {
     // каждая беда — конкретное действие той же кнопкой в Eggo
@@ -84,14 +87,25 @@ export function pendingNotifications(
       испачкался: 'помой',
     }
     const actions = reasons.map((r) => actionByReason[r] ?? 'загляни в Eggo')
+    // во сне кормить/играть/мыть движок отказывает: любой уход начинается с будильника
+    const action = pet.sleeping
+      ? `открой Eggo, нажми «Разбудить», потом ${actions.join(', ')}`
+      : `открой Eggo и ${actions.join(', ')}`
     result.push({
       kind: 'critical',
       text: pet.sick
         ? withAction(
             `🤒 ${petTitle(pet)} заболел — срочно нужен уход!`,
-            'открой Eggo, покорми питомца, поиграй и помой его — при хорошем уходе он выздоровеет сам',
+            pet.sleeping
+              ? 'открой Eggo, нажми «Разбудить», потом покорми питомца, поиграй и помой его — при хорошем уходе он выздоровеет сам'
+              : 'открой Eggo, покорми питомца, поиграй и помой его — при хорошем уходе он выздоровеет сам',
           )
-        : withAction(`😢 ${petTitle(pet)} ${reasons.join(', ')} — загляни скорее!`, `открой Eggo и ${actions.join(', ')}`),
+        : withAction(
+            pet.sleeping
+              ? `😴 ${petTitle(pet)} спит, но ${reasons.join(', ')} — загляни скорее!`
+              : `😢 ${petTitle(pet)} ${reasons.join(', ')} — загляни скорее!`,
+            action,
+          ),
       delivery: quiet ? 'silent' : 'now',
     })
   }
@@ -138,7 +152,13 @@ export function pendingNotifications(
   ) {
     result.push({
       kind: 'missYou',
-      text: withAction(`🥺 ${petTitle(pet)} очень скучает без тебя…`, 'загляни в Eggo — покорми питомца с руки, поиграй и помой его'),
+      text: withAction(
+        `🥺 ${petTitle(pet)} очень скучает без тебя…`,
+        // спящего ухода не будет: будильник — первое действие и здесь
+        pet.sleeping
+          ? 'открой Eggo, нажми «Разбудить», потом покорми питомца с руки, поиграй и помой его'
+          : 'загляни в Eggo — покорми питомца с руки, поиграй и помой его',
+      ),
       delivery: quiet ? 'hold' : 'now',
     })
   }

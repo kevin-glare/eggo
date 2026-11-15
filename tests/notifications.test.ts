@@ -75,6 +75,51 @@ describe('pendingNotifications — «питомец в беде»', () => {
   })
 })
 
+describe('pendingNotifications — спящий питомец в беде', () => {
+  it('спящий голодный: инструкция начинается с будильника', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { fullness: 20 })
+    const list = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)
+    expect(list[0]?.kind).toBe('critical')
+    expect(list[0]?.text).toContain('спит')
+    expect(list[0]?.text).toContain('«Разбудить»')
+    expect(list[0]?.text).toContain('покорми')
+  })
+
+  it('спящий грустный: будильник перед мини-игрой', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { happiness: 20 })
+    const text = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)[0]?.text ?? ''
+    expect(text).toContain('«Разбудить»')
+    expect(text).toContain('поиграй')
+  })
+
+  it('спящий вымотался — бедой не считаем: сон сам восстанавливает энергию', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 20 })
+    expect(pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)).toEqual([])
+  })
+
+  it('спящий больной: сначала будильник, потом уход', () => {
+    const pet = hatchedPet(config, { sick: true, sleeping: true })
+    const text = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)[0]?.text ?? ''
+    expect(text).toContain('«Разбудить»')
+    expect(text).toContain('выздоровеет')
+  })
+
+  it('спящий голодный с полной энергией: беда с будильником важнее «выспался»', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { fullness: 20, energy: 100 })
+    const list = pendingNotifications(pet, NOW, config, NOW - HOUR, GROWN_SEEN, DAY_HOUR)
+    expect(list[0]?.kind).toBe('critical')
+    expect(list[0]?.text).toContain('«Разбудить»')
+    expect(list[0]?.text).not.toContain('выспался')
+  })
+
+  it('«скучаем» про спящего тоже начинается с будильника', () => {
+    const pet = hatchedPet(config, { sleeping: true }, { energy: 50 })
+    const list = pendingNotifications(pet, NOW, config, NOW - 30 * HOUR, GROWN_SEEN, DAY_HOUR)
+    expect(list[0]?.kind).toBe('missYou')
+    expect(list[0]?.text).toContain('«Разбудить»')
+  })
+})
+
 describe('pendingNotifications — «взросление»', () => {
   it('стадия без отметки → поздравление с названием стадии', () => {
     const pet = hatchedPet(config, { stage: 'teen' })
