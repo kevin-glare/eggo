@@ -285,6 +285,11 @@ export const en: Strings = {
       'Open the bot chat and launch Eggo via the menu button — it sits to the left of the message input. The game won’t open from a link in the chat.',
     textOutside:
       'Your pet is tied to Telegram — that’s how it’s saved on the server and waits for you on any device. Open the mini app via the bot.',
+    features: [
+      '🍽️ Feed and care — your pet grows',
+      '🎮 Mini-games, quests and daily star rewards',
+      '🐣 Hatches from an egg through 5 growth stages',
+    ],
     button: 'Sign in with Telegram',
     debugNoSdk: 'no SDK',
     debugYes: 'yes',

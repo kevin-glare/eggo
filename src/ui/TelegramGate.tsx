@@ -30,6 +30,11 @@ export default function TelegramGate() {
       ) : (
         <p className="gate-text">{str.gate.textOutside}</p>
       )}
+      <ul className="gate-features">
+        {str.gate.features.map((f) => (
+          <li key={f}>{f}</li>
+        ))}
+      </ul>
       {BOT_URL !== null && (
         <a className="gate-button" href={BOT_URL} target="_blank" rel="noreferrer">
           {str.gate.button}
