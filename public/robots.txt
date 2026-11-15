@@ -1,0 +1,40 @@
+# Eggo — витрина мини-аппа: поисковикам и ИИ-ассистентам всё открыто.
+# (robots.txt по умолчанию всё разрешает; явные Allow нужны как документация
+# и на случай будущих запретов — не удалять «за ненадобностью».)
+Sitemap: https://eggotg.ru/sitemap.xml
+
+User-agent: *
+Allow: /
+
+# ИИ-поисковики: от них зависит цитируемость в ChatGPT Search, Claude, Perplexity
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# ИИ-краулеры обучения моделей: разрешены сознательно — для маленького сайта
+# видимость в ответах ИИ важнее ограничений на обучение
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
