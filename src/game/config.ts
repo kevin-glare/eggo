@@ -76,10 +76,6 @@ export interface GameConfig {
     /** пауза от рождения питомца до первой просьбы */
     firstDelayMs: number
   }
-  /** рефералка: пороги приглашённых — каждая звезда дружбы питомцу */
-  referrals: {
-    milestones: number[]
-  }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
   /** звёздочки — валюта заботы: начисления и каталог магазина */
@@ -92,8 +88,8 @@ export interface GameConfig {
     playStars: number
     /** звёздочек за новый личный рекорд в мини-игре */
     recordStars: number
-    /** звёздочек за порог приглашённых: приглашённые → награда */
-    referralStars: Record<number, number>
+    /** звёздочек за каждого приглашённого друга */
+    referralStarsPerFriend: number
     /** цена смены имени питомца */
     renamePrice: number
     /** каталог товаров */
@@ -132,8 +128,8 @@ export interface GameConfig {
     minigameBest: number
     /** недели дружбы от createdAt */
     friendshipWeeks: number[]
-    /** звёзды дружбы от приглашённых */
-    referralTier: number[]
+    /** пороги друзей для достижений (звёзды дружбы на питомце) */
+    referralFriends: number[]
     /** уровни дружбы */
     friendshipLevel: number[]
     /** накопленные звёздочки */
@@ -267,10 +263,6 @@ export const DEFAULT_CONFIG: GameConfig = {
     cooldownMs: 3 * HOUR,
     firstDelayMs: 1 * HOUR,
   },
-  // рефералка: пересечённый порог приглашённых = +звезда дружбы питомцу
-  referrals: {
-    milestones: [1, 3, 10],
-  },
   streak: { milestones: [3, 7, 14, 30] },
   // звёздочки: за задания дня, вехи серии, каждую партию, новые рекорды
   // и приглашённых; блюда — премиум-еда на одну сессию кормления (базовая еда бесплатна)
@@ -279,7 +271,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     streakStars: { 3: 5, 7: 10, 14: 20, 30: 50 },
     playStars: 1,
     recordStars: 2,
-    referralStars: { 1: 5, 3: 15, 10: 40 },
+    referralStarsPerFriend: 5,
     renamePrice: 3,
     items: [
       { id: 'dish-cake', kind: 'dish', price: 8, emoji: '🍰', bonusPerFood: 4 },
@@ -317,7 +309,7 @@ export const DEFAULT_CONFIG: GameConfig = {
     ageDays: [7, 30],
     minigameBest: 100,
     friendshipWeeks: [2, 6],
-    referralTier: [1, 3],
+    referralFriends: [1, 3],
     friendshipLevel: [3, 5],
     starsEarned: [100, 300],
   },

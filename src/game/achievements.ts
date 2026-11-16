@@ -30,7 +30,7 @@ export function achievementList(config: GameConfig): Achievement[] {
     ...a.friendshipWeeks.map(
       (w): Achievement => ({ id: `weeks-${w}`, met: (s, _c, now) => Math.floor((now - s.createdAt) / FRIENDSHIP_WEEK_MS) >= w }),
     ),
-    ...a.referralTier.map((t): Achievement => ({ id: `ref-${t}`, met: (s) => s.appearance.refMark >= t })),
+    ...a.referralFriends.map((t): Achievement => ({ id: `ref-${t}`, met: (s) => s.appearance.refMark >= t })),
     ...a.friendshipLevel.map((l): Achievement => ({ id: `lvl-${l}`, met: (s, c) => friendshipLevel(s.xp, c) >= l })),
     ...a.starsEarned.map((v): Achievement => ({ id: `stars-${v}`, met: (s) => s.stars >= v })),
   ]

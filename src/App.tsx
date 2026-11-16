@@ -439,7 +439,7 @@ export default function App() {
           }}
           authorUrl={AUTHOR_URL}
           invited={invited}
-          milestones={config.referrals.milestones}
+          perFriend={config.shop.referralStarsPerFriend}
           version={APP_VERSION}
         />
       )}

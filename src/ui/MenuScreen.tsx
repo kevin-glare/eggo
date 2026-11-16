@@ -64,8 +64,8 @@ interface MenuScreenProps {
   authorUrl: string | null
   /** сколько друзей пришло (с сервера); null — счётчик ещё не приходил */
   invited: number | null
-  /** пороги звёзд дружбы из config.referrals.milestones */
-  milestones: number[]
+  /** звёздочек за каждого друга из config.shop.referralStarsPerFriend */
+  perFriend: number
   version: string
 }
 
@@ -100,7 +100,7 @@ export default function MenuScreen({
   onAuthor,
   authorUrl,
   invited,
-  milestones,
+  perFriend,
   version,
 }: MenuScreenProps) {
   const str = useStrings()
@@ -523,7 +523,7 @@ export default function MenuScreen({
                   </div>
                 </div>
               ) : view === 'invite' ? (
-                <InvitePanel invited={invited} stars={pet.appearance.refMark} milestones={milestones} onShare={onShare} />
+                <InvitePanel invited={invited} perFriend={perFriend} onShare={onShare} />
               ) : view === 'achievements' ? (
                 <div className="menu-ach">
                   {achievementIds.map((id) => {

@@ -705,12 +705,13 @@ function drawSpots(
 }
 
 /**
- * Звёзды дружбы — заработанные приглашениями (ген refMark), не часть палитры:
- * золотая звезда на боку питомца, крупнее с каждым уровнем.
+ * Звёзды дружбы — заработанные приглашениями (ген refMark = оплаченные друзья),
+ * не часть палитры: золотая звезда на боку питомца, крупнее с каждым другом
+ * (размер растёт до четверых, дальше звезда не разбухает).
  */
 function drawFriendStar(ctx: CanvasRenderingContext2D, tier: number, rx: number, ry: number, cy: number): void {
   if (tier <= 0) return
-  const r = 3.5 + tier * 1.5
+  const r = 3.5 + Math.min(tier, 4) * 1.5
   const x = rx * 0.52
   const y = cy - ry * 0.42
   ctx.save()

@@ -1,39 +1,36 @@
 import type { GameConfig } from './config'
+import { REF_MARK_CAP } from './appearance'
 import { earnStars } from './economy'
 import type { PetState } from './types'
 
 /**
  * Рефералка: друг открывает Eggo по ссылке игрока (startapp=ref_<id>) →
- * питомцу звезда дружбы и звёздочки в кошелёк. Счётчик приглашённых живёт
- * на сервере и приходит клиенту в ответе /sync; награда выводится из него
- * чистой функцией — идемпотентно, и потеря звёзд при слиянии двух девайсов
- * лечится пересчётом на следующем синке.
+ * питомцу звезда дружбы на боку и звёздочки в кошелёк за каждого друга
+ * (config.shop.referralStarsPerFriend). Счётчик приглашённых живёт
+ * на сервере и приходит клиенту в ответе /sync; оплаченные друзья отмечены
+ * в refMark — награда выводится из них чистой функцией, идемпотентно,
+ * и потеря звёзд при слиянии двух девайсов лечится пересчётом на синке.
  */
 
 export interface ReferralReward {
   state: PetState
-  /** сколько звёзд у питомца после пересчёта (0..milestones.length) */
-  tier: number
-  /** звёздочек начислено за пересечённые пороги (0 — порог не рос) */
+  /** звёзд дружбы у питомца после пересчёта (= оплаченных друзей) */
+  friends: number
+  /** звёздочек начислено за новых друзей (0 — новых нет) */
   stars: number
 }
 
-/** Уровень по счётчику приглашённых: число пересечённых порогов. */
-export function referralTier(invited: number, config: GameConfig): number {
-  return config.referrals.milestones.filter((m) => invited >= m).length
-}
-
-/** Выдать заслуженные звёзды, если их стало больше; иначе состояние без изменений. */
+/** Выдать заслуженное, если друзей стало больше оплаченных; иначе — без изменений. */
 export function applyReferralReward(state: PetState, invited: number, config: GameConfig): ReferralReward {
-  const tier = referralTier(invited, config)
-  if (tier <= state.appearance.refMark) return { state, tier: state.appearance.refMark, stars: 0 }
-  // все пороги между прежним и новым уровнями: сумма их звёздочек
-  const stars = config.referrals.milestones
-    .filter((_, i) => i >= state.appearance.refMark && i < tier)
-    .reduce((sum, m) => sum + (config.shop.referralStars[m] ?? 0), 0)
+  const paid = state.appearance.refMark
+  // счётчик пишется под тем же потолком, что и clamp сейва: иначе после
+  // каждого чтения refMark «отставал» бы и награда платилась заново
+  const count = Math.min(invited, REF_MARK_CAP)
+  if (count <= paid) return { state, friends: paid, stars: 0 }
+  const stars = (count - paid) * config.shop.referralStarsPerFriend
   return {
-    state: earnStars({ ...state, appearance: { ...state.appearance, refMark: tier } }, stars),
-    tier,
+    state: earnStars({ ...state, appearance: { ...state.appearance, refMark: count } }, stars),
+    friends: count,
     stars,
   }
 }

@@ -25,15 +25,6 @@ function pluralWeeks(n: number): string {
   return 'недель'
 }
 
-/** Русская плюрализация: 1 друга, 3 друга, 5 друзей. */
-function pluralFriends(n: number): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return 'друга'
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'друга'
-  return 'друзей'
-}
-
 /** Русская плюрализация: 1 звезда, 2 звезды, 5 звёзд. */
 function pluralStars(n: number): string {
   const mod10 = n % 10
@@ -262,8 +253,8 @@ export const ru = {
   // --- панель «Позови друга» ---
   inviteAria: 'Позови друга',
   inviteTitle: 'Позови друга!',
-  inviteSub: 'Друг запустит Eggo по твоей ссылке — питомцу звезда дружбы ✨',
-  inviteMilestone: (n: number) => `Звезда за ${n} ${pluralFriends(n)}`,
+  inviteSub: 'Друг запустит Eggo по твоей ссылке — питомцу звезда дружбы и звёздочки ✨',
+  invitePerFriend: (n: number) => `⭐ +${n} за каждого друга`,
   inviteCount: (n: number) => `Уже позвал: ${n}`,
   inviteShare: 'Поделиться ссылкой',
   inviteReward: (n: number, stars: number) =>

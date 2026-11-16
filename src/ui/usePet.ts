@@ -209,15 +209,15 @@ useEffect(() => {
     return () => window.clearTimeout(id)
   }, [notice])
 
-  // звёзды дружбы: счётчик приглашённых дорос до порога — питомцу +звезда.
+  // звёзды дружбы: за каждого друга — питомцу звезда и звёздочки.
   // Награда выводится из счётчика, поэтому идемпотентна и не теряется при слиянии
   useEffect(() => {
     if (pet === null || invited === null) return
     const reward = applyReferralReward(pet, invited, config)
-    if (reward.tier <= pet.appearance.refMark) return
+    if (reward.friends <= pet.appearance.refMark) return
       setPet({ ...reward.state, lastEventAt: Date.now() })
       forceSyncRef.current = true
-      setNotice(str.inviteReward(reward.tier, reward.stars))
+      setNotice(str.inviteReward(reward.friends, reward.stars))
       setCelebrate((n) => n + 1)
       hapticSuccess()
   }, [invited, pet, config])

@@ -1,31 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeAppearance } from '../src/game/appearance'
+import { normalizeAppearance, REF_MARK_CAP } from '../src/game/appearance'
 import { DEFAULT_CONFIG } from '../src/game/config'
-import { applyReferralReward, referralTier } from '../src/game/referrals'
+import { applyReferralReward } from '../src/game/referrals'
 import { hatchedPet, TEST_APPEARANCE } from './helpers'
 
 const CFG = DEFAULT_CONFIG
 
-describe('referralTier', () => {
-  it('считает пересечённые пороги', () => {
-    expect(referralTier(0, CFG)).toBe(0)
-    expect(referralTier(1, CFG)).toBe(1)
-    expect(referralTier(2, CFG)).toBe(1)
-    expect(referralTier(3, CFG)).toBe(2)
-    expect(referralTier(9, CFG)).toBe(2)
-    expect(referralTier(10, CFG)).toBe(3)
-    expect(referralTier(99, CFG)).toBe(3)
-  })
-})
-
-describe('applyReferralReward', () => {
-  it('выдаёт звёзды и звёздочки, когда порог пересечён; остальные гены не тронуты', () => {
+describe('applyReferralReward — за каждого друга', () => {
+  it('первый друг: звезда дружбы и звёздочки за каждого друга', () => {
     const pet = hatchedPet(CFG)
     const reward = applyReferralReward(pet, 1, CFG)
-    expect(reward.tier).toBe(1)
+    expect(reward.friends).toBe(1)
     expect(reward.state.appearance).toEqual({ ...pet.appearance, refMark: 1 })
-    expect(reward.stars).toBe(CFG.shop.referralStars[1])
-    expect(reward.state.stars).toBe(pet.stars + CFG.shop.referralStars[1]!)
+    expect(reward.stars).toBe(CFG.shop.referralStarsPerFriend)
+    expect(reward.state.stars).toBe(pet.stars + CFG.shop.referralStarsPerFriend)
+  })
+
+  it('награда линейна: три друга — три порции звёздочек', () => {
+    const pet = hatchedPet(CFG)
+    const reward = applyReferralReward(pet, 3, CFG)
+    expect(reward.friends).toBe(3)
+    expect(reward.stars).toBe(CFG.shop.referralStarsPerFriend * 3)
+    expect(reward.state.appearance.refMark).toBe(3)
   })
 
   it('идемпотентна: повторный пересчёт не меняет состояние и не платит', () => {
@@ -33,22 +29,32 @@ describe('applyReferralReward', () => {
     const first = applyReferralReward(pet, 3, CFG)
     const again = applyReferralReward(first.state, 3, CFG)
     expect(again.state).toBe(first.state)
-    expect(again.tier).toBe(2)
+    expect(again.friends).toBe(3)
     expect(again.stars).toBe(0)
   })
 
-  it('скачок через два порога платит за оба', () => {
-    const pet = hatchedPet(CFG)
-    const reward = applyReferralReward(pet, 10, CFG)
-    expect(reward.tier).toBe(3)
-    expect(reward.stars).toBe(CFG.shop.referralStars[1]! + CFG.shop.referralStars[3]! + CFG.shop.referralStars[10]!)
+  it('новые друзья сверху платят только за разницу', () => {
+    const pet = hatchedPet(CFG, { appearance: { ...TEST_APPEARANCE, refMark: 3 } })
+    const reward = applyReferralReward(pet, 5, CFG)
+    expect(reward.stars).toBe(CFG.shop.referralStarsPerFriend * 2)
+    expect(reward.friends).toBe(5)
+    expect(reward.state.appearance.refMark).toBe(5)
   })
 
-  it('меньше заработанного звёзд не отбирает', () => {
-    const pet = hatchedPet(CFG, { appearance: { ...TEST_APPEARANCE, refMark: 3 } })
+  it('меньше оплаченных друзей счётчик не отбирает', () => {
+    const pet = hatchedPet(CFG, { appearance: { ...TEST_APPEARANCE, refMark: 5 } })
     const reward = applyReferralReward(pet, 1, CFG)
     expect(reward.state).toBe(pet)
-    expect(reward.tier).toBe(3)
+    expect(reward.friends).toBe(5)
+  })
+
+  it('потолок счётчика не ломает идемпотентность: cap+1 платит один раз', () => {
+    const pet = hatchedPet(CFG)
+    const reward = applyReferralReward(pet, REF_MARK_CAP + 1, CFG)
+    expect(reward.state.appearance.refMark).toBe(REF_MARK_CAP)
+    const again = applyReferralReward(reward.state, REF_MARK_CAP + 1, CFG)
+    expect(again.state).toBe(reward.state)
+    expect(again.stars).toBe(0)
   })
 })
 
@@ -58,9 +64,10 @@ describe('normalizeAppearance — звёзды дружбы', () => {
     expect(normalizeAppearance(old)?.refMark).toBe(0)
   })
 
-  it('кривое число звёзд зажимается в 0..3', () => {
+  it('кривое число звёзд зажимается в 0..999 (счётчик друзей не ограничен тремя)', () => {
     expect(normalizeAppearance({ ...TEST_APPEARANCE, refMark: 2 })?.refMark).toBe(2)
-    expect(normalizeAppearance({ ...TEST_APPEARANCE, refMark: 7 })?.refMark).toBe(3)
+    expect(normalizeAppearance({ ...TEST_APPEARANCE, refMark: 7 })?.refMark).toBe(7)
+    expect(normalizeAppearance({ ...TEST_APPEARANCE, refMark: 5000 })?.refMark).toBe(999)
     expect(normalizeAppearance({ ...TEST_APPEARANCE, refMark: -1 })?.refMark).toBe(0)
     expect(normalizeAppearance({ ...TEST_APPEARANCE, refMark: 'две' })?.refMark).toBe(0)
   })

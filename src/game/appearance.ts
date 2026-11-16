@@ -6,6 +6,9 @@
  */
 
 export type BodyShape = 'round' | 'pear' | 'tall'
+
+/** Потолок звёзд дружбы (refMark = оплаченные друзья): защита от мусора, не механика. */
+export const REF_MARK_CAP = 999
 export type EarKind = 'round' | 'long' | 'droopy' | 'tuft'
 export type EyeKind = 'big' | 'beady' | 'wide'
 export type NoseKind = 'oval' | 'triangle' | 'dot' | 'none'
@@ -100,10 +103,11 @@ export function normalizeAppearance(value: unknown): PetAppearance | null {
     legs: v.legs,
     palette: v.palette,
     spots: isOneOf(v.spots, SPOT_KINDS) ? v.spots : 'none',
-    // сейвы до звёзд дружбы (и с битым числом) — питомец просто ещё не приглашал
+    // сейвы до звёзд дружбы (и с битым числом) — питомец просто ещё не приглашал;
+    // refMark = сколько друзей оплачено, потолок — защита от мусора, не механика
     refMark:
       typeof v.refMark === 'number' && Number.isFinite(v.refMark)
-        ? Math.min(3, Math.max(0, Math.floor(v.refMark)))
+        ? Math.min(REF_MARK_CAP, Math.max(0, Math.floor(v.refMark)))
         : 0,
   }
 }

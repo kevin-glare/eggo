@@ -217,8 +217,8 @@ export const en: Strings = {
   // --- invite panel ---
   inviteAria: 'Invite a friend',
   inviteTitle: 'Invite a friend!',
-  inviteSub: 'A friend launches Eggo via your link — your pet gets a friendship star ✨',
-  inviteMilestone: (n: number) => `Star for ${n} ${n === 1 ? 'friend' : 'friends'}`,
+  inviteSub: 'A friend launches Eggo via your link — your pet earns a friendship star and ⭐',
+  invitePerFriend: (n: number) => `⭐ +${n} per friend`,
   inviteCount: (n: number) => `Friends joined: ${n}`,
   inviteShare: 'Share the link',
   inviteReward: (n: number, stars: number) =>
