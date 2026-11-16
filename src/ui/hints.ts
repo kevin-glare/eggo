@@ -50,7 +50,7 @@ export function markRequestHintDone(): void {
  * Карточка «Что нового» — разовое сообщение об обновлении. Флаг в
  * localStorage: на новом устройстве карточка покажется снова — не страшно.
  */
-const WHATSNEW_FLAG = PREFIX + 'whatsnew-shop'
+const WHATSNEW_FLAG = PREFIX + 'whatsnew-stars'
 
 export function isWhatsNewDone(): boolean {
   try {
