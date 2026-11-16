@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CONFIG } from '../src/game/config'
+import { DEFAULT_CONFIG, type GameConfig } from '../src/game/config'
 import { dayKey } from '../src/game/quests'
 import { convertStreakStars, missYou, touchStreak } from '../src/game/streak'
 import { DAY, HOUR, makePet } from './helpers'
@@ -7,17 +7,19 @@ import { DAY, HOUR, makePet } from './helpers'
 const NOW = Date.UTC(2026, 9, 28, 12, 0, 0)
 
 describe('touchStreak', () => {
-  it('первая активность за долгое время — серия 1, без праздника и без звёздочек', () => {
+  it('первая активность — серия 1 и звёздочка за день', () => {
     const pet = makePet(DEFAULT_CONFIG, { streakDays: 0, lastVisitDayKey: null })
     const result = touchStreak(pet, DEFAULT_CONFIG, NOW)
     expect(result.extended).toBe(true)
+    expect(result.days).toBe(1)
     expect(result.milestone).toBeNull()
-    expect(result.stars).toBe(0)
+    expect(result.stars).toBe(DEFAULT_CONFIG.shop.streakDayStars)
+    expect(result.state.stars).toBe(pet.stars + DEFAULT_CONFIG.shop.streakDayStars)
     expect(result.state.streakDays).toBe(1)
     expect(result.state.lastVisitDayKey).toBe(dayKey(NOW))
   })
 
-  it('повторные действия в тот же день серию не двигают', () => {
+  it('повторные действия в тот же день серию не двигают и не платят', () => {
     const pet = touchStreak(makePet(DEFAULT_CONFIG), DEFAULT_CONFIG, NOW).state
     const again = touchStreak(pet, DEFAULT_CONFIG, NOW + 3 * HOUR)
     expect(again.extended).toBe(false)
@@ -27,33 +29,36 @@ describe('touchStreak', () => {
     expect(again.state).toBe(pet) // состояние даже не пересоздаётся
   })
 
-  it('вчера — серия растёт', () => {
+  it('вчера — серия растёт и платит за каждый день', () => {
     const pet = makePet(DEFAULT_CONFIG, { streakDays: 4, lastVisitDayKey: '2026-10-27' })
     const result = touchStreak(pet, DEFAULT_CONFIG, NOW)
     expect(result.extended).toBe(true)
+    expect(result.days).toBe(5)
     expect(result.state.streakDays).toBe(5)
+    expect(result.state.stars).toBe(pet.stars + DEFAULT_CONFIG.shop.streakDayStars)
   })
 
-  it('пропустил день — серия сгорает и начинается заново с 1', () => {
+  it('пропустил день — серия сгорает, начинается заново с 1 и платит за день', () => {
     const pet = makePet(DEFAULT_CONFIG, { streakDays: 9, lastVisitDayKey: '2026-10-26' })
     const result = touchStreak(pet, DEFAULT_CONFIG, NOW)
     expect(result.state.streakDays).toBe(1)
+    expect(result.stars).toBe(DEFAULT_CONFIG.shop.streakDayStars)
   })
 
-  it('порог серии — праздник и звёздочки; следующее продление — уже нет', () => {
+  it('порог серии — день конфетти, звёздочки платятся и без порога', () => {
     let pet = makePet(DEFAULT_CONFIG, { streakDays: 2, lastVisitDayKey: '2026-10-27' })
     const third = touchStreak(pet, DEFAULT_CONFIG, NOW)
     expect(third.milestone).toBe(3)
-    expect(third.stars).toBe(DEFAULT_CONFIG.shop.streakStars[3])
-    expect(third.state.stars).toBe(pet.stars + DEFAULT_CONFIG.shop.streakStars[3]!)
+    expect(third.stars).toBe(DEFAULT_CONFIG.shop.streakDayStars)
+    expect(third.state.stars).toBe(pet.stars + DEFAULT_CONFIG.shop.streakDayStars)
     const fourth = touchStreak(third.state, DEFAULT_CONFIG, NOW + DAY)
     expect(fourth.milestone).toBeNull()
-    expect(fourth.stars).toBe(0)
-    expect(fourth.state.stars).toBe(third.state.stars)
+    expect(fourth.stars).toBe(DEFAULT_CONFIG.shop.streakDayStars)
+    expect(fourth.state.stars).toBe(third.state.stars + DEFAULT_CONFIG.shop.streakDayStars)
     expect(fourth.state.streakDays).toBe(4)
   })
 
-  it('пороги берутся из конфига: 7, 14 и 30 празднуются тоже', () => {
+  it('пороги берутся из конфига: 7, 14 и 30 — дни конфетти', () => {
     for (const [before, milestone] of [
       [6, 7],
       [13, 14],
@@ -62,8 +67,15 @@ describe('touchStreak', () => {
       const pet = makePet(DEFAULT_CONFIG, { streakDays: before, lastVisitDayKey: '2026-10-27' })
       const result = touchStreak(pet, DEFAULT_CONFIG, NOW)
       expect(result.milestone).toBe(milestone)
-      expect(result.stars).toBe(DEFAULT_CONFIG.shop.streakStars[milestone])
     }
+  })
+
+  it('ставка за день берётся из конфига', () => {
+    const config: GameConfig = { ...DEFAULT_CONFIG, shop: { ...DEFAULT_CONFIG.shop, streakDayStars: 7 } }
+    const pet = makePet(config, { streakDays: 4, lastVisitDayKey: '2026-10-27' })
+    const result = touchStreak(pet, config, NOW)
+    expect(result.stars).toBe(7)
+    expect(result.state.stars).toBe(pet.stars + 7)
   })
 
   it('не мутирует исходное состояние', () => {

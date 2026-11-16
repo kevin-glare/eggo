@@ -276,14 +276,15 @@ useEffect(() => {
         markRequestHintDone()
       }
       // успешное действие отмечается в заданиях дня и в серии дней
-      let milestoneToast: string | null = null
+      let streakToast: string | null = null
       if (questId) {
         next = recordQuest(next, questId, config, Date.now())
         const streak = touchStreak(next, config, Date.now())
         next = streak.state
-        if (streak.milestone !== null) {
-          milestoneToast = str.daysInRow(streak.milestone, streak.stars)
-          setCelebrate((n) => n + 1)
+        if (streak.extended) {
+          // каждый день серии — тост с наградой; конфетти — только в пороговый день
+          streakToast = str.daysInRow(streak.days, streak.stars)
+          if (streak.milestone !== null) setCelebrate((n) => n + 1)
         }
       }
       // забота капает в опыт дружбы; перешагнули порог — праздник
@@ -293,14 +294,14 @@ useEffect(() => {
       if (nextLevel > prevLevel) setCelebrate((n) => n + 1)
       setPet(next)
       forceSyncRef.current = true
-      // один тост по старшинству: просьба ×2 > уровень дружбы > веха стрика > текст действия
+      // один тост по старшинству: просьба ×2 > уровень дружбы > серия дней > текст действия
       const levelUpToast = nextLevel > prevLevel
         ? str.levelUp(str.friendshipTitles[Math.min(nextLevel, str.friendshipTitles.length) - 1] ?? '')
         : null
       setNotice(
         result.requestBonus === true
           ? str.requestBonus(current.name ?? str.petFallbackName)
-          : levelUpToast ?? milestoneToast ?? successText,
+          : levelUpToast ?? streakToast ?? successText,
       )
       hapticSuccess()
       return { ...result, state: next }
