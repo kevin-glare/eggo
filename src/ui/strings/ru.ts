@@ -142,9 +142,9 @@ export const ru = {
   mgBest: (n: number) => `Рекорд: ${n}`,
   mgNewRecord: '🏆 Новый рекорд!',
   mgBonus: (n: number) => `Эгго в восторге: +${n} к счастью`,
+  mgStars: (n: number) => `⭐ +${n} за партию`,
   mgGameOver: 'Игра окончена',
-  mgRecordToast: (n: number, stars: number) =>
-    stars > 0 ? `🏆 Новый рекорд: ${n} — +${stars} ⭐!` : `🏆 Новый рекорд: ${n}!`,
+  mgRecordToast: (n: number) => `🏆 Новый рекорд: ${n}!`,
   mgTime: (s: number) => `${s} с`,
   mgMatched: 'пара собрана',
   mgCardHidden: 'Закрытая карточка',

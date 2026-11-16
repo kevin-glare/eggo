@@ -19,6 +19,8 @@ export interface MinigameResultView {
   score: number
   isRecord: boolean
   bonus: number
+  /** всего звёздочек за партию: за саму игру + за рекорд */
+  stars: number
 }
 
 interface MinigameOverlayProps {
@@ -161,6 +163,7 @@ export default function MinigameOverlay({
             ) : best !== null ? (
               <p className="mg-note">{str.mgBest(best)}</p>
             ) : null}
+            {result.stars > 0 && <p className="mg-note">{str.mgStars(result.stars)}</p>}
             {result.bonus > 0 && <p className="mg-note">{str.mgBonus(result.bonus)}</p>}
             <p className="mg-note">{str.mgGameOver}</p>
             <button type="button" className="mg-btn" onClick={restart}>

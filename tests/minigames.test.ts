@@ -10,7 +10,7 @@ import {
   type MemoryState,
 } from '../src/game/minigames/memory'
 import { AVAILABLE_MINIGAMES, MINIGAME_IDS, pickMinigame } from '../src/game/minigames'
-import { applyMinigameBonus, minigameBonus, recordMinigameScore } from '../src/game/minigames/reward'
+import { applyMinigameBonus, earnPartyStars, minigameBonus, recordMinigameScore } from '../src/game/minigames/reward'
 import type { MinigameId } from '../src/game/minigames/types'
 import { hatchedPet } from './helpers'
 
@@ -201,5 +201,17 @@ describe('награды мини-игр', () => {
     const next = recordMinigameScore(pet, 'runner' as MinigameId, 10, config).state
     expect(next.minigameBest.memory).toBe(50)
     expect(next.minigameBest.runner).toBe(10)
+  })
+
+  it('партия платит сама: earnPartyStars начисляет config.shop.playStars', () => {
+    const pet = hatchedPet(config)
+    const next = earnPartyStars(pet, config)
+    expect(next.stars).toBe(pet.stars + config.shop.playStars)
+  })
+
+  it('playStars: 0 — состояние возвращается как есть', () => {
+    const pet = hatchedPet(config)
+    const zero: GameConfig = { ...config, shop: { ...config.shop, playStars: 0 } }
+    expect(earnPartyStars(pet, zero)).toBe(pet)
   })
 })

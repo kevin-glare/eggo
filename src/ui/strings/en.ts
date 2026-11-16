@@ -98,9 +98,9 @@ export const en: Strings = {
   mgBest: (n: number) => `Best: ${n}`,
   mgNewRecord: '🏆 New record!',
   mgBonus: (n: number) => `Eggo is thrilled: +${n} happiness`,
+  mgStars: (n: number) => `⭐ +${n} for playing`,
   mgGameOver: 'Game over',
-  mgRecordToast: (n: number, stars: number) =>
-    stars > 0 ? `🏆 New record: ${n} — +${stars} ⭐!` : `🏆 New record: ${n}!`,
+  mgRecordToast: (n: number) => `🏆 New record: ${n}!`,
   mgTime: (s: number) => `${s} s`,
   mgMatched: 'pair matched',
   mgCardHidden: 'Hidden card',

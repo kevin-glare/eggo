@@ -6,7 +6,7 @@ import type { MinigameId } from './types'
 /**
  * Награда мини-игр. База — обычный play() (радость, усталость, просьба ×2,
  * квест) — его применяет usePet после партии. Здесь только добавка:
- * бонус к счастью за победу, запись рекорда и звёздочки за рекорд.
+ * бонус к счастью за победу, звёздочки за саму партию и за рекорд.
  */
 
 /** Бонус к счастью за партию: за новый рекорд; в игре дня — двойной. */
@@ -45,4 +45,13 @@ export function recordMinigameScore(
     isRecord: true,
     stars: config.shop.recordStars,
   }
+}
+
+/**
+ * За саму доигранную партию — звёздочки в кошелёк, без условий
+ * (config.shop.playStars). Выход посреди партии сюда не доходит:
+ * награду применяет usePet только на финише.
+ */
+export function earnPartyStars(state: PetState, config: GameConfig): PetState {
+  return earnStars(state, config.shop.playStars)
 }

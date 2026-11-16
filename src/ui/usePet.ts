@@ -23,7 +23,7 @@ import { convertStreakStars, friendshipDay, missYou, touchStreak } from '../game
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
 import type { PetState } from '../game/types'
 import type { MinigameId, MinigameOutcome } from '../game/minigames/types'
-import { applyMinigameBonus, minigameBonus, recordMinigameScore } from '../game/minigames/reward'
+import { applyMinigameBonus, earnPartyStars, minigameBonus, recordMinigameScore } from '../game/minigames/reward'
 import { feedCatch } from '../game/actions'
 import { updateRequest } from '../game/requests'
 import { applyReferralReward } from '../game/referrals'
@@ -318,16 +318,19 @@ useEffect(() => {
    * бонус за победу и запись рекорда. Весь итог — одно событие игрока.
    */
   const finishMinigame = useCallback(
-    (id: MinigameId, outcome: MinigameOutcome): { isRecord: boolean; bonus: number } => {
+    (id: MinigameId, outcome: MinigameOutcome): { isRecord: boolean; bonus: number; stars: number } => {
       // базовое «поиграли»: отказ (уже счастлив и т.п.) не мешает рекорду
       const base = playPet()
       const current = base?.state ?? petRef.current
-      if (current === null) return { isRecord: false, bonus: 0 }
+      if (current === null) return { isRecord: false, bonus: 0, stars: 0 }
       const rec = recordMinigameScore(current, id, outcome.score, config)
       // игра дня: рекорд платит двойной бонус
       const bonus = minigameBonus(rec.isRecord, dayGame(dayKey(Date.now())) === id, config)
       let next = rec.state
       if (bonus > 0) next = applyMinigameBonus(next, bonus)
+      // партия платит сама: звёздочка за доигранную сессию (config.shop.playStars)
+      next = earnPartyStars(next, config)
+      const stars = rec.stars + config.shop.playStars
       // партия — тоже забота: опыт дружбы сверху действия play
       next = addXp(next, config.friendship.xpPerMinigame)
       if (next !== current) {
@@ -335,10 +338,10 @@ useEffect(() => {
         forceSyncRef.current = true
       }
       if (rec.isRecord) {
-        setNotice(str.mgRecordToast(outcome.score, rec.stars))
+        setNotice(str.mgRecordToast(outcome.score))
         setCelebrate((n) => n + 1)
       }
-      return { isRecord: rec.isRecord, bonus }
+      return { isRecord: rec.isRecord, bonus, stars }
     },
     [config, playPet, str],
   )
