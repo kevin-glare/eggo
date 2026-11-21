@@ -1,10 +1,11 @@
 import type { GameConfig } from './config'
 import { normalizeAppearance, type PetAppearance } from './appearance'
 import { stageForAge, tick } from './engine'
+import { SCENE_EVENT_KINDS } from './events'
 import type { QuestId } from './quests'
 import type { DailyQuests } from './quests'
 import { applyAutoServices } from './services'
-import type { PetAccessorySlots, PetCosmetics, PetRequest, PetState, RequestKind, Stats } from './types'
+import type { PetAccessorySlots, PetCosmetics, PetRequest, PetState, RequestKind, SceneEvent, Stats } from './types'
 import { MINIGAME_IDS } from './minigames'
 import type { MinigameId } from './minigames/types'
 
@@ -42,6 +43,18 @@ function normalizeRequest(raw: unknown): PetRequest | null {
   if (typeof r.kind !== 'string' || !REQUEST_KINDS.includes(r.kind as RequestKind)) return null
   if (typeof r.expiresAt !== 'number' || r.expiresAt < 0) return null
   return { kind: r.kind as RequestKind, expiresAt: r.expiresAt }
+}
+
+/**
+ * События на сцене появились позже сейва v1: их отсутствие или поломка
+ * нормализуется в null — питомец просто дождётся следующего события.
+ */
+function normalizeEvent(raw: unknown): SceneEvent | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const e = raw as Partial<SceneEvent>
+  if (typeof e.kind !== 'string' || !SCENE_EVENT_KINDS.includes(e.kind as SceneEvent['kind'])) return null
+  if (typeof e.expiresAt !== 'number' || e.expiresAt < 0) return null
+  return { kind: e.kind as SceneEvent['kind'], expiresAt: e.expiresAt }
 }
 
 /**
@@ -150,6 +163,9 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
         : null,
       request: normalizeRequest(pet.request),
       nextRequestAt: typeof pet.nextRequestAt === 'number' && pet.nextRequestAt >= 0 ? pet.nextRequestAt : 0,
+      // события на сцене появились позже сейва v1: событие не ждёт, таймер в нуле
+      event: normalizeEvent(pet.event),
+      nextEventAt: typeof pet.nextEventAt === 'number' && pet.nextEventAt >= 0 ? pet.nextEventAt : 0,
       minigameBest: normalizeMinigameBest(pet.minigameBest),
       // перекорм появился позже сейва v1: отсутствие — питомец не объедался
       overfedUntil: typeof pet.overfedUntil === 'number' && pet.overfedUntil >= 0 ? pet.overfedUntil : 0,

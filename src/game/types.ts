@@ -49,6 +49,16 @@ export interface PetRequest {
   expiresAt: number
 }
 
+/** Что появляется на сцене само по себе: тапабельный объект с наградой. */
+export type SceneEventKind = 'star' | 'butterfly' | 'bubbles'
+
+/** Активное событие на сцене: тапни, чтобы поймать. */
+export interface SceneEvent {
+  kind: SceneEventKind
+  /** до какого реального момента событие можно поймать (мс, epoch) */
+  expiresAt: number
+}
+
 /** Полное состояние питомца. Все значения — чистые данные, без методов. */
 export interface PetState {
   /** реальный момент создания (мс, epoch) */
@@ -83,6 +93,10 @@ export interface PetState {
   request: PetRequest | null
   /** реальный момент, когда питомец снова может попросить (мс, epoch) */
   nextRequestAt: number
+  /** активное событие на сцене: тапни, чтобы поймать; null — событий нет (нормализуется) */
+  event: SceneEvent | null
+  /** реальный момент следующего появления события на сцене (мс, epoch); у старых сейвов 0 (нормализуется) */
+  nextEventAt: number
   /** рекорды мини-игр: лучший счёт каждой; у старых сейвов пусто (нормализуется) */
   minigameBest: Partial<Record<MinigameId, number>>
   /** до какого реального момента питомец отдыхает после объедения (мс, epoch); 0 — не объедался */

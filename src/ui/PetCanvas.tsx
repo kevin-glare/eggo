@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import type { PetAppearance } from '../game/appearance'
 import type { DesireKind } from '../game/engine'
 import { createFeeding, feedTap, FEEDING_WORLD, stepFeeding, type FeedingBalance, type FeedingState } from '../game/feeding'
-import type { Mood, PetRequest, Stage } from '../game/types'
+import type { Mood, PetRequest, SceneEvent, SceneEventKind, Stage } from '../game/types'
 import { dirtIntensity, type DirtLevel } from './dirt'
 import { getStrings } from './i18n'
 import {
@@ -15,7 +15,7 @@ import {
   SCENE_W,
   type PetVisualState,
 } from './petArt'
-import { drawScene } from './scene'
+import { drawScene, drawSceneEvent } from './scene'
 import { resolveHolidayTheme } from './holidays'
 import { hapticSuccess, hapticTap, hapticWarning } from '../telegram'
 import { playSound } from './sound'
@@ -44,6 +44,10 @@ interface PetCanvasProps {
   desire?: DesireKind | null
   /** активная просьба — пузырёк показывает её вместо пассивного желания */
   request?: PetRequest | null
+  /** активное событие на сцене: тапабельная звёздочка/бабочка/пузырьки; null — скрыт */
+  sceneEvent?: SceneEvent | null
+  /** тап по событию сцены: поймать его */
+  onEventTap?: () => void
   /** dev: подменный час неба; null = локальное время пользователя */
   skyHourOverride?: number | null
   onTap?: () => void
@@ -219,6 +223,8 @@ export default function PetCanvas({
   neglectLevel = 0,
   desire,
   request,
+  sceneEvent = null,
+  onEventTap,
   skyHourOverride,
   onTap,
   onPetTap,
@@ -230,8 +236,8 @@ export default function PetCanvas({
   cake = false,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessories, decor, cake, feeding, fullness })
-  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessories, decor, cake, feeding, fullness }
+  const propsRef = useRef({ stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessories, decor, cake, feeding, fullness, sceneEvent })
+  propsRef.current = { stage, mood, appearance, eggProgress, skyHourOverride, dirtLevel, accessories, decor, cake, feeding, fullness, sceneEvent }
   const visRef = useRef<PetVisualState>(createVisualState())
   const sceneRef = useRef({ energy: 0.7, warm: 0.9, neglect: 0 })
   const particlesRef = useRef<Particle[]>([])
@@ -280,6 +286,28 @@ export default function PetCanvas({
     if (kind) bubbleRef.current.kind = kind
     gsap.to(bubbleRef.current, { alpha: kind ? 1 : 0, duration: 0.3, ease: 'power1.out', overwrite: 'auto' })
   }, [desire, request])
+
+  // событие сцены: место рождения выбирается один раз на спавн — по ключу
+  // окна (expiresAt уникален у каждого появления), в полосе видимости x 0.23–0.77
+  const eventPosRef = useRef<{ kind: SceneEventKind; x: number; y: number } | null>(null)
+  const eventSpawnRef = useRef(0)
+  useEffect(() => {
+    const ev = sceneEvent
+    if (ev === null) {
+      eventPosRef.current = null
+      return
+    }
+    if (eventSpawnRef.current === ev.expiresAt) return
+    eventSpawnRef.current = ev.expiresAt
+    const x = SCENE_W * (0.23 + Math.random() * 0.54)
+    const y =
+      ev.kind === 'star'
+        ? 60 + Math.random() * 70
+        : ev.kind === 'butterfly'
+          ? GROUND_Y - 150 - Math.random() * 50
+          : GROUND_Y - 70 - Math.random() * 60
+    eventPosRef.current = { kind: ev.kind, x, y }
+  }, [sceneEvent])
 
   // канвас, рендер-цикл и вечные GSAP-циклы (дыхание, покачивание, моргание)
   useEffect(() => {
@@ -361,6 +389,12 @@ export default function PetCanvas({
       if (holiday) holiday.draw(ctx, SCENE_W, SCENE_H, now, sky)
       // купленный декор: цветы/гриб/домик на лугу, лодка у берега
       drawDecor(ctx, SCENE_W, SCENE_H, deco, now)
+      // случайное событие: гаснет к концу своего окна
+      const ev = propsRef.current.sceneEvent
+      const evPos = eventPosRef.current
+      if (ev !== null && evPos !== null && evPos.kind === ev.kind) {
+        drawSceneEvent(ctx, ev.kind, evPos.x, evPos.y, now, Math.min(1, (ev.expiresAt - Date.now()) / 4000))
+      }
       if (showCake) drawCake(ctx, CAKE_X, GROUND_Y + 3, now)
       if (bubbleRef.current.alpha > 0.01)
         drawDesireBubble(ctx, bubbleRef.current.kind, bubbleRef.current.alpha, now, SCENE_W / 2 + wanderRef.current.x)
@@ -731,6 +765,23 @@ export default function PetCanvas({
         }
       }
       return
+    }
+    // событие сцены: тап по нему ловит событие — до проверки питомца,
+    // чтобы бабочка над питомцем не превращалась в поглаживание.
+    // Окно сверяем прямо здесь: между тиками секунда, когда хит-зона
+    // уже просрочена, а состояние ещё не убрано — фидбека быть не должно
+    const ev = propsRef.current.sceneEvent
+    const evPos = eventPosRef.current
+    if (ev !== null && evPos !== null && evPos.kind === ev.kind && ev.expiresAt > Date.now()) {
+      const dx = x - evPos.x
+      const dy = y - evPos.y
+      if (dx * dx + dy * dy < 36 * 36) {
+        spawnSparklesAt(particlesRef.current, evPos.x, evPos.y)
+        playSound('catch')
+        hapticTap()
+        onEventTap?.()
+        return
+      }
     }
     const stroked = propsRef.current.stage !== 'egg' && hitPet(x, y)
     const v = visRef.current

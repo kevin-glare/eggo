@@ -561,3 +561,113 @@ function drawBoatDecor(ctx: CanvasRenderingContext2D, x: number, y: number, now:
   ctx.stroke()
   ctx.restore()
 }
+
+/* ---------- события на сцене ---------- */
+
+/**
+ * Случайное событие: звёздочка мерцает в небе, бабочка порхает над лугом,
+ * пузырьки всплывают над травой. Тёплое пульсирующее сияние вокруг —
+ * приглашение тапнуть. alpha гаснет к концу окна события.
+ */
+export function drawSceneEvent(
+  ctx: CanvasRenderingContext2D,
+  kind: 'star' | 'butterfly' | 'bubbles',
+  x: number,
+  y: number,
+  now: number,
+  alpha: number,
+): void {
+  if (alpha <= 0.01) return
+  ctx.save()
+  ctx.globalAlpha = alpha
+  const pulse = 0.5 + 0.5 * Math.sin(now / 300)
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, 30)
+  glow.addColorStop(0, `rgba(255, 224, 130, ${(0.22 + 0.2 * pulse).toFixed(3)})`)
+  glow.addColorStop(1, 'rgba(255, 224, 130, 0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(x - 30, y - 30, 60, 60)
+  if (kind === 'star') drawEventStar(ctx, x, y, now)
+  if (kind === 'butterfly') drawEventButterfly(ctx, x, y, now)
+  if (kind === 'bubbles') drawEventBubbles(ctx, x, y, now)
+  ctx.restore()
+}
+
+function drawEventStar(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
+  ctx.save()
+  ctx.translate(x, y + Math.sin(now / 700) * 3)
+  ctx.rotate(Math.sin(now / 1100) * 0.25)
+  const twinkle = 1 + Math.sin(now / 180) * 0.12
+  ctx.scale(twinkle, twinkle)
+  ctx.beginPath()
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? 13 : 5.5
+    const a = (Math.PI * i) / 5 - Math.PI / 2
+    const px = Math.cos(a) * r
+    const py = Math.sin(a) * r
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+  ctx.fillStyle = '#ffd76a'
+  ctx.fill()
+  ctx.strokeStyle = '#d9a832'
+  ctx.lineWidth = 1.5
+  ctx.lineJoin = 'round'
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)'
+  ctx.beginPath()
+  ctx.arc(0, 0, 2.6, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+function drawEventButterfly(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
+  const flap = Math.abs(Math.sin(now / 140))
+  ctx.save()
+  ctx.translate(x, y + Math.sin(now / 600) * 4)
+  ctx.fillStyle = '#f087b8'
+  ctx.strokeStyle = '#b35574'
+  ctx.lineWidth = 1.4
+  for (const side of [-1, 1]) {
+    ctx.save()
+    ctx.scale(side, 1)
+    ctx.beginPath()
+    ctx.ellipse(8 * flap, -3, 9 * flap, 6, -0.4, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.ellipse(6 * flap, 5, 6 * flap, 4.5, 0.4, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+    ctx.restore()
+  }
+  ctx.fillStyle = '#5c4a6a'
+  ctx.beginPath()
+  ctx.ellipse(0, 0, 1.8, 7, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+function drawEventBubbles(ctx: CanvasRenderingContext2D, x: number, y: number, now: number): void {
+  const offs: [number, number, number][] = [
+    [-10, 4, 7],
+    [8, -2, 9],
+    [-1, 9, 6],
+  ]
+  ctx.save()
+  ctx.strokeStyle = '#8fd3ff'
+  ctx.lineWidth = 1.6
+  for (const [dx, dy, r] of offs) {
+    const bob = Math.sin(now / 450 + dx) * 3
+    ctx.beginPath()
+    ctx.arc(x + dx, y + dy + bob, r, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(205, 234, 255, 0.45)'
+    ctx.fill()
+    ctx.stroke()
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+    ctx.beginPath()
+    ctx.arc(x + dx - r * 0.3, y + dy + bob - r * 0.3, r * 0.22, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+}

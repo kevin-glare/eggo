@@ -21,14 +21,15 @@ import { addXp, friendshipLevel } from '../game/friendship'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { convertStreakStars, friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
-import type { PetState } from '../game/types'
+import type { PetState, SceneEventKind } from '../game/types'
 import type { MinigameId, MinigameOutcome } from '../game/minigames/types'
 import { applyMinigameBonus, earnPartyStars, minigameBonus, recordMinigameScore } from '../game/minigames/reward'
 import { feedCatch } from '../game/actions'
 import { updateRequest } from '../game/requests'
+import { claimEvent, maybeSpawnEvent } from '../game/events'
 import { applyReferralReward } from '../game/referrals'
 import { useStrings } from './i18n'
-import { isHintDone, markHintDone, markRequestHintDone } from './hints'
+import { isEventHintDone, isHintDone, markEventHintDone, markHintDone, markRequestHintDone } from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
 
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
@@ -130,10 +131,17 @@ useEffect(() => {
 }, [config])
 
   // при запуске досчитываем всё время, пока приложение было закрыто,
-  // разыгрываем задания сегодняшнего дня и просрочиваем просьбу — всё видно сразу после входа
+  // разыгрываем задания сегодняшнего дня, просрочиваем просьбу
+  // и показываем ждущее событие сцены — всё видно сразу после входа
   useEffect(() => {
     setPet((p) =>
-      p === null ? p : updateRequest(ensureDaily(catchUp(p, Date.now(), config), config, Date.now()), config, Date.now()),
+      p === null
+        ? p
+        : maybeSpawnEvent(
+            updateRequest(ensureDaily(catchUp(p, Date.now(), config), config, Date.now()), config, Date.now()),
+            config,
+            Date.now(),
+          ),
     )
   }, [config])
 
@@ -143,7 +151,11 @@ useEffect(() => {
         setPet((p) =>
           p === null
             ? p
-            : updateRequest(ensureDaily(catchUp(p, Date.now(), config), config, Date.now()), config, Date.now()),
+            : maybeSpawnEvent(
+                updateRequest(ensureDaily(catchUp(p, Date.now(), config), config, Date.now()), config, Date.now()),
+                config,
+                Date.now(),
+              ),
         ),
       1000,
     )
@@ -455,6 +467,37 @@ useEffect(() => {
     showNotice(str.shopStarsHint)
   }, [pet, showNotice, str])
 
+  // событие на сцене должно само объясниться: тост при каждом появлении,
+  // пока игрок ни разу ничего не поймал (отметка — в claimSceneEvent)
+  useEffect(() => {
+    if (pet?.event == null || isEventHintDone()) return
+    showNotice(str.eventHint)
+  }, [pet?.event, showNotice, str])
+
+  /** Поймать событие на сцене: награда и тост; отказ (окно вышло) — тихо. */
+  const claimSceneEvent = useCallback(
+    (kind: SceneEventKind) => {
+      const current = petRef.current
+      if (current === null) return
+      const result = claimEvent(current, kind, config, Date.now())
+      if (!result.ok) return
+      // поимка — событие игрока: штамп для мультидевайс-слияния
+      setPet({ ...result.state, lastEventAt: Date.now() })
+      forceSyncRef.current = true
+      markEventHintDone()
+      const reward = result.reward
+      setNotice(
+        reward.kind === 'star'
+          ? str.eventStar(reward.stars)
+          : reward.kind === 'butterfly'
+            ? str.eventButterfly(reward.happiness)
+            : str.eventBubbles(reward.cleanliness),
+      )
+      hapticSuccess()
+    },
+    [config, str],
+  )
+
   /**
    * Дать имя питомцу: без имени игра не начинается.
    * Работает и для свежего яйца, и для старого безымянного сейва.
@@ -525,6 +568,7 @@ useEffect(() => {
     finishFeeding,
     petPet,
     claimDaily,
+    claimSceneEvent,
     showNotice,
     toggleSleep,
     startGame,

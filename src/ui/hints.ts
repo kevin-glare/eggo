@@ -8,6 +8,28 @@ const PREFIX = 'eggo.hint.'
 
 export type HintKind = 'feedCatch' | 'wash' | 'stars'
 
+/**
+ * Подсказка событий сцены — не сценка, а тост, поэтому живёт отдельным флагом
+ * (как подсказка просьб). Показывается, пока игрок ни разу ничего не поймал.
+ */
+const EVENT_FLAG = PREFIX + 'event'
+
+export function isEventHintDone(): boolean {
+  try {
+    return window.localStorage.getItem(EVENT_FLAG) === 'done'
+  } catch {
+    return true
+  }
+}
+
+export function markEventHintDone(): void {
+  try {
+    window.localStorage.setItem(EVENT_FLAG, 'done')
+  } catch {
+    // без хранилища подсказка будет показываться снова — не страшно
+  }
+}
+
 export function isHintDone(kind: HintKind): boolean {
   try {
     return window.localStorage.getItem(PREFIX + kind) === 'done'

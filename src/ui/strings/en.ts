@@ -201,6 +201,12 @@ export const en: Strings = {
   requestHint: '💡 Eggo is asking for something! Do it in time — the effect is doubled',
   requestBonus: (name: string) => `✨ Request fulfilled — ${name} is delighted!`,
 
+  // --- scene events ---
+  eventHint: '✨ Something appeared on the meadow — tap to catch it!',
+  eventStar: (n: number) => `⭐ +${n} — star caught!`,
+  eventButterfly: (n: number) => `🦋 Eggo admires the butterfly: +${n} happiness`,
+  eventBubbles: (n: number) => `🫧 Bubbles popped: +${n} cleanliness`,
+
   // --- catch-the-food feeding ---
   overfed: '🤢 Eggo overate! It will rest a bit now',
 

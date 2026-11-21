@@ -76,6 +76,20 @@ export interface GameConfig {
     /** пауза от рождения питомца до первой просьбы */
     firstDelayMs: number
   }
+  /** случайные события на сцене: что-то появляется само, тапни — поймай */
+  events: {
+    /** пауза между событиями (реальное время): от минимума до максимума */
+    gapMinMs: number
+    gapMaxMs: number
+    /** сколько событие ждёт тапа, потом исчезает */
+    expireMs: number
+    /** звёздочка: звёздочек в кошелёк за поимку */
+    starStars: number
+    /** бабочка: счастья за поимку */
+    butterflyHappiness: number
+    /** пузырьки: чистоты за поимку */
+    bubblesCleanliness: number
+  }
   /** серия дней: дни, на которых праздник */
   streak: { milestones: number[] }
   /** звёздочки — валюта заботы: начисления и каталог магазина */
@@ -263,6 +277,16 @@ export const DEFAULT_CONFIG: GameConfig = {
     cooldownMs: 3 * HOUR,
     firstDelayMs: 1 * HOUR,
   },
+  // события на сцене тоже реальном времени: каждые 4–10 минут что-то
+  // появляется и ждёт тапа 45 секунд — оживление между кнопками
+  events: {
+    gapMinMs: 4 * MINUTE,
+    gapMaxMs: 10 * MINUTE,
+    expireMs: 45_000,
+    starStars: 1,
+    butterflyHappiness: 3,
+    bubblesCleanliness: 10,
+  },
   streak: { milestones: [3, 7, 14, 30] },
   // звёздочки: за задания дня, каждый день серии, каждую партию, новые
   // рекорды и приглашённых; блюда — премиум-еда на одну сессию кормления (базовая еда бесплатна)
@@ -384,6 +408,9 @@ export const DEV_CONFIG: GameConfig = {
   // просьбы живут в реальном времени — timeScale на них не влияет,
   // поэтому в dev они короткие, чтобы механику было видно за сессию
   requests: { bonusMultiplier: 2, windowMs: 2 * MINUTE, cooldownMs: MINUTE, firstDelayMs: 15_000 },
+  // события на сцене — тоже реальное время: в dev каждые 12–25 секунд,
+  // чтобы механику было видно за сессию
+  events: { ...DEFAULT_CONFIG.events, gapMinMs: 12_000, gapMaxMs: 25_000, expireMs: 30_000 },
   // перерыв после объедения тоже реальный: в dev — 20 секунд, чтобы увидеть механику
   feeding: { ...DEFAULT_CONFIG.feeding, overfedMs: 20_000 },
 }

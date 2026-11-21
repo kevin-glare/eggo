@@ -57,6 +57,7 @@ export default function App() {
     finishFeeding,
     petPet,
     claimDaily,
+    claimSceneEvent,
     showNotice,
     toggleSleep,
     startGame,
@@ -268,10 +269,16 @@ export default function App() {
               neglectLevel={neglectLevel(pet, config)}
               desire={desireKind}
               request={pet.request}
+              sceneEvent={pet.sleeping ? null : pet.event}
               skyHourOverride={skyHour}
               onPetTap={() => {
                 track('pet')
                 petPet()
+              }}
+              onEventTap={() => {
+                if (pet.event === null) return
+                track('event-claim')
+                claimSceneEvent(pet.event.kind)
               }}
               scene={scene}
               onSceneComplete={onSceneComplete}
