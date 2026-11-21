@@ -57,7 +57,7 @@ export default function QuestsBar({ daily, targets, onClaim, onExplain }: Quests
               <span className="qicon" aria-hidden="true">
                 {QUEST_ICONS[q]}
               </span>
-              <span className="qlabel">{str.quest[q]}</span>
+              <span className="qlabel">{str.questShort[q]}</span>
             </span>
             <span className="qcount">{p}/{t}</span>
           </button>

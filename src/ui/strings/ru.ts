@@ -115,6 +115,18 @@ export const ru = {
     shopVisit: 'Заглянуть в магазин',
     sleep: 'Уложить спать',
   } as Record<QuestId, string>,
+  // Короткие имена для колонок панели заданий: длинные названия там не влезают,
+  // полное имя остаётся в тосте-пояснении по тапу.
+  questShort: {
+    feed: 'Покормить',
+    play: 'Поиграть',
+    wash: 'Помыть',
+    pet: 'Погладить',
+    gameOfDay: 'Игра дня',
+    catchStar: 'Звёздочка',
+    shopVisit: 'Магазин',
+    sleep: 'Сон',
+  } as Record<QuestId, string>,
   questExplainDone: (label: string, t: number) =>
     `✅ «${label}» — ${t}/${t} сегодня. Задания считают заботу, а статы падают сами.`,
   questExplainProgress: (label: string, p: number, t: number) => `🎯 «${label}» — ${p}/${t} сегодня.`,

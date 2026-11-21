@@ -81,6 +81,17 @@ export const en: Strings = {
     shopVisit: 'Visit the shop',
     sleep: 'Tuck in to sleep',
   },
+  // Short names for the quests panel columns; full names stay in tap-toasts.
+  questShort: {
+    feed: 'Feed',
+    play: 'Play',
+    wash: 'Wash',
+    pet: 'Pet',
+    gameOfDay: 'Daily game',
+    catchStar: 'Star',
+    shopVisit: 'Shop',
+    sleep: 'Sleep',
+  },
   questExplainDone: (label: string, t: number) =>
     `✅ “${label}” — ${t}/${t} today. Quests count your care; stats drop on their own.`,
   questExplainProgress: (label: string, p: number, t: number) => `🎯 “${label}” — ${p}/${t} today.`,

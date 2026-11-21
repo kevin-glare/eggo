@@ -1046,6 +1046,9 @@ body {
   align-items: center;
   gap: 3px;
   min-width: 0;
+  /* не шире своей колонки: иначе длинная подпись наезжает на соседей,
+    а ellipsis на .qlabel не срабатывает */
+  max-width: 100%;
 }
 
 .qcell .qicon {
