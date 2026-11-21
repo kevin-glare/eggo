@@ -36,6 +36,9 @@ import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegra
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
 
+/** После полного провала POST-ов следующий синк — раньше обычного интервала. */
+const SYNC_FAIL_RETRY_MS = 5_000
+
 /**
  * Страховка от вечной загрузки: у некоторых вебвью фетч может зависнуть
  * навсегда и не отозваться на abort. Худший честный путь стартового синка —
@@ -67,6 +70,8 @@ export function usePet(config: GameConfig) {
   petRef.current = pet
   const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
   const lastSyncRef = useRef(0)
+  /** пока идёт цепочка синка (до 4 попыток с паузами), новые не запускаем */
+  const syncInFlightRef = useRef(false)
   /** действие игрока сменило состояние — следующий сейв едет на сервер без троттлинга */
   const forceSyncRef = useRef(false)
   /** стартовый синк закончился (любым исходом) — сторожу больше нечего делать */
@@ -175,24 +180,34 @@ useEffect(() => {
     // крон решает пуши по сейву из базы: сон, не доехавший до неё за троттлинг,
     // превращается в «уложи спать» для уже спящего питомца
     const forced = forceSyncRef.current
-    forceSyncRef.current = false
     if (!forced && now - lastSyncRef.current < SERVER_SYNC_INTERVAL_MS) return
+    // цепочка синка ещё в полёте — новую не запускаем; forced при этом не съедаем
+    if (syncInFlightRef.current) return
+    forceSyncRef.current = false
     lastSyncRef.current = now
-    void petStore.serverSync(raw).then(async (response) => {
-      // с каждым синком забираем чужие изменения: сервер вернул слитый сейв.
-      // Свой свежее (событие случилось, пока запрос летел) — слияние оставит его.
-      // POST не доехал (сеть его режет) — тянем состояние из базы GET-ом:
-      // так чужие сон и действия доезжают даже при неработающих POST-ах
-      const pulled = response ?? (await petStore.serverPull())
-      if (pulled === null) return
-      setInvited('invited' in pulled && typeof pulled.invited === 'number' ? pulled.invited : null)
-      setPet((current) => {
-        if (current === null) return current
-        const merged = mergeRemoteSave(pulled.save, current, current.appearance, config)
-        if (merged === current || merged === null) return current
-        return catchUp(merged, Date.now(), config)
+    syncInFlightRef.current = true
+    void petStore
+      .serverSync(raw)
+      .then(async (response) => {
+        // провал POST-ов не съедает слот: пересинк через 5с, а не через 10с
+        if (response === null) lastSyncRef.current = Date.now() - SERVER_SYNC_INTERVAL_MS + SYNC_FAIL_RETRY_MS
+        // с каждым синком забираем чужие изменения: сервер вернул слитый сейв.
+        // Свой свежее (событие случилось, пока запрос летел) — слияние оставит его.
+        // POST не доехал (сеть его режет) — тянем состояние из базы GET-ом:
+        // так чужие сон и действия доезжают даже при неработающих POST-ах
+        const pulled = response ?? (await petStore.serverPull())
+        if (pulled === null) return
+        setInvited('invited' in pulled && typeof pulled.invited === 'number' ? pulled.invited : null)
+        setPet((current) => {
+          if (current === null) return current
+          const merged = mergeRemoteSave(pulled.save, current, current.appearance, config)
+          if (merged === current || merged === null) return current
+          return catchUp(merged, Date.now(), config)
+        })
       })
-    })
+      .finally(() => {
+        syncInFlightRef.current = false
+      })
   }, [pet, config])
 
   // при уходе со страницы — залить актуальный сейв на сервер

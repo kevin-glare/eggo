@@ -4,6 +4,8 @@
  * Вне Telegram всё превращается в безопасный no-op.
  */
 
+import { track } from './metrika'
+
 /** Минимальная типизация нужной части официального SDK. */
 interface TgWebApp {
   ready: () => void
@@ -63,8 +65,9 @@ export const BOT_URL: string | null = typeof envBotUrl === 'string' && envBotUrl
 const SYNC_TIMEOUT_MS = 10_000
 
 /** POST с телом часто теряется по пути (мобильные сети) — повторяем попытки. */
-const SYNC_RETRIES = 2
-const SYNC_RETRY_DELAY_MS = 1_500
+const SYNC_RETRIES = 3
+/** Пауза перед ретраем растёт с номером попытки: душащая сеть отпускает не сразу. */
+const SYNC_RETRY_DELAYS_MS = [1_500, 3_000, 6_000] as const
 
 /** Сколько ждём старое облако Telegram: замолчавший колбэк не должен вешать загрузку. */
 const CLOUD_STORAGE_TIMEOUT_MS = 5_000
@@ -205,20 +208,37 @@ async function syncAttempt(
 }
 
 /**
+ * Пауза перед ретраем: база растёт с номером попытки (1.5с → 3с → 6с),
+ * поверх — джиттер ±30%, чтобы ретраи разных устройств не ходили стаей.
+ */
+function retryDelayMs(attempt: number): number {
+  const index = Math.max(0, Math.min(attempt - 1, SYNC_RETRY_DELAYS_MS.length - 1))
+  const base = SYNC_RETRY_DELAYS_MS[index] ?? SYNC_RETRY_DELAYS_MS[0]
+  return Math.round(base * (0.7 + Math.random() * 0.6))
+}
+
+/**
  * Синк с сервером с ретраями: мобильные сети нередко теряют POST с телом,
- * повторные попытки через паузу часто доезжают. keepalive (финальное
- * сохранение при уходе со страницы) не повторяется — страница умирает.
+ * повторные попытки через растущую паузу часто доезжают. Успех со 2+ попытки
+ * и полный провал считаем в Метрике — видно, скольким сетям не везёт.
+ * keepalive (финальное сохранение при уходе со страницы) не повторяется —
+ * страница умирает.
  */
 async function serverSyncRaw(
   clientRaw: string | null,
   keepalive = false,
 ): Promise<{ save: string | null; invited: number | null } | null> {
+  if (!tg()?.initData) return null
   const attempts = keepalive ? 1 : 1 + SYNC_RETRIES
   for (let attempt = 0; attempt < attempts; attempt++) {
-    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, SYNC_RETRY_DELAY_MS))
+    if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, retryDelayMs(attempt)))
     const result = await syncAttempt(clientRaw, keepalive)
-    if (result !== null) return result
+    if (result !== null) {
+      if (attempt > 0) track('sync-recovered')
+      return result
+    }
   }
+  track('sync-fail')
   return null
 }
 
