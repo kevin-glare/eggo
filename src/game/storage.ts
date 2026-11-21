@@ -2,7 +2,7 @@ import type { GameConfig } from './config'
 import { normalizeAppearance, type PetAppearance } from './appearance'
 import { stageForAge, tick } from './engine'
 import { SCENE_EVENT_KINDS } from './events'
-import type { QuestId } from './quests'
+import { ALL_QUESTS } from './quests'
 import type { DailyQuests } from './quests'
 import { applyAutoServices } from './services'
 import type { PetAccessorySlots, PetCosmetics, PetRequest, PetState, RequestKind, SceneEvent, Stats } from './types'
@@ -10,8 +10,6 @@ import { MINIGAME_IDS } from './minigames'
 import type { MinigameId } from './minigames/types'
 
 const SAVE_VERSION = 1
-
-const QUEST_IDS: QuestId[] = ['feed', 'play', 'wash', 'pet']
 
 const REQUEST_KINDS: RequestKind[] = ['feed', 'play', 'wash']
 
@@ -24,7 +22,9 @@ function normalizeDaily(raw: unknown): DailyQuests | null {
   const d = raw as Partial<DailyQuests>
   if (typeof d.day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d.day)) return null
   if (!Array.isArray(d.quests) || !Array.isArray(d.progress) || d.quests.length !== d.progress.length) return null
-  if (!d.quests.every((q) => QUEST_IDS.includes(q))) return null
+  // старые сейвы с заданиями из прежнего пула из четырёх — валидны; неизвестный
+  // id (битый или из будущего) бракует весь день — начнётся заново
+  if (!d.quests.every((q) => ALL_QUESTS.includes(q))) return null
   return {
     day: d.day,
     quests: d.quests,

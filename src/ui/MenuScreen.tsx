@@ -37,6 +37,8 @@ interface MenuScreenProps {
   unlockedAchievements: string[]
   /** каталог магазина из config.shop.items */
   shopItems: ShopItemConfig[]
+  /** магазин открыт: отметить квест «загляни в магазин» */
+  onShopVisit?: () => void
   /** покупка: отказ несёт reason для тоста в меню */
   onBuy: (id: string) => { ok: boolean; reason?: BuyReason }
   /** цены автосервисов из config.services.prices */
@@ -85,6 +87,7 @@ export default function MenuScreen({
   achievementIds,
   unlockedAchievements,
   shopItems,
+  onShopVisit,
   onBuy,
   servicePrices,
   onBuyService,
@@ -110,6 +113,13 @@ export default function MenuScreen({
   useEffect(() => {
     if (open) setView(openView)
   }, [open, openView])
+  // магазин реально открыт (из меню, панели действий или «что нового»):
+  // раз за открытие отмечаем квест «загляни в магазин»
+  const onShopVisitRef = useRef(onShopVisit)
+  onShopVisitRef.current = onShopVisit
+  useEffect(() => {
+    if (open && view === 'shop') onShopVisitRef.current?.()
+  }, [open, view])
   // смена имени за звёздочки: инлайн-форма в разделе магазина «Имя питомца»
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState('')

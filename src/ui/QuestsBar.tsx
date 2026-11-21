@@ -10,7 +10,16 @@ interface QuestsBarProps {
   onExplain: (text: string) => void
 }
 
-const QUEST_ICONS: Record<QuestId, string> = { feed: '🍔', play: '🎮', wash: '🛁', pet: '💗' }
+const QUEST_ICONS: Record<QuestId, string> = {
+  feed: '🍔',
+  play: '🎮',
+  wash: '🛁',
+  pet: '💗',
+  gameOfDay: '🎯',
+  catchStar: '⭐',
+  shopVisit: '🛍',
+  sleep: '😴',
+}
 
 /**
  * Задания дня — одна карточка с четырьмя колонками, в языке панели статов:

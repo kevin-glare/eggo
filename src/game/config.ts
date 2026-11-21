@@ -268,7 +268,9 @@ export const DEFAULT_CONFIG: GameConfig = {
   nameMaxLength: 16,
   quests: {
     count: 3,
-    targets: { feed: 3, play: 2, wash: 2, pet: 3 },
+    // цели: забота повторяется за день, «события дня» — разовые (звёздочек
+    // на полянке за день бывает до нескольких)
+    targets: { feed: 3, play: 2, wash: 2, pet: 3, gameOfDay: 1, catchStar: 2, shopVisit: 1, sleep: 1 },
   },
   // просьба живёт в реальном времени: окно 2 часа, потом пауза 3 часа
   requests: {

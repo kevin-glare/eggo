@@ -10,9 +10,14 @@ import type { PetState } from './types'
  * Всё чистое: state → new state, без мутаций.
  */
 
-export type QuestId = 'feed' | 'play' | 'wash' | 'pet'
+export type QuestId = 'feed' | 'play' | 'wash' | 'pet' | 'gameOfDay' | 'catchStar' | 'shopVisit' | 'sleep'
 
-const ALL_QUESTS: QuestId[] = ['feed', 'play', 'wash', 'pet']
+/**
+ * Пул заданий: старая забота (кормить/играть/мыть/гладить) и «события дня»
+ * (игра дня, пойманная звёздочка, магазин, укладывание спать). Порядок
+ * стабильный — id входят в сейв.
+ */
+export const ALL_QUESTS: QuestId[] = ['feed', 'play', 'wash', 'pet', 'gameOfDay', 'catchStar', 'shopVisit', 'sleep']
 
 export interface DailyQuests {
   /** ключ дня 'YYYY-MM-DD' (локальная дата игрока) */

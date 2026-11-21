@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, type GameConfig } from '../src/game/config'
-import { claimReward, dayKey, ensureDaily, recordQuest, rollQuests, type QuestId } from '../src/game/quests'
-import { hatchedPet, makePet } from './helpers'
+import { claimReward, dayKey, ensureDaily, recordQuest, rollQuests, ALL_QUESTS, type QuestId } from '../src/game/quests'
+import { deserialize, serialize } from '../src/game/storage'
+import { hatchedPet, makePet, TEST_APPEARANCE } from './helpers'
 
 const QUESTS_CONFIG = DEFAULT_CONFIG.quests
 
@@ -20,12 +21,11 @@ describe('dayKey', () => {
 })
 
 describe('rollQuests', () => {
-  it('возвращает count уникальных заданий из пула', () => {
-    const pool: QuestId[] = ['feed', 'play', 'wash', 'pet']
+  it('возвращает count уникальных заданий из полного пула', () => {
     const quests = rollQuests('2026-10-28', QUESTS_CONFIG.count)
     expect(quests).toHaveLength(QUESTS_CONFIG.count)
     expect(new Set(quests).size).toBe(quests.length)
-    for (const q of quests) expect(pool).toContain(q)
+    for (const q of quests) expect(ALL_QUESTS).toContain(q)
   })
 
   it('детерминирован: один и тот же день — один и тот же набор (на всех устройствах)', () => {
@@ -41,6 +41,16 @@ describe('rollQuests', () => {
       sets.add(rollQuests(day, 3).join(','))
     }
     expect(sets.size).toBeGreaterThan(1)
+  })
+
+  it('за месяц каждый тип задания хоть раз выпадает', () => {
+    const seen = new Set<QuestId>()
+    for (let i = 1; i <= 120; i++) {
+      const month = Math.floor(i / 28) + 1
+      const day = `2026-0${month}-${String((i % 28) + 1).padStart(2, '0')}`
+      for (const q of rollQuests(day, 3)) seen.add(q)
+    }
+    for (const q of ALL_QUESTS) expect(seen).toContain(q)
   })
 })
 
@@ -120,11 +130,11 @@ describe('recordQuest', () => {
 describe('claimReward', () => {
   const NOW = Date.UTC(2026, 9, 28, 10, 0, 0)
 
-  function completeQuests(pet: ReturnType<typeof hatchedPet>, config: GameConfig) {
+  function completeQuests(pet: ReturnType<typeof hatchedPet>, config: GameConfig, at: number = NOW) {
     const daily = pet.daily!
     let next = pet
     for (const q of daily.quests) {
-      for (let k = 0; k < config.quests.targets[q]; k++) next = recordQuest(next, q, config, NOW)
+      for (let k = 0; k < config.quests.targets[q]; k++) next = recordQuest(next, q, config, at)
     }
     return next
   }
@@ -180,7 +190,8 @@ describe('claimReward', () => {
     pet = claimReward(completeQuests(pet, DEFAULT_CONFIG), DEFAULT_CONFIG).state
     const nextDay = Date.UTC(2026, 9, 29, 12, 0, 0)
     pet = ensureDaily(pet, DEFAULT_CONFIG, nextDay)
-    pet = completeQuests(pet, DEFAULT_CONFIG)
+    // записи нового дня идут с меткой нового дня — иначе ensureDaily откатит день
+    pet = completeQuests(pet, DEFAULT_CONFIG, nextDay)
     expect(claimReward(pet, DEFAULT_CONFIG).ok).toBe(true)
   })
 })
@@ -188,5 +199,24 @@ describe('claimReward', () => {
 describe('интеграция с makePet', () => {
   it('свежий питомец без daily', () => {
     expect(makePet(DEFAULT_CONFIG).daily).toBeNull()
+  })
+
+  it('прогресс новых типов считается по целям', () => {
+    const NOW = Date.UTC(2026, 9, 28, 10, 0, 0)
+    // проверяем каждый новый тип на подставленном дне: запись и цель — общая механика
+    for (const q of ['gameOfDay', 'catchStar', 'shopVisit', 'sleep'] as QuestId[]) {
+      let probe = ensureDaily(hatchedPet(DEFAULT_CONFIG), DEFAULT_CONFIG, NOW)
+      probe = { ...probe, daily: { ...probe.daily!, quests: [q, 'feed', 'wash'] } }
+      for (let k = 0; k < QUESTS_CONFIG.targets[q] + 1; k++) probe = recordQuest(probe, q, DEFAULT_CONFIG, NOW)
+      expect(probe.daily!.progress[0]).toBe(QUESTS_CONFIG.targets[q])
+    }
+  })
+
+  it('сейв с новым пулом заданий переживает сериализацию', () => {
+    const NOW = Date.UTC(2026, 9, 28, 10, 0, 0)
+    let pet = ensureDaily(hatchedPet(DEFAULT_CONFIG), DEFAULT_CONFIG, NOW)
+    pet = { ...pet, daily: { ...pet.daily!, quests: ['gameOfDay', 'catchStar', 'shopVisit'] } }
+    const back = deserialize(serialize(pet), TEST_APPEARANCE)
+    expect(back?.daily?.quests).toEqual(['gameOfDay', 'catchStar', 'shopVisit'])
   })
 })

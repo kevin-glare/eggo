@@ -110,6 +110,10 @@ export const ru = {
     play: 'Поиграть',
     wash: 'Помыть',
     pet: 'Погладить',
+    gameOfDay: 'Сыграть в игру дня',
+    catchStar: 'Поймать звёздочку',
+    shopVisit: 'Заглянуть в магазин',
+    sleep: 'Уложить спать',
   } as Record<QuestId, string>,
   questExplainDone: (label: string, t: number) =>
     `✅ «${label}» — ${t}/${t} сегодня. Задания считают заботу, а статы падают сами.`,

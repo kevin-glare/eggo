@@ -58,6 +58,7 @@ export default function App() {
     petPet,
     claimDaily,
     claimSceneEvent,
+    visitShop,
     showNotice,
     toggleSleep,
     startGame,
@@ -426,6 +427,7 @@ export default function App() {
           achievementIds={achievementIds}
           unlockedAchievements={pet.achievements}
           shopItems={config.shop.items}
+          onShopVisit={visitShop}
           onBuy={buy}
           servicePrices={config.services.prices}
           onBuyService={buyService}

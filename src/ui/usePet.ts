@@ -338,9 +338,12 @@ useEffect(() => {
       if (current === null) return { isRecord: false, bonus: 0, stars: 0 }
       const rec = recordMinigameScore(current, id, outcome.score, config)
       // игра дня: рекорд платит двойной бонус
-      const bonus = minigameBonus(rec.isRecord, dayGame(dayKey(Date.now())) === id, config)
+      const isDailyGame = dayGame(dayKey(Date.now())) === id
+      const bonus = minigameBonus(rec.isRecord, isDailyGame, config)
       let next = rec.state
       if (bonus > 0) next = applyMinigameBonus(next, bonus)
+      // партия в игру дня отмечается в задании «сыграть в игру дня»
+      if (isDailyGame) next = recordQuest(next, 'gameOfDay', config, Date.now())
       // партия платит сама: звёздочка за доигранную сессию (config.shop.playStars)
       next = earnPartyStars(next, config)
       const stars = rec.stars + config.shop.playStars
@@ -392,6 +395,18 @@ useEffect(() => {
 
   /** Показать разовое сообщение (подсказки интерфейса). */
   const showNotice = useCallback((text: string) => setNotice(text), [])
+
+  /**
+   * Открыть магазин — событие дня: отмечается в задании «загляни в магазин».
+   * Вызывается, когда магазин реально открыт (из панели действий, меню
+   * или карточки «что нового»).
+   */
+  const visitShop = useCallback(() => {
+    const current = petRef.current
+    if (current === null) return
+    // открытие магазина — событие игрока: штамп для мультидевайс-слияния
+    setPet({ ...recordQuest(current, 'shopVisit', config, Date.now()), lastEventAt: Date.now() })
+  }, [config])
 
   /**
    * Сессия кормления-ловли доиграла: сытость капает за пойманное (просьба ×2,
@@ -482,7 +497,9 @@ useEffect(() => {
       const result = claimEvent(current, kind, config, Date.now())
       if (!result.ok) return
       // поимка — событие игрока: штамп для мультидевайс-слияния
-      setPet({ ...result.state, lastEventAt: Date.now() })
+      // пойманная звёздочка отмечается в задании «поймать звёздочку»
+      const next = recordQuest({ ...result.state, lastEventAt: Date.now() }, 'catchStar', config, Date.now())
+      setPet(next)
       forceSyncRef.current = true
       markEventHintDone()
       const reward = result.reward
@@ -525,7 +542,8 @@ useEffect(() => {
     const current = petRef.current
     if (current === null) return null
     const sleeping = current.sleeping
-    return sleeping ? apply(wake, str.sleepWake) : apply(startSleep, str.sleepStart)
+    // укладывание — тоже задание дня; пробуждение не считается
+    return sleeping ? apply(wake, str.sleepWake) : apply(startSleep, str.sleepStart, 'sleep')
   }, [apply])
 
   /** Dev-инструмент: прокрутить игровое время вперёд. */
@@ -569,6 +587,7 @@ useEffect(() => {
     petPet,
     claimDaily,
     claimSceneEvent,
+    visitShop,
     showNotice,
     toggleSleep,
     startGame,

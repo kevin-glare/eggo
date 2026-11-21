@@ -76,6 +76,10 @@ export const en: Strings = {
     play: 'Play',
     wash: 'Wash',
     pet: 'Pet',
+    gameOfDay: 'Play the daily game',
+    catchStar: 'Catch a star',
+    shopVisit: 'Visit the shop',
+    sleep: 'Tuck in to sleep',
   },
   questExplainDone: (label: string, t: number) =>
     `✅ “${label}” — ${t}/${t} today. Quests count your care; stats drop on their own.`,
