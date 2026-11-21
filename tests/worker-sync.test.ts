@@ -60,7 +60,7 @@ describe('resolveSync — слияние сейвов по полям (стат�
 
   it('оба пусты → пусто', () => {
     const decision = resolveSync(null, null)
-    expect(decision).toEqual({ raw: null, stage: null })
+    expect(decision).toEqual({ raw: null, stage: null, minigameBest: {} })
   })
 
   it('безымянный клиентский сейв не перезаписывает именованного питомца, даже если он «новее»', () => {

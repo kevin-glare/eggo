@@ -269,6 +269,43 @@ export async function fetchNotifyState(): Promise<'on' | 'off' | null> {
   }
 }
 
+/** Топ-таблица мини-игры: имена из Telegram и место звонящего. */
+export interface LeaderboardView {
+  rows: { place: number; name: string; best: number }[]
+  /** место игрока в этой игре; null — своего рекорда ещё нет */
+  you: number | null
+}
+
+/** Лидерборд одной игры; null — не в Telegram, сеть подвела или пустая таблица. */
+export async function fetchLeaderboard(game: string): Promise<LeaderboardView | null> {
+  const initData = tg()?.initData
+  if (!initData) return null
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS)
+  try {
+    const response = await fetch(
+      `${API_URL}/leaderboard?initData=${encodeURIComponent(initData)}&game=${encodeURIComponent(game)}`,
+      { signal: controller.signal },
+    )
+    if (!response.ok) return null
+    const data = JSON.parse(await response.text()) as { rows?: unknown; you?: unknown }
+    if (!Array.isArray(data.rows)) return null
+    const rows: LeaderboardView['rows'] = []
+    for (const r of data.rows) {
+      const row = r as { place?: unknown; name?: unknown; best?: unknown }
+      if (typeof row.place === 'number' && typeof row.name === 'string' && typeof row.best === 'number') {
+        rows.push({ place: row.place, name: row.name, best: row.best })
+      }
+    }
+    if (rows.length === 0) return null
+    return { rows, you: typeof data.you === 'number' ? data.you : null }
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /** Включить/выключить пуши. 'blocked' — юзер не стартовал бота или заблокировал его. */
 export async function setNotifyEnabled(enabled: boolean): Promise<'ok' | 'blocked' | 'error'> {
   const initData = tg()?.initData

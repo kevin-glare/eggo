@@ -1,5 +1,13 @@
 import type { D1Database, UserRow } from '../worker/src/repo'
 
+/** Ряд таблицы рекордов лидерборда (worker/migrations/0005_scores.sql). */
+export interface FakeScoreRow {
+  telegram_id: number
+  game: string
+  best: number
+  updated_at: number
+}
+
 /**
  * Фейковая D1 в памяти: понимает ровно те запросы, что пишет worker/src/repo.ts.
  * Запросы опознаются по началу строки, параметры — по порядку bind.
@@ -8,6 +16,8 @@ export class FakeDb implements D1Database {
   users: UserRow[] = []
   /** ключ `${telegram_id}:${kind}` → sent_at */
   sent = new Map<string, number>()
+  /** таблица рекордов лидерборда */
+  scores: FakeScoreRow[] = []
 
   constructor(rows: Array<Partial<UserRow> & { telegram_id: number }> = []) {
     this.users = rows.map((row) => ({
@@ -43,6 +53,16 @@ export class FakeDb implements D1Database {
           const n = this.users.filter((u) => u.referrer_tg_id === id).length
           return { n } as T | null
         }
+        if (query.startsWith('SELECT best FROM scores')) {
+          const [game, id] = vals as [string, number]
+          const row = this.scores.find((s) => s.game === game && s.telegram_id === id)
+          return (row ? { best: row.best } : null) as T | null
+        }
+        if (query.startsWith('SELECT COUNT(*) AS n FROM scores')) {
+          const [game, best] = vals as [string, number]
+          const n = this.scores.filter((s) => s.game === game && s.best > best).length
+          return { n } as T | null
+        }
         return null
       },
       all: async <T>(): Promise<{ results: T[] }> => {
@@ -57,10 +77,33 @@ export class FakeDb implements D1Database {
             .map(([key, sent_at]) => ({ kind: key.slice(String(id).length + 1), sent_at }))
           return { results: results as unknown as T[] }
         }
+        if (query.includes('FROM scores s JOIN')) {
+          const [game, limit] = vals as [string, number]
+          const rows = this.scores
+            .filter((s) => s.game === game)
+            .sort((a, b) => b.best - a.best || a.updated_at - b.updated_at)
+            .slice(0, limit)
+            .map((s) => ({
+              telegram_id: s.telegram_id,
+              first_name: this.users.find((u) => u.telegram_id === s.telegram_id)?.first_name ?? null,
+              best: s.best,
+            }))
+          return { results: rows as unknown as T[] }
+        }
         return { results: [] }
       },
       run: async (): Promise<unknown> => {
-        if (query.startsWith('INSERT INTO notifications')) {
+        if (query.startsWith('INSERT INTO scores')) {
+          // апсерт по максимуму, как в SQL: MAX(best, excluded.best)
+          const [telegram_id, game, best, updated_at] = vals as [number, string, number, number]
+          const row = this.scores.find((s) => s.telegram_id === telegram_id && s.game === game)
+          if (row) {
+            if (best > row.best) row.best = best
+            row.updated_at = updated_at
+          } else {
+            this.scores.push({ telegram_id, game, best, updated_at })
+          }
+        } else if (query.startsWith('INSERT INTO notifications')) {
           const [telegram_id, kind, sent_at] = vals as [number, string, number]
           this.sent.set(`${telegram_id}:${kind}`, sent_at)
         } else if (query.startsWith('INSERT INTO users')) {

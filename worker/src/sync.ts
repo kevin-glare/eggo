@@ -1,5 +1,6 @@
 import { rollAppearance } from '../../src/game/appearance'
 import { DEFAULT_CONFIG } from '../../src/game/config'
+import type { MinigameId } from '../../src/game/minigames/types'
 import { deserialize, mergeStates, serialize } from '../../src/game/storage'
 import type { PetState } from '../../src/game/types'
 
@@ -15,6 +16,8 @@ export interface SyncDecision {
   raw: string | null
   /** стадия итогового сейва: крон по нему заметит взросление */
   stage: PetState['stage'] | null
+  /** рекорды итогового сейва: воркер льёт их в таблицу лидерборда */
+  minigameBest: Partial<Record<MinigameId, number>>
 }
 
 /** запасная внешность для очень старых сейвов — общая для воркера */
@@ -27,17 +30,17 @@ export function resolveSync(clientRaw: string | null, serverRaw: string | null):
   const server = serverRaw === null ? null : deserialize(serverRaw, client?.appearance ?? FALLBACK_APPEARANCE)
 
   if (!client) {
-    return { raw: serverRaw, stage: server ? server.stage : null }
+    return { raw: serverRaw, stage: server ? server.stage : null, minigameBest: server?.minigameBest ?? {} }
   }
   // свежее безымянное яйцо с нового устройства не должно побеждать
   // именованного питомца — сейв в базе не трогаем
   if (client.name === null && server?.name != null) {
-    return { raw: serverRaw, stage: server.stage }
+    return { raw: serverRaw, stage: server.stage, minigameBest: server.minigameBest }
   }
   // битой строке в базе не доверяем — клиент чинит своим сейвом
   if (!server) {
-    return { raw: clientRaw, stage: client.stage }
+    return { raw: clientRaw, stage: client.stage, minigameBest: client.minigameBest }
   }
   const merged = mergeStates(client, server, DEFAULT_CONFIG)
-  return { raw: serialize(merged), stage: merged.stage }
+  return { raw: serialize(merged), stage: merged.stage, minigameBest: merged.minigameBest }
 }

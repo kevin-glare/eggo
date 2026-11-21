@@ -164,3 +164,66 @@ export async function setBotBlocked(db: D1Database, telegramId: number, nowMs: n
     .bind(nowMs, telegramId)
     .run()
 }
+
+/* ---------- лидерборд мини-игр ---------- */
+
+/** Ряд таблицы рекордов: кто и сколько, имя для показа — из users (JOIN). */
+export interface LeaderRow {
+  telegram_id: number
+  first_name: string | null
+  best: number
+}
+
+/**
+ * Апсерт рекордов сейва в таблицу лидерборда: по максимуму — повторный
+ * синк с меньшим счётом ничего не портит. Мусор (не числа, нули и меньше)
+ * не записывается.
+ */
+export async function upsertScores(
+  db: D1Database,
+  telegramId: number,
+  best: Partial<Record<string, number>>,
+  nowMs: number,
+): Promise<void> {
+  for (const [game, score] of Object.entries(best)) {
+    if (typeof score !== 'number' || !Number.isFinite(score) || score <= 0) continue
+    await db
+      .prepare(
+        `INSERT INTO scores (telegram_id, game, best, updated_at) VALUES (?, ?, ?, ?)
+         ON CONFLICT(telegram_id, game) DO UPDATE SET
+           best = MAX(best, excluded.best),
+           updated_at = excluded.updated_at`,
+      )
+      .bind(telegramId, game, Math.floor(score), nowMs)
+      .run()
+  }
+}
+
+/** Топ-таблица одной игры: сильнейшие сверху, при равенстве — кто раньше. */
+export async function fetchLeaderboard(db: D1Database, game: string, limit: number): Promise<LeaderRow[]> {
+  const result = await db
+    .prepare(
+      `SELECT s.telegram_id, u.first_name, s.best
+       FROM scores s JOIN users u ON u.telegram_id = s.telegram_id
+       WHERE s.game = ?
+       ORDER BY s.best DESC, s.updated_at ASC
+       LIMIT ?`,
+    )
+    .bind(game, limit)
+    .all<LeaderRow>()
+  return result.results
+}
+
+/** Место игрока в игре: сколько рекордов строго выше его собственного; null — рекорда нет. */
+export async function fetchScoreRank(db: D1Database, game: string, telegramId: number): Promise<number | null> {
+  const mine = await db
+    .prepare('SELECT best FROM scores WHERE game = ? AND telegram_id = ?')
+    .bind(game, telegramId)
+    .first<{ best: number }>()
+  if (mine === null) return null
+  const row = await db
+    .prepare('SELECT COUNT(*) AS n FROM scores WHERE game = ? AND best > ?')
+    .bind(game, mine.best)
+    .first<{ n: number }>()
+  return (row?.n ?? 0) + 1
+}

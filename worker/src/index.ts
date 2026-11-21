@@ -3,16 +3,23 @@ import { runPushCron } from './pushes'
 import {
   countInvited,
   ensureUser,
+  fetchLeaderboard,
+  fetchScoreRank,
   fetchUser,
   markNotificationSent,
   setBotBlocked,
   setPushEnabled,
+  upsertScores,
   upsertSyncUser,
   FALLBACK_UTC_OFFSET_MIN,
   type D1Database,
 } from './repo'
 import { resolveSync } from './sync'
 import { sendBotMessage } from './telegram-api'
+import { MINIGAME_IDS } from '../../src/game/minigames'
+
+/** Сколько строк лидерборда отдавать: топ-таблица целиком на экран пикера. */
+const LEADERBOARD_TOP = 20
 
 export interface Env {
   DB: D1Database
@@ -111,7 +118,23 @@ export default {
       })
       // счётчик приглашённых клиенту: по нему выдаются звёзды дружбы
       const invited = await countInvited(env.DB, auth.user.id)
+      // рекорды слитого сейва едут в лидерборд: по максимуму, идемпотентно
+      await upsertScores(env.DB, auth.user.id, decision.minigameBest, nowMs)
       return json({ save: decision.raw, invited }, 200, cors)
+    }
+
+    if (url.pathname === '/leaderboard' && request.method === 'GET') {
+      // топ-таблица одной мини-игры и место звонящего; только чтение
+      const initData = url.searchParams.get('initData')
+      const game = url.searchParams.get('game')
+      if (!initData || !game || !MINIGAME_IDS.includes(game as (typeof MINIGAME_IDS)[number])) {
+        return json({ error: 'bad request' }, 400, cors)
+      }
+      const auth = await validateInitData(initData, env.BOT_TOKEN, Math.floor(Date.now() / 1000))
+      if (!auth) return json({ error: 'unauthorized' }, 401, cors)
+      const rows = await fetchLeaderboard(env.DB, game, LEADERBOARD_TOP)
+      const you = await fetchScoreRank(env.DB, game, auth.user.id)
+      return json({ rows: rows.map((r, i) => ({ place: i + 1, name: r.first_name ?? '', best: r.best })), you }, 200, cors)
     }
 
     if (url.pathname === '/notify') {

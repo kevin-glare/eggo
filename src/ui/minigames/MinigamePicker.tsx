@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MINIGAME_IDS } from '../../game/minigames'
 import type { MinigameId } from '../../game/minigames/types'
-import { hapticTap, tg } from '../../telegram'
+import { fetchLeaderboard, hapticTap, tg, type LeaderboardView } from '../../telegram'
 import { useStrings } from '../i18n'
 import { useDialogFocus } from '../useDialogFocus'
 
@@ -14,6 +14,9 @@ interface MinigamePickerProps {
   onClose: () => void
 }
 
+/** Сколько строк чужого топа показывать: пикер должен остаться компактным. */
+const LB_ROWS_SHOWN = 5
+
 /**
  * Выбор мини-игры кнопкой «Играть»: плитка «Случайная» сохраняет сюрприз,
  * дальше — все игры с рекордами и бейджем игры дня. Паттерн меню:
@@ -23,6 +26,18 @@ export default function MinigamePicker({ best, dayGameId, onPick, onClose }: Min
   const str = useStrings()
   const panelRef = useRef<HTMLElement>(null)
   useDialogFocus(panelRef, true, onClose)
+  // лидерборд игры дня: тянется один раз при открытии пикера; сети нет
+  // или таблица пуста — секция тихо не рисуется
+  const [board, setBoard] = useState<LeaderboardView | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void fetchLeaderboard(dayGameId).then((b) => {
+      if (!cancelled && b !== null) setBoard(b)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [dayGameId])
 
   // BackButton Telegram: закрытие без выбора
   useEffect(() => {
@@ -81,6 +96,23 @@ export default function MinigamePicker({ best, dayGameId, onPick, onClose }: Min
             </button>
           ))}
         </div>
+        {board !== null && (
+          <section className="lb" aria-label={str.lbTitle}>
+            <p className="lb-title">
+              {str.lbTitle} · {str.game[dayGameId].title}
+            </p>
+            {board.you !== null && <p className="lb-you">{str.lbYou(board.you)}</p>}
+            <ul className="lb-rows">
+              {board.rows.slice(0, LB_ROWS_SHOWN).map((r) => (
+                <li key={r.place} className={r.place === board.you ? 'lb-row me' : 'lb-row'}>
+                  <span className="lb-place num">{r.place}</span>
+                  <span className="lb-name">{r.name || str.lbAnon}</span>
+                  <span className="lb-best num">{r.best}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </section>
     </div>
   )
