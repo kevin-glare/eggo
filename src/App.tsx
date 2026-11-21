@@ -9,6 +9,7 @@ import { AVAILABLE_MINIGAMES, pickMinigame } from './game/minigames'
 import { dayKey } from './game/quests'
 import type { MinigameId, MinigameOutcome } from './game/minigames/types'
 import { friendshipDay } from './game/streak'
+import { characterLevels, TRAIT_IDS } from './game/character'
 import { desire, getMood, neglectLevel } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
@@ -210,6 +211,9 @@ export default function App() {
   const desireKind = desire(pet, config)
   // каталог достижений стабилен от конфига: порядок строк и счётчик «N из M»
   const achievementIds = allAchievementIds(config)
+  // черты характера для профиля меню: только раскрывшиеся, в порядке каталога
+  const traitLevels = characterLevels(pet, config)
+  const traits = TRAIT_IDS.filter((id) => traitLevels[id] > 0).map((id) => ({ id, level: traitLevels[id] }))
   // активное блюдо из магазина усиливает еду сессии кормления; базовая еда бесплатна
   const dishItem = pet.dish !== null ? itemById(config, pet.dish) : null
   const feedBalance =
@@ -427,6 +431,7 @@ export default function App() {
           achievementIds={achievementIds}
           unlockedAchievements={pet.achievements}
           shopItems={config.shop.items}
+          traits={traits}
           onShopVisit={visitShop}
           onBuy={buy}
           servicePrices={config.services.prices}

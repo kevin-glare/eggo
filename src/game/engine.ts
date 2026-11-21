@@ -1,4 +1,5 @@
 import type { GameConfig } from './config'
+import { EMPTY_CHARACTER } from './character'
 import type { PetAppearance } from './appearance'
 import type { Mood, PetState, Stage, StatKey, Stats } from './types'
 
@@ -32,6 +33,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     xp: 0,
     achievements: [],
     dish: null,
+    character: { ...EMPTY_CHARACTER },
     cosmetics: { owned: [], accessories: { head: null, face: null, neck: null }, decor: { meadow: null, sea: null } },
     services: { feedUntil: 0, washUntil: 0, sleepUntil: 0, lastFeedAt: 0, lastWashAt: 0 },
   }

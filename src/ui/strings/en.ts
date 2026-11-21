@@ -211,6 +211,11 @@ export const en: Strings = {
   eventButterfly: (n: number) => `🦋 Eggo admires the butterfly: +${n} happiness`,
   eventBubbles: (n: number) => `🫧 Bubbles popped: +${n} cleanliness`,
 
+  // --- pet character ---
+  traits: { sweetTooth: 'Sweet tooth', playful: 'Playful', affectionate: 'Cuddly' },
+  traitUp: (t: string) => `✨ Character revealed: ${t}!`,
+  characterAria: 'Pet character',
+
   // --- catch-the-food feeding ---
   overfed: '🤢 Eggo overate! It will rest a bit now',
 
@@ -257,6 +262,7 @@ export const en: Strings = {
         '😴 Put it to sleep at night — energy returns by morning',
         '🤒 Sick? Good care heals: keep every stat in the clear',
         '💡 Eggo is asking for something? Do it in time — the effect is doubled',
+        '🎯 Daily quests differ every day: care, the game of the day, a meadow star or the shop',
       ],
     },
     {
@@ -275,6 +281,15 @@ export const en: Strings = {
         '⭐ Every finished run earns a star — even without a record',
         '🎯 The game of the day changes daily: its record earns double stars',
         '🏆 Winning delights your pet; records survive even on a new device',
+      ],
+    },
+    {
+      title: 'Character',
+      lines: [
+        '🍭 Feed shop dishes — the Sweet tooth grows: dishes delight even more',
+        '🎾 Finish mini-game runs — the Playful one grows: every run brings more joy',
+        '💗 Pet Eggo often — the Cuddly one grows: petting warms even more',
+        '✨ Traits live in the menu profile and reveal at the second level',
       ],
     },
     {

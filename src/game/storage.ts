@@ -1,5 +1,7 @@
 import type { GameConfig } from './config'
 import { normalizeAppearance, type PetAppearance } from './appearance'
+import { EMPTY_CHARACTER } from './character'
+import type { PetCharacter } from './character'
 import { stageForAge, tick } from './engine'
 import { SCENE_EVENT_KINDS } from './events'
 import { ALL_QUESTS } from './quests'
@@ -55,6 +57,20 @@ function normalizeEvent(raw: unknown): SceneEvent | null {
   if (typeof e.kind !== 'string' || !SCENE_EVENT_KINDS.includes(e.kind as SceneEvent['kind'])) return null
   if (typeof e.expiresAt !== 'number' || e.expiresAt < 0) return null
   return { kind: e.kind as SceneEvent['kind'], expiresAt: e.expiresAt }
+}
+
+/**
+ * Характер появился позже сейва v1: отсутствие или поломка нормализуется
+ * в нулевые счётчики — черты просто вырастут заново от заботы.
+ */
+function normalizeCharacter(raw: unknown): PetCharacter {
+  if (typeof raw !== 'object' || raw === null) return { ...EMPTY_CHARACTER }
+  const c = raw as Partial<PetCharacter>
+  return {
+    dishesFed: typeof c.dishesFed === 'number' && c.dishesFed >= 0 ? Math.floor(c.dishesFed) : 0,
+    gamesPlayed: typeof c.gamesPlayed === 'number' && c.gamesPlayed >= 0 ? Math.floor(c.gamesPlayed) : 0,
+    petsGiven: typeof c.petsGiven === 'number' && c.petsGiven >= 0 ? Math.floor(c.petsGiven) : 0,
+  }
 }
 
 /**
@@ -176,6 +192,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
       achievements: normalizeAchievements(pet.achievements),
       // магазин появился позже сейва v1: блюда не подано, косметики нет
       dish: typeof pet.dish === 'string' ? pet.dish : null,
+      // характер появился позже сейва v1: счётчики стиля заботы в нуле
+      character: normalizeCharacter(pet.character),
       cosmetics: normalizeCosmetics(pet.cosmetics),
       // автосервисы появились позже сейва v1: пропусков нет
       services: {
@@ -274,6 +292,12 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     minigameBest: mergeMinigameBest(caughtNewer.minigameBest, caughtOlder.minigameBest),
     // перерыв после объедения тоже по максимуму: отсиденный на другом девайсе
     overfedUntil: Math.max(caughtNewer.overfedUntil, caughtOlder.overfedUntil),
+    // характер только растёт: максимум счётчиков с любого девайса, без двойного счёта
+    character: {
+      dishesFed: Math.max(caughtNewer.character.dishesFed, caughtOlder.character.dishesFed),
+      gamesPlayed: Math.max(caughtNewer.character.gamesPlayed, caughtOlder.character.gamesPlayed),
+      petsGiven: Math.max(caughtNewer.character.petsGiven, caughtOlder.character.petsGiven),
+    },
     // опыт дружбы только растёт — максимум с любого девайса не теряется
     xp: Math.max(caughtNewer.xp, caughtOlder.xp),
     // достижения копятся: объединение каталогов с двух девайсов

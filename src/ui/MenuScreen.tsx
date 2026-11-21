@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ActionResult } from '../game/actions'
+import type { TraitId } from '../game/character'
 import type { ShopItemConfig } from '../game/config'
 import type { BuyReason } from '../game/economy'
 import type { ServiceId } from '../game/services'
@@ -14,6 +15,9 @@ import { useDialogFocus } from './useDialogFocus'
 import { isSoundOn, playSound, setSoundOn } from './sound'
 import { track } from '../metrika'
 import { hapticTap, hapticWarning, tg } from '../telegram'
+
+/** Иконки черт характера — рядом с подписью в профиле. */
+const TRAIT_ICONS: Record<TraitId, string> = { sweetTooth: '🍭', playful: '🎾', affectionate: '💗' }
 
 /** Подэкраны меню: корень с рядами и карточки-объяснения поверх главного экрана. */
 export type MenuView = 'root' | 'invite' | 'help' | 'achievements' | 'shop'
@@ -37,6 +41,8 @@ interface MenuScreenProps {
   unlockedAchievements: string[]
   /** каталог магазина из config.shop.items */
   shopItems: ShopItemConfig[]
+  /** раскрытые черты характера: только уровнем ≥ 1, в порядке каталога */
+  traits: { id: TraitId; level: number }[]
   /** магазин открыт: отметить квест «загляни в магазин» */
   onShopVisit?: () => void
   /** покупка: отказ несёт reason для тоста в меню */
@@ -87,6 +93,7 @@ export default function MenuScreen({
   achievementIds,
   unlockedAchievements,
   shopItems,
+  traits,
   onShopVisit,
   onBuy,
   servicePrices,
@@ -277,6 +284,17 @@ export default function MenuScreen({
                     {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
                   </p>
                 </div>
+                {/* характер: раскрывшиеся черты с уровнями; ни одной — строка не рисуется */}
+                {traits.length > 0 && (
+                  <p className="menu-profile-traits" aria-label={str.characterAria}>
+                    {traits.map((t) => (
+                      <span className="trait-chip" key={t.id}>
+                        <span aria-hidden="true">{TRAIT_ICONS[t.id]}</span> {str.traits[t.id]}{' '}
+                        <span className="num">{t.level}</span>
+                      </span>
+                    ))}
+                  </p>
+                )}
               </div>
               {/* порядок пунктов задан владельцем: магазин → достижения →
                   как играть → позови друга → автор; настройки — внизу */}

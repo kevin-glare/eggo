@@ -18,6 +18,7 @@ import { evaluateAchievements } from '../game/achievements'
 import { activateItem, buyItem, type BuyReason } from '../game/economy'
 import { buyService as buyServiceAction, useVitamin as useVitaminAction, type ServiceId, type VitaminReason } from '../game/services'
 import { addXp, friendshipLevel } from '../game/friendship'
+import { applyTraitHappiness, characterLevels, countTrait, traitHappinessBonus, TRAIT_IDS } from '../game/character'
 import { claimReward, dayKey, ensureDaily, recordQuest, type QuestId } from '../game/quests'
 import { convertStreakStars, friendshipDay, missYou, touchStreak } from '../game/streak'
 import { catchUp, deserialize, mergeRemoteSave, serialize } from '../game/storage'
@@ -269,6 +270,22 @@ useEffect(() => {
     setNotice(str.streakConverted)
   }, [pet, str])
 
+  // характер: черта раскрылась на новый уровень — праздник и объяснение.
+  // Уровни выводятся из счётчиков, поэтому ловим только рост
+  const traitLevelsRef = useRef<Record<string, number> | null>(null)
+  useEffect(() => {
+    if (pet === null) return
+    const levels = characterLevels(pet, config)
+    const prev = traitLevelsRef.current
+    traitLevelsRef.current = levels
+    if (prev === null) return
+    const grew = TRAIT_IDS.find((t) => levels[t] > (prev[t] ?? 0))
+    if (grew === undefined) return
+    setNotice(str.traitUp(str.traits[grew]))
+    setCelebrate((n) => n + 1)
+    hapticSuccess()
+  }, [pet?.character, config, str])
+
   const apply = useCallback(
     (action: (p: PetState, c: GameConfig) => ActionResult, successText: string, questId?: QuestId) => {
       const current = petRef.current
@@ -349,6 +366,9 @@ useEffect(() => {
       const stars = rec.stars + config.shop.playStars
       // партия — тоже забота: опыт дружбы сверху действия play
       next = addXp(next, config.friendship.xpPerMinigame)
+      // партия растит Непоседу; раскрывшаяся черта радует сильнее
+      next = countTrait(next, 'playful')
+      next = applyTraitHappiness(next, traitHappinessBonus(next, 'playful', config))
       if (next !== current) {
         setPet({ ...next, lastEventAt: Date.now() })
         forceSyncRef.current = true
@@ -369,7 +389,15 @@ useEffect(() => {
     const now = Date.now()
     if (now - lastPetAtRef.current < config.actions.pet.cooldownMs) return null
     const result = apply(petAction, str.actionSuccess.pet, 'pet')
-    if (result?.ok) lastPetAtRef.current = now
+    if (result?.ok) {
+      lastPetAtRef.current = now
+      // ласка растит Неженку; раскрывшаяся черта греет сильнее
+      setPet((p) => {
+        if (p === null) return p
+        const grown = countTrait(p, 'affectionate')
+        return applyTraitHappiness(grown, traitHappinessBonus(grown, 'affectionate', config))
+      })
+    }
     return result
   }, [apply, config])
 
@@ -417,9 +445,14 @@ useEffect(() => {
     (caught: number) => {
       const result = apply((p, c) => feedCatch(p, caught, c, Date.now()), str.actionSuccess.feed, 'feed')
       if (result?.ok) {
-        // премиум-блюдо подано и съедено: слот освобождается до следующей покупки
+        // премиум-блюдо подано и съедено: слот освобождается до следующей покупки,
+        // а сытая трапеза растит Сладкоежку — раскрывшаяся черта радуется сладкому
         if (result.state.dish !== null) {
-          setPet((p) => (p === null ? p : { ...p, dish: null, lastEventAt: Date.now() }))
+          setPet((p) => {
+            if (p === null) return p
+            const grown = countTrait(p, 'sweetTooth')
+            return { ...applyTraitHappiness(grown, traitHappinessBonus(grown, 'sweetTooth', config)), dish: null }
+          })
         }
         if (result.state.overfedUntil > Date.now()) setNotice(str.overfed)
       }

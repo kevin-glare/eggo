@@ -1,4 +1,5 @@
 import type { PetAppearance } from './appearance'
+import type { PetCharacter } from './character'
 import type { DailyQuests } from './quests'
 import type { MinigameId } from './minigames/types'
 
@@ -109,6 +110,8 @@ export interface PetState {
   achievements: string[]
   /** активное блюдо для следующего кормления из магазина; null — базовая еда (нормализуется) */
   dish: string | null
+  /** характер: счётчики стиля заботы, из них выводятся черты; у старых сейвов нули (нормализуется) */
+  character: PetCharacter
   /** купленная косметика и её активация; у старых сейвов пусто (нормализуется) */
   cosmetics: PetCosmetics
   /** активные автосервисы: дедлайны пропусков и кулдауны сработки (реальное время); у старых сейвов нули (нормализуется) */
