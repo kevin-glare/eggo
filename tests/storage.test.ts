@@ -312,6 +312,16 @@ describe('mergeStates — слияние состояний одного пит�
     expect(mergeStates(e2, e1, DEFAULT_CONFIG)).toEqual(e2)
   })
 
+  it('полная ничья в штампах — событийные поля у первого аргумента (локальный/клиентский сейв)', () => {
+    const base = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR })
+    const local = { ...base, sleeping: true }
+    const remote = { ...base, sleeping: false }
+    // клиентское правило: то, что игрок делал на этом устройстве, не отдаётся серверу
+    expect(mergeStates(local, remote, DEFAULT_CONFIG).sleeping).toBe(true)
+    // серверное (аргументы те же, порядок клиент-сервер): ничья за клиентом
+    expect(mergeStates(remote, local, DEFAULT_CONFIG).sleeping).toBe(false)
+  })
+
   it('рекорды мини-игр сливаются по максимуму с обеих сторон', () => {
     const a = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, minigameBest: { memory: 70, runner: 5 } })
     const b = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR, minigameBest: { memory: 30, snake: 9 } })
@@ -350,6 +360,15 @@ describe('mergeRemoteSave — обёртка mergeStates над raw-строка
     // сытость сервера (100, распавшаяся до 5×HOUR) выше локальной за тот же срок
     expect(merged?.stats.fullness).toBe(catchUp(remote, 5 * HOUR, DEFAULT_CONFIG).stats.fullness)
     expect(merged?.stats.fullness).toBeGreaterThan(local.stats.fullness)
+  })
+
+  it('ничья в штампах — событийные поля локальные: уложенный спать перед закрытием питомец не «просыпается» от сервера', () => {
+    const base = hatchedPet(DEFAULT_CONFIG, { lastTickAt: HOUR, lastEventAt: HOUR }, { fullness: 100 })
+    const local = { ...base, sleeping: true }
+    const remote = { ...base, sleeping: false }
+    const merged = mergeRemoteSave(serialize(remote), local, TEST_APPEARANCE, DEFAULT_CONFIG)
+    expect(merged?.sleeping).toBe(true)
+    expect(merged?.stats.fullness).toBe(100)
   })
 
   it('null и битый удалённый сейв → локальный', () => {

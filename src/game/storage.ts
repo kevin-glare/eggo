@@ -242,11 +242,11 @@ export function catchUp(state: PetState, nowMs: number, config: GameConfig): Pet
   return { ...next, lastTickAt: nowMs }
 }
 
-/** Чья сторона «событийно» свежее: по штампу события, при ничьей — по тику (старые сейвы), затем — второй аргумент. */
+/** Чья сторона «событийно» свежее: по штампу события, при ничьей — по тику (старые сейвы), затем — первый аргумент. */
 function newerEvent(a: PetState, b: PetState): PetState {
   if (a.lastEventAt !== b.lastEventAt) return a.lastEventAt > b.lastEventAt ? a : b
   if (a.lastTickAt !== b.lastTickAt) return a.lastTickAt > b.lastTickAt ? a : b
-  return b
+  return a
 }
 
 /**
@@ -257,7 +257,8 @@ function newerEvent(a: PetState, b: PetState): PetState {
  *  - статы и возраст берутся по максимуму: «+30 сытости» с одного девайса
  *    не затирается распадом с другого;
  *  - событийные поля (имя, сон, задания, серия, звёздочки) — у стороны с более
- *    свежим событием; ничья — у второго аргумента (на сервере это серверный сейв).
+ *    свежим событием; ничья — у первого аргумента (на клиенте это локальный
+ *    сейв, на сервере — клиентский: действия игрока главнее лежалого сейва).
  * Безымянное яйцо не тикает и событий не имеет — именованная сторона всегда главная.
  */
 export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetState {
