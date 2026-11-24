@@ -39,6 +39,9 @@ const SERVER_SYNC_INTERVAL_MS = 10_000
 /** После полного провала POST-ов следующий синк — раньше обычного интервала. */
 const SYNC_FAIL_RETRY_MS = 5_000
 
+/** Как часто зеркалим аварийную копию сейва в облако Telegram вне действий. */
+const BACKUP_INTERVAL_MS = 10_000
+
 /**
  * Страховка от вечной загрузки: у некоторых вебвью фетч может зависнуть
  * навсегда и не отозваться на abort. Худший честный путь стартового синка —
@@ -70,6 +73,8 @@ export function usePet(config: GameConfig) {
   petRef.current = pet
   const prevStageRef = useRef<PetState['stage'] | null>(pet?.stage ?? null)
   const lastSyncRef = useRef(0)
+  /** когда в последний раз зеркалили аварийную копию в облако Telegram */
+  const lastBackupRef = useRef(0)
   /** пока идёт цепочка синка (до 4 попыток с паузами), новые не запускаем */
   const syncInFlightRef = useRef(false)
   /** действие игрока сменило состояние — следующий сейв едет на сервер без троттлинга */
@@ -92,6 +97,10 @@ export function usePet(config: GameConfig) {
       try {
         const legacyRaw = await petStore.legacyCloudLoad()
         if (legacyRaw !== null) best = mergeRemoteSave(legacyRaw, best, fallbackAppearance, config) ?? best
+        // аварийная копия из облака Telegram: вычищенный localStorage на этом
+        // девайсе и сон, уложенный на другом, приезжают ещё до сервера
+        const backupRaw = await petStore.cloudBackupLoad()
+        if (backupRaw !== null) best = mergeRemoteSave(backupRaw, best, fallbackAppearance, config) ?? best
         const payload = best?.name != null ? serialize(best) : null
         const posted = await petStore.serverSync(payload)
         // POST потерялся по пути — тянем состояние GET-ом: часть мобильных
@@ -175,6 +184,14 @@ useEffect(() => {
     if (pet === null) return
     const raw = serialize(pet)
     petStore.saveLocal(raw)
+    // аварийная копия в облако Telegram: действие игрока зеркалим сразу,
+    // между действиями — не чаще BACKUP_INTERVAL_MS. Вычищенный localStorage
+    // и потерянный при закрытии POST не должны убивать прогресс вдвоём
+    const backupNow = forceSyncRef.current || Date.now() - lastBackupRef.current >= BACKUP_INTERVAL_MS
+    if (backupNow) {
+      lastBackupRef.current = Date.now()
+      void petStore.cloudBackupSave(raw)
+    }
     if (pet.name === null) return
     const now = Date.now()
     // крон решает пуши по сейву из базы: сон, не доехавший до неё за троттлинг,
@@ -210,11 +227,15 @@ useEffect(() => {
       })
   }, [pet, config])
 
-  // при уходе со страницы — залить актуальный сейв на сервер
+  // при уходе со страницы — аварийная копия в облако Telegram (IPC переживёт
+  // смерть страницы, в отличие от fetch через душащую сеть) и POST на сервер
   useEffect(() => {
     const flush = () => {
       const current = petRef.current
-      if (current?.name != null) void petStore.serverSync(serialize(current), true)
+      if (current === null) return
+      const raw = serialize(current)
+      void petStore.cloudBackupSave(raw)
+      if (current.name != null) void petStore.serverSync(raw, true)
     }
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)

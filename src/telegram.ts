@@ -22,9 +22,10 @@ interface TgWebApp {
     impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void
     notificationOccurred: (type: 'error' | 'success' | 'warning') => void
   }
-  /** старое облако Telegram: читаем один раз для миграции сейва на сервер */
+  /** облако Telegram: аварийная копия сейва (живёт мимо Cloudflare и чистки localStorage) */
   CloudStorage?: {
     getItem: (key: string, cb?: (err: unknown, value: string | null) => void) => void
+    setItem: (key: string, value: string, cb?: (err: unknown, ok: boolean) => void) => void
   }
   /** открыть ссылку t.me/… штатным клиентом Telegram (шер, канал, чат автора) */
   openTelegramLink?: (url: string) => void
@@ -267,10 +268,87 @@ async function serverPullRaw(): Promise<{ save: string | null } | null> {
 }
 
 /** Публичное API хранилища для usePet. */
+/**
+ * Одна запись в CloudStorage с таймаутом: замолчавший колбэк не вешает сохранение.
+ * false — вне Telegram, нет API или сеть подвела.
+ */
+function cloudSetItem(key: string, value: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const cs = tg()?.CloudStorage
+    if (!cs?.setItem) {
+      resolve(false)
+      return
+    }
+    const timer = setTimeout(() => resolve(false), CLOUD_STORAGE_TIMEOUT_MS)
+    cs.setItem(key, value, (err) => {
+      clearTimeout(timer)
+      resolve(!err)
+    })
+  })
+}
+
+/** Одно чтение из CloudStorage с таймаутом; null — нет API, ошибка или тишина. */
+function cloudGetItem(key: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const cs = tg()?.CloudStorage
+    if (!cs) {
+      resolve(null)
+      return
+    }
+    const timer = setTimeout(() => resolve(null), CLOUD_STORAGE_TIMEOUT_MS)
+    cs.getItem(key, (err, value) => {
+      clearTimeout(timer)
+      resolve(err ? null : value)
+    })
+  })
+}
+
+/** Лимит значения CloudStorage — 4096 символов: чанк с запасом. */
+const BACKUP_CHUNK_CHARS = 3600
+/** Ключи бэкапа: счётчик чанков и сами чанки (точки в ключах CloudStorage запрещены). */
+const BACKUP_COUNT_KEY = 'eggo_bk_n'
+const BACKUP_MAX_CHUNKS = 8
+const backupChunkKey = (i: number): string => `eggo_bk_${i}`
+
+/**
+ * Аварийная копия сейва в облаке Telegram: localStorage в мини-аппе вычищается
+ * между сессиями, а сервер может не получить последний POST (душащая сеть).
+ * Облако ходит через Telegram, мимо Cloudflare, и переживает чистку хранилища.
+ * Чанки ≤ BACKUP_CHUNK_CHARS, счётчик пишется последним и служит маркером
+ * целостности: не дошла запись до конца — старый счётчик оставит бэкап
+ * целиком предыдущим, а не пополам со старым.
+ */
+export async function cloudBackupSave(raw: string): Promise<void> {
+  const chunks: string[] = []
+  for (let i = 0; i < raw.length; i += BACKUP_CHUNK_CHARS) chunks.push(raw.slice(i, i + BACKUP_CHUNK_CHARS))
+  if (chunks.length > BACKUP_MAX_CHUNKS) return
+  for (const [i, chunk] of chunks.entries()) {
+    if (!(await cloudSetItem(backupChunkKey(i), chunk))) return
+  }
+  await cloudSetItem(BACKUP_COUNT_KEY, String(chunks.length))
+}
+
+/** Аварийная копия из облака Telegram; частичный или кривой набор — null. */
+export async function cloudBackupLoad(): Promise<string | null> {
+  const countRaw = await cloudGetItem(BACKUP_COUNT_KEY)
+  const count = Number(countRaw)
+  if (!Number.isInteger(count) || count < 1 || count > BACKUP_MAX_CHUNKS) return null
+  const parts: string[] = []
+  for (let i = 0; i < count; i++) {
+    const part = await cloudGetItem(backupChunkKey(i))
+    if (part === null) return null
+    parts.push(part)
+  }
+  return parts.join('')
+}
+
+/** Публичное API хранилища для usePet. */
 export const petStore = {
   loadLocal: loadLocalRaw,
   saveLocal: saveLocalRaw,
   legacyCloudLoad: legacyCloudLoadRaw,
+  cloudBackupSave,
+  cloudBackupLoad,
   serverSync: serverSyncRaw,
   serverPull: serverPullRaw,
 } as const
