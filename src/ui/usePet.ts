@@ -32,6 +32,7 @@ import { applyReferralReward } from '../game/referrals'
 import { useStrings } from './i18n'
 import { isEventHintDone, isHintDone, markEventHintDone, markHintDone, markRequestHintDone } from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
+import { track } from '../metrika'
 
 /** Как часто синхроним сейв с сервером (локально — при каждом изменении). */
 const SERVER_SYNC_INTERVAL_MS = 10_000
@@ -100,7 +101,13 @@ export function usePet(config: GameConfig) {
         // аварийная копия из облака Telegram: вычищенный localStorage на этом
         // девайсе и сон, уложенный на другом, приезжают ещё до сервера
         const backupRaw = await petStore.cloudBackupLoad()
-        if (backupRaw !== null) best = mergeRemoteSave(backupRaw, best, fallbackAppearance, config) ?? best
+        if (backupRaw !== null) {
+          // бэкап новее локали — прогресс выжил после вычистки хранилища
+          // (или приехал с другого девайса); яйцо-бэкап настоящего питомца не «спасает»
+          const backup = deserialize(backupRaw, fallbackAppearance)
+          if (backup?.name != null && (best === null || backup.lastEventAt > best.lastEventAt)) track('backup-rescued')
+          best = mergeRemoteSave(backupRaw, best, fallbackAppearance, config) ?? best
+        }
         const payload = best?.name != null ? serialize(best) : null
         const posted = await petStore.serverSync(payload)
         // POST потерялся по пути — тянем состояние GET-ом: часть мобильных
@@ -108,8 +115,17 @@ export function usePet(config: GameConfig) {
         const response = posted ?? (await petStore.serverPull())
         if (response !== null) {
           setInvited('invited' in response && typeof response.invited === 'number' ? response.invited : null)
+          const bestStamp = best?.lastEventAt ?? 0
+          const serverStamp =
+            response.save !== null ? (deserialize(response.save, fallbackAppearance)?.lastEventAt ?? 0) : 0
           best = mergeRemoteSave(response.save, best, fallbackAppearance, config) ?? best
+          // сервер отстал от наших событий — где-то по пути погиб POST; цель
+          // считает именно эти потери (sync-fail не успевает: страницу закрыли)
+          if (response.save !== null && best?.name != null && bestStamp > serverStamp) track('open-stale-server')
         }
+        // локали не было, но питомец нашёлся в облаке или на сервере:
+        // localStorage этого девайса вычистили — прогресс спасло слияние
+        if (local === null && best?.name != null) track('open-local-missing')
     } catch {
       // живём на локальном сейве (или новом яйце ниже)
     }
