@@ -46,9 +46,10 @@ const BACKUP_INTERVAL_MS = 10_000
 /**
  * Страховка от вечной загрузки: у некоторых вебвью фетч может зависнуть
  * навсегда и не отозваться на abort. Худший честный путь стартового синка —
- * 5с облако + 10с фетч, поэтому сторож срабатывает позже — на 20-й секунде.
+ * 5с легаси-облако + 5с счётчик бэкапа + 5с чанки параллельно + 10с фетч = 25с,
+ * поэтому сторож срабатывает позже — на 30-й секунде.
  */
-const SYNC_WATCHDOG_MS = 20_000
+const SYNC_WATCHDOG_MS = 30_000
 
 function initialPet(): PetState | null {
   // локальный сейв; если его нет — null: новое яйцо не создаём, пока
@@ -113,19 +114,26 @@ export function usePet(config: GameConfig) {
         // POST потерялся по пути — тянем состояние GET-ом: часть мобильных
         // сетей режет POST с телом, а pull без тела доезжает
         const response = posted ?? (await petStore.serverPull())
+        let serverStamp = 0
         if (response !== null) {
           setInvited('invited' in response && typeof response.invited === 'number' ? response.invited : null)
-          const bestStamp = best?.lastEventAt ?? 0
-          const serverStamp =
+          serverStamp =
             response.save !== null ? (deserialize(response.save, fallbackAppearance)?.lastEventAt ?? 0) : 0
           best = mergeRemoteSave(response.save, best, fallbackAppearance, config) ?? best
-          // сервер отстал от наших событий — где-то по пути погиб POST; цель
-          // считает именно эти потери (sync-fail не успевает: страницу закрыли)
-          if (response.save !== null && best?.name != null && bestStamp > serverStamp) track('open-stale-server')
+          // сервер отстал от СОБСТВЕННЫХ событий девайса — где-то по пути погиб
+          // POST (sync-fail не успевает: страницу закрыли раньше). Сравнивать
+          // «спасённое» с чужого девайса нельзя: часы устройств расходятся
+          if (response.save !== null && local?.name != null && local.lastEventAt > serverStamp) {
+            track('open-stale-server')
+          }
         }
-        // локали не было, но питомец нашёлся в облаке или на сервере:
-        // localStorage этого девайса вычистили — прогресс спасло слияние
-        if (local === null && best?.name != null) track('open-local-missing')
+        // локали не было, а питомец на девайсе всё же есть и сервер его свежее
+        // не отдаёт (пуст или отстал) — хранилище вычистили с реальной потерей,
+        // выжило только то, что привёз бэкап/слияние. Чистое «новое устройство»
+        // не попадает: там сервер приносит питомца целиком (штампы совпадают)
+        if (local === null && best?.name != null && (best?.lastEventAt ?? 0) > serverStamp) {
+          track('open-local-missing')
+        }
     } catch {
       // живём на локальном сейве (или новом яйце ниже)
     }
@@ -200,6 +208,9 @@ useEffect(() => {
     if (pet === null) return
     const raw = serialize(pet)
     petStore.saveLocal(raw)
+    // безымянное яйцо — ещё не питомец: ни на сервер, ни в облако, иначе яйцо
+    // от сторожа или нового девайса перезапишет аварийную копию настоящего питомца
+    if (pet.name === null) return
     // аварийная копия в облако Telegram: действие игрока зеркалим сразу,
     // между действиями — не чаще BACKUP_INTERVAL_MS. Вычищенный localStorage
     // и потерянный при закрытии POST не должны убивать прогресс вдвоём
@@ -208,7 +219,6 @@ useEffect(() => {
       lastBackupRef.current = Date.now()
       void petStore.cloudBackupSave(raw)
     }
-    if (pet.name === null) return
     const now = Date.now()
     // крон решает пуши по сейву из базы: сон, не доехавший до неё за троттлинг,
     // превращается в «уложи спать» для уже спящего питомца
@@ -248,10 +258,11 @@ useEffect(() => {
   useEffect(() => {
     const flush = () => {
       const current = petRef.current
-      if (current === null) return
+      // яйцо — не питомец: ни в облако, ни на сервер (сместил бы бэкап настоящего)
+      if (current === null || current.name === null) return
       const raw = serialize(current)
       void petStore.cloudBackupSave(raw)
-      if (current.name != null) void petStore.serverSync(raw, true)
+      void petStore.serverSync(raw, true)
     }
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)

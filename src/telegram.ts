@@ -267,7 +267,6 @@ async function serverPullRaw(): Promise<{ save: string | null } | null> {
   }
 }
 
-/** Публичное API хранилища для usePet. */
 /**
  * Одна запись в CloudStorage с таймаутом: замолчавший колбэк не вешает сохранение.
  * false — вне Telegram, нет API или сеть подвела.
@@ -314,9 +313,9 @@ const backupChunkKey = (i: number): string => `eggo_bk_${i}`
  * Аварийная копия сейва в облаке Telegram: localStorage в мини-аппе вычищается
  * между сессиями, а сервер может не получить последний POST (душащая сеть).
  * Облако ходит через Telegram, мимо Cloudflare, и переживает чистку хранилища.
- * Чанки ≤ BACKUP_CHUNK_CHARS, счётчик пишется последним и служит маркером
- * целостности: не дошла запись до конца — старый счётчик оставит бэкап
- * целиком предыдущим, а не пополам со старым.
+ * Чанки ≤ BACKUP_CHUNK_CHARS, счётчик {n, len} пишется последним и служит
+ * маркером целостности: оборванная или перемешанная с предыдущей запись
+ * (уменьшившийся сейв, смерть страницы посреди цикла) отбракуется по длине.
  */
 export async function cloudBackupSave(raw: string): Promise<void> {
   const chunks: string[] = []
@@ -325,21 +324,25 @@ export async function cloudBackupSave(raw: string): Promise<void> {
   for (const [i, chunk] of chunks.entries()) {
     if (!(await cloudSetItem(backupChunkKey(i), chunk))) return
   }
-  await cloudSetItem(BACKUP_COUNT_KEY, String(chunks.length))
+  await cloudSetItem(BACKUP_COUNT_KEY, JSON.stringify({ n: chunks.length, len: raw.length }))
 }
 
-/** Аварийная копия из облака Telegram; частичный или кривой набор — null. */
+/** Аварийная копия из облака Telegram; частичный, перемешанный или кривой набор — null. */
 export async function cloudBackupLoad(): Promise<string | null> {
-  const countRaw = await cloudGetItem(BACKUP_COUNT_KEY)
-  const count = Number(countRaw)
-  if (!Number.isInteger(count) || count < 1 || count > BACKUP_MAX_CHUNKS) return null
-  const parts: string[] = []
-  for (let i = 0; i < count; i++) {
-    const part = await cloudGetItem(backupChunkKey(i))
-    if (part === null) return null
-    parts.push(part)
+  let count = 0
+  let len = -1
+  try {
+    const meta = JSON.parse((await cloudGetItem(BACKUP_COUNT_KEY)) ?? '') as { n?: unknown; len?: unknown }
+    if (typeof meta.n === 'number' && Number.isInteger(meta.n)) count = meta.n
+    if (typeof meta.len === 'number' && Number.isInteger(meta.len)) len = meta.len
+  } catch {
+    return null
   }
-  return parts.join('')
+  if (count < 1 || count > BACKUP_MAX_CHUNKS || len < 0) return null
+  const parts = await Promise.all(Array.from({ length: count }, (_, i) => cloudGetItem(backupChunkKey(i))))
+  if (parts.some((part) => part === null)) return null
+  const joined = parts.join('')
+  return joined.length === len ? joined : null
 }
 
 /** Публичное API хранилища для usePet. */
