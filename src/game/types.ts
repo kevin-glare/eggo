@@ -116,4 +116,7 @@ export interface PetState {
   cosmetics: PetCosmetics
   /** активные автосервисы: дедлайны пропусков и кулдауны сработки (реальное время); у старых сейвов нули (нормализуется) */
   services: { feedUntil: number; washUntil: number; sleepUntil: number; lastFeedAt: number; lastWashAt: number }
+  /** реальный момент, когда питомец ушёл после недели без визита (мс, epoch);
+   *  null — питомец живёт у хозяина; у старых сейвов null (нормализуется) */
+  ranAwayAt: number | null
 }

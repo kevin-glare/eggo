@@ -12,6 +12,7 @@ export type ActionReason =
   | 'invalid-name'
   | 'no-stars'
   | 'overfed'
+  | 'runaway'
 
 export interface ActionResult {
   state: PetState
@@ -33,8 +34,16 @@ function fail(state: PetState, reason: ActionReason): ActionResult {
   return { state, ok: false, reason }
 }
 
+/** С ушедшим питомцем действий нет: это экран прощания, а не игра. */
+function guardAlive(state: PetState): ActionResult | null {
+  if (state.ranAwayAt !== null) return fail(state, 'runaway')
+  return null
+}
+
 /** Едят и бодрствуют только вылупившиеся питомцы. */
 function guardAwake(state: PetState): ActionResult | null {
+  const gone = guardAlive(state)
+  if (gone) return gone
   if (state.stage === 'egg') return fail(state, 'not-hatched')
   if (state.sleeping) return fail(state, 'sleeping')
   return null
@@ -140,16 +149,22 @@ export function pet(state: PetState, config: GameConfig): ActionResult {
 }
 
 export function startSleep(state: PetState): ActionResult {
+  const gone = guardAlive(state)
+  if (gone) return gone
   if (state.stage === 'egg') return fail(state, 'not-hatched')
   return ok({ ...state, sleeping: true })
 }
 
 export function wake(state: PetState): ActionResult {
+  const gone = guardAlive(state)
+  if (gone) return gone
   return ok({ ...state, sleeping: false })
 }
 
 /** Имя даётся один раз; безымянным может быть любой питомец — и старый сейв. */
 export function namePet(state: PetState, rawName: string, config: GameConfig): ActionResult {
+  const gone = guardAlive(state)
+  if (gone) return gone
   if (state.name !== null) return fail(state, 'already-named')
   const name = rawName.trim()
   if (name.length === 0 || name.length > config.nameMaxLength) return fail(state, 'invalid-name')
@@ -162,6 +177,8 @@ export function namePet(state: PetState, rawName: string, config: GameConfig): A
  * имя отклоняется до списания — звёзды за опечатку не берём.
  */
 export function renamePet(state: PetState, rawName: string, config: GameConfig): ActionResult {
+  const gone = guardAlive(state)
+  if (gone) return gone
   if (state.name === null) return fail(state, 'not-hatched')
   const name = rawName.trim()
   if (name.length === 0 || name.length > config.nameMaxLength) return fail(state, 'invalid-name')

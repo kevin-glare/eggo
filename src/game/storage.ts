@@ -203,6 +203,8 @@ export function deserialize(raw: string, fallbackAppearance: PetAppearance): Pet
         lastFeedAt: stamp(pet.services?.lastFeedAt),
         lastWashAt: stamp(pet.services?.lastWashAt),
       },
+      // уход появился позже сейва v1: отсутствие поля — питомец жив
+      ranAwayAt: typeof pet.ranAwayAt === 'number' && pet.ranAwayAt >= 0 ? pet.ranAwayAt : null,
     }
   } catch {
     return null
@@ -226,6 +228,18 @@ export interface PetStorage {
  * оффлайн-возврат и воркер ведут себя одинаково.
  */
 export function catchUp(state: PetState, nowMs: number, config: GameConfig): PetState {
+  // ушедший питомец вне времени: никакой симуляции, только двигаем шкалу
+  // для слияния девайсов и воркера
+  if (state.ranAwayAt !== null) {
+    return { ...state, lastTickAt: Math.max(state.lastTickAt, nowMs) }
+  }
+  // неделя без визита — питомец уходит в момент истечения срока. Считаем
+  // по сырому интервалу до капа maxOfflineMs, чтобы клиент, второй девайс
+  // и воркер получили один и тот же момент ухода
+  if (state.name !== null && nowMs - state.lastTickAt >= config.runaway.afterMs) {
+    const leftAt = state.lastTickAt + config.runaway.afterMs
+    return { ...state, ranAwayAt: leftAt, lastTickAt: leftAt }
+  }
   const realGap = Math.min(Math.max(0, nowMs - state.lastTickAt), config.maxOfflineMs)
   const gameGap = realGap * config.timeScale
 
@@ -260,9 +274,17 @@ function newerEvent(a: PetState, b: PetState): PetState {
  *    свежим событием; ничья — у первого аргумента (на клиенте это локальный
  *    сейв, на сервере — клиентский: действия игрока главнее лежалого сейва).
  * Безымянное яйцо не тикает и событий не имеет — именованная сторона всегда главная.
+ * Уход — конец питомца: новый питомец (другой createdAt) побеждает ушедшего целиком.
  */
 export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetState {
   const timeline = Math.max(a.lastTickAt, b.lastTickAt)
+  // уход необратим: новый питомец (другой createdAt) целиком заменяет ушедшего
+  if (a.ranAwayAt !== null && b.ranAwayAt === null && a.createdAt !== b.createdAt) {
+    return catchUp(b, timeline, config)
+  }
+  if (b.ranAwayAt !== null && a.ranAwayAt === null && a.createdAt !== b.createdAt) {
+    return catchUp(a, timeline, config)
+  }
   if (a.name === null || b.name === null) {
     // два яйца: обе стороны замерли, целиком берём более свежее
     if (a.name === null && b.name === null) return newerEvent(a, b)
@@ -318,6 +340,10 @@ export function mergeStates(a: PetState, b: PetState, config: GameConfig): PetSt
     },
     // конвертация огоньков проведена, если проведена хотя бы на одном девайсе
     streakStarsGiven: Math.max(caughtNewer.streakStarsGiven, caughtOlder.streakStarsGiven),
+    // уход — только у стороны с более свежим событием: лежалая сторона другого
+    // девайса может насчитать уход по своей старой lastTickAt, хотя питомца
+    // недавно видели живым (свежее событие сильнее чужой памяти о визите)
+    ranAwayAt: caughtNewer.ranAwayAt,
     lastTickAt: timeline,
   }
 }
@@ -353,7 +379,11 @@ export function mergeRemoteSave(
   if (!remoteRaw) return local
   const remote = deserialize(remoteRaw, local?.appearance ?? fallbackAppearance)
   if (!remote) return local
-  if (local === null || local.name === null) return remote
+  if (local === null) return remote
+  // ушедший удалённый питомец не воскрешает локального: локально уже начат
+  // новый питомец (пусть и безымянное яйцо) или тот же, но тоже ушедший
+  if (remote.ranAwayAt !== null) return local
+  if (local.name === null) return remote
   // безымянный удалённый сейв (до появления имён) не носитель событий
   if (remote.name === null) return remote.lastTickAt <= local.lastTickAt ? local : remote
   return mergeStates(local, remote, config)

@@ -247,6 +247,18 @@ export interface GameConfig {
     /** тихие часы по местному времени игрока: часы с from (включительно) до to; окно может переходить через полночь */
     quietHours: { from: number; to: number }
   }
+  /** «Ушёл искать нового хозяина»: пороги отсутствия игрока. Отсутствие —
+   *  реальное время (последний тик), timeScale его не ускоряет */
+  runaway: {
+    /** неделя без визита — питомец уходит */
+    afterMs: number
+    /** первый пуш-предупреждение: «ещё пару дней — и уйду» */
+    warnAfterMs: number
+    /** финальный пуш: «завтра уйду» */
+    finalWarnAfterMs: number
+    /** вернулся после разлуки дольше этого — вместо «скучал» честный тост про правило недели */
+    awayToastAfterMs: number
+  }
 }
 
 export const MINUTE = 60_000
@@ -422,6 +434,8 @@ export const DEFAULT_CONFIG: GameConfig = {
     // не будим игрока с 22:00 до 9:00 по его часам
     quietHours: { from: 22, to: 9 },
   },
+  // питомец уходит после недели без визита; предупреждаем пушами на 5-й и 6-й день
+  runaway: { afterMs: 7 * DAY, warnAfterMs: 5 * DAY, finalWarnAfterMs: 6 * DAY, awayToastAfterMs: 2 * DAY },
 }
 
 /** Дев-режим: время ×60 — эволюцию видно за минуты. */
@@ -438,4 +452,8 @@ export const DEV_CONFIG: GameConfig = {
   events: { ...DEFAULT_CONFIG.events, gapMinMs: 12_000, gapMaxMs: 25_000, expireMs: 30_000 },
   // перерыв после объедения тоже реальный: в dev — 20 секунд, чтобы увидеть механику
   feeding: { ...DEFAULT_CONFIG.feeding, overfedMs: 20_000 },
+  // отсутствие — реальное время, timeScale его не ускоряет: в dev уход
+  // через 2 минуты реального оффлайна, предупреждения на 80-й и 100-й секунде,
+  // чтобы механику было видно за одну сессию; тост «тебя не было» — после 5 секунд
+  runaway: { afterMs: 2 * MINUTE, warnAfterMs: 80_000, finalWarnAfterMs: 100_000, awayToastAfterMs: 5_000 },
 }

@@ -241,3 +241,10 @@ describe('neglectLevel — запущенность сцены', () => {
     expect(neglectLevel(withNeglect(cfg.criticalMs), DEFAULT_CONFIG)).toBe(3)
   })
 })
+
+describe('уход питомца', () => {
+  it('тик не трогает ушедшего питомца', () => {
+    const gone = hatchedPet(DEFAULT_CONFIG, { ranAwayAt: 5 * HOUR })
+    expect(tick(gone, HOUR, DEFAULT_CONFIG)).toEqual(gone)
+  })
+})

@@ -42,6 +42,7 @@ export const en: Strings = {
     'invalid-name': '✏️ 1 to 16 characters',
     'no-stars': '⭐ Not enough stars',
     overfed: '😴 Too full — resting, feed later',
+    runaway: '💔 The pet has left…',
   },
   actionSuccess: { feed: '🍗 Yum-yum!', play: '😄 That was fun!', wash: '🛁 Squeaky clean!', pet: '💗 Purr-purr!' },
   sleepStart: '😴 Good night!',
@@ -57,6 +58,9 @@ export const en: Strings = {
   claimAlready: '🎁 Reward already claimed',
   claimNotReady: '🎯 Finish the daily quests first',
   newGame: '🥚 New game — name your pet!',
+  // возвращение после долгой разлуки: правило недели проговариваем сразу
+  awayToast: (days: number) => `⏳ You were away for ${days} ${days === 1 ? 'day' : 'days'} — after 7 days without a visit, I’ll leave!`,
+  hintLeaveWarn: '⏳ The rule of Eggo: 7 days without a visit — and I’ll leave. Drop by for at least a minute!',
 
   create: {
     headline: 'Name your pet',
@@ -64,6 +68,14 @@ export const en: Strings = {
     namePlaceholder: 'Pet name',
     nameButton: 'Name it',
     pitch: 'Feed, play and watch it grow',
+  },
+
+  // --- экран прощания: питомец ушёл после недели без визита ---
+  farewell: {
+    emoji: '💔',
+    headline: (name: string) => `${name} won’t wait anymore…`,
+    sub: 'A week without a visit — and the pet left to find an owner who stays around. That’s how Eggo works.',
+    restart: 'Take a new egg',
   },
 
   actionsAria: 'Actions',
@@ -277,6 +289,7 @@ export const en: Strings = {
         '🤒 Sick? Good care heals: keep every stat in the clear',
         '💡 Eggo is asking for something? Do it in time — the effect is doubled',
         '🎯 Daily quests differ every day: care, the game of the day, a meadow star or the shop',
+        '⏳ A week without a visit — and the pet leaves: drop by at least once a week',
       ],
     },
     {

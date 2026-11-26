@@ -244,3 +244,17 @@ describe('чистота функций', () => {
     expect(petState).toEqual(before)
   })
 })
+
+describe('уход питомца — действия закрыты', () => {
+  it('все действия с ушедшим отвечают отказом runaway', () => {
+    const gone = hatchedPet(DEFAULT_CONFIG, { ranAwayAt: 1_000 })
+    expect(feed(gone, DEFAULT_CONFIG)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(play(gone, DEFAULT_CONFIG)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(wash(gone, DEFAULT_CONFIG)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(pet(gone, DEFAULT_CONFIG)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(startSleep(gone)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(wake(gone)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(namePet(gone, 'Друг', DEFAULT_CONFIG)).toMatchObject({ ok: false, reason: 'runaway' })
+    expect(renamePet(gone, 'Друг', DEFAULT_CONFIG)).toMatchObject({ ok: false, reason: 'runaway' })
+  })
+})

@@ -36,6 +36,7 @@ export function createPet(now: number, config: GameConfig, appearance: PetAppear
     character: { ...EMPTY_CHARACTER },
     cosmetics: { owned: [], accessories: { head: null, face: null, neck: null }, decor: { meadow: null, sea: null } },
     services: { feedUntil: 0, washUntil: 0, sleepUntil: 0, lastFeedAt: 0, lastWashAt: 0 },
+    ranAwayAt: null,
   }
 }
 
@@ -61,6 +62,8 @@ export function stageForAge(ageMs: number, config: GameConfig): Stage {
 /** Продвинуть игровое время на dtMs. Чистая: возвращает новое состояние. */
 export function tick(state: PetState, dtMs: number, config: GameConfig): PetState {
   if (dtMs <= 0) return state
+  // ушедший питомец вне времени: тики его не трогают
+  if (state.ranAwayAt !== null) return state
   // жизнь не начинается, пока питомец не получил имени: яйцо просто ждёт
   if (state.name === null) return state
 
