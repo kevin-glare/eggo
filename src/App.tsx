@@ -13,6 +13,7 @@ import { characterLevels, TRAIT_IDS } from './game/character'
 import { desire, getMood, neglectLevel } from './game/engine'
 import ActionsBar from './ui/ActionsBar'
 import CreatePetScreen from './ui/CreatePetScreen'
+import FarewellScreen from './ui/FarewellScreen'
 import { dirtLevel } from './ui/dirt'
 import { useStrings } from './ui/i18n'
 import { isRequestHintDone, isWhatsNewDone, markWhatsNewDone } from './ui/hints'
@@ -202,6 +203,16 @@ export default function App() {
     return (
       <main className="app">
         <div className="loading">{str.loading}</div>
+      </main>
+    )
+  }
+
+  // питомец ушёл после недели без визита: экран прощания вместо игры,
+  // кнопка начинает заново (раньше ветки isCreating — ушедший именован)
+  if (pet.ranAwayAt !== null) {
+    return (
+      <main className="app">
+        <FarewellScreen name={pet.name ?? str.stage[pet.stage]} onRestart={reset} />
       </main>
     )
   }

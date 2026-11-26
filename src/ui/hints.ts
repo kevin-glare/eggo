@@ -9,6 +9,29 @@ const PREFIX = 'eggo.hint.'
 export type HintKind = 'feedCatch' | 'wash' | 'stars'
 
 /**
+ * Подсказка правила недели («7 дней без визита — и уйду») — не сценка,
+ * а тост, поэтому живёт отдельным флагом (как подсказки просьб и событий).
+ * Показывается один раз, когда питомец получил имя и его жизнь началась.
+ */
+const LEAVE_WARN_FLAG = PREFIX + 'leaveWarn'
+
+export function isLeaveWarnHintDone(): boolean {
+  try {
+    return window.localStorage.getItem(LEAVE_WARN_FLAG) === 'done'
+  } catch {
+    return true
+  }
+}
+
+export function markLeaveWarnHintDone(): void {
+  try {
+    window.localStorage.setItem(LEAVE_WARN_FLAG, 'done')
+  } catch {
+    // без хранилища подсказка будет показываться снова — не страшно
+  }
+}
+
+/**
  * Подсказка событий сцены — не сценка, а тост, поэтому живёт отдельным флагом
  * (как подсказка просьб). Показывается, пока игрок ни разу ничего не поймал.
  */

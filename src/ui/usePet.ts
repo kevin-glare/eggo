@@ -12,6 +12,7 @@ import {
   type ActionResult,
 } from '../game/actions'
 import type { GameConfig } from '../game/config'
+import { DAY } from '../game/config'
 import { createPet, tick } from '../game/engine'
 import { dayGame } from '../game/dailyChallenge'
 import { evaluateAchievements } from '../game/achievements'
@@ -30,7 +31,15 @@ import { updateRequest } from '../game/requests'
 import { claimEvent, maybeSpawnEvent } from '../game/events'
 import { applyReferralReward } from '../game/referrals'
 import { useStrings } from './i18n'
-import { isEventHintDone, isHintDone, markEventHintDone, markHintDone, markRequestHintDone } from './hints'
+import {
+  isEventHintDone,
+  isHintDone,
+  isLeaveWarnHintDone,
+  markEventHintDone,
+  markHintDone,
+  markLeaveWarnHintDone,
+  markRequestHintDone,
+} from './hints'
 import { hapticSuccess, hapticWarning, initTelegram, petStore } from '../telegram'
 import { track } from '../metrika'
 
@@ -141,8 +150,14 @@ export function usePet(config: GameConfig) {
     // питомца нет нигде — новая игра; чужой сейв досчитываем по времени отсутствия
     const resolved = best ?? createPet(Date.now(), config, rollAppearance(Math.random))
     if (!cancelled) {
-      // «скучал»: absence считается до досчёта — lastTickAt ещё старый
-      if (best !== null && missYou(best, config, Date.now())) {
+      // «скучал»: absence считается до досчёта — lastTickAt ещё старый.
+      // Ушедшему конфетти не положены, а при разлуке дольше awayToastAfterMs
+      // вместо радости — честное предупреждение: правило недели проговариваем сразу
+      const absenceMs = best !== null ? Date.now() - best.lastTickAt : 0
+      const goneOrLeaving = best !== null && (best.ranAwayAt !== null || absenceMs >= config.runaway.afterMs)
+      if (best !== null && !goneOrLeaving && absenceMs >= config.runaway.awayToastAfterMs) {
+        setNotice(str.awayToast(Math.floor(absenceMs / DAY)))
+      } else if (best !== null && !goneOrLeaving && missYou(best, config, Date.now())) {
         setNotice(str.missYou(best.name ?? str.petFallbackName))
         setCelebrate((n) => n + 1)
       }
@@ -629,7 +644,14 @@ useEffect(() => {
       // имя — первое событие питомца: штамп для мультидевайс-слияния
       setPet({ ...result.state, lastEventAt: Date.now() })
       hapticSuccess()
-      setNotice(result.state.stage === 'egg' ? str.eggAppeared : str.named(result.state.name ?? str.petFallbackName))
+      // жизнь питомца началась — самое время проговорить правило недели
+      // (одноразовая подсказка, флаг в localStorage)
+      if (!isLeaveWarnHintDone()) {
+        markLeaveWarnHintDone()
+        setNotice(str.hintLeaveWarn)
+      } else {
+        setNotice(result.state.stage === 'egg' ? str.eggAppeared : str.named(result.state.name ?? str.petFallbackName))
+      }
       return true
     },
     [config, str],
