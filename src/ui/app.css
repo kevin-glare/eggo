@@ -537,10 +537,10 @@ body {
   box-shadow: inset 0 1px 0 var(--sheen);
 }
 
-/* мини-арт питомца: статичный кадр движка petArt; чуть меньше, чтобы дать место имени и чипам */
+/* мини-арт питомца: статичный кадр движка petArt; крупнее исходного — увеличиваем питомца, не чипы */
 .menu-avatar {
-  width: 52px;
-  height: 48px;
+  width: 68px;
+  height: 62px;
   flex: none;
 }
 
@@ -650,11 +650,11 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 11px;
+  padding: 3px 9px;
   border-radius: 999px;
   background: linear-gradient(180deg, var(--card-hi), var(--card));
   box-shadow: inset 0 1px 0 var(--sheen);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
