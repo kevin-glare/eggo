@@ -278,7 +278,7 @@ export default function MenuScreen({
                   className="menu-avatar"
                 />
                 <div className="menu-profile-text">
-                  <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                  <p className="menu-profile-name">{pet.name?.trim() ? pet.name : str.stage[pet.stage]}</p>
                   {/* характер: черты с уровнями под именем; ни одной — строка не рисуется */}
                   {traits.length > 0 && (
                     <p className="menu-profile-traits" aria-label={str.characterAria}>

@@ -646,16 +646,14 @@ body {
   gap: 6px;
 }
 
+/* черта характера: тихая мелкая подпись без рамки и фона — внимания ей не нужно */
 .trait-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--card-hi), var(--card));
-  box-shadow: inset 0 1px 0 var(--sheen);
-  font-size: 12px;
-  font-weight: 700;
+  gap: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
   white-space: nowrap;
 }
 
