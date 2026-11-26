@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { PetAppearance } from '../game/appearance'
 import type { Mood, Stage } from '../game/types'
-import { createVisualState, drawPet, GROUND_Y, SCENE_W } from './petArt'
+import { createVisualState, drawPet, GROUND_Y, petBodyHeight, SCENE_W } from './petArt'
 
 interface PetBadgeProps {
   stage: Stage
@@ -26,7 +26,9 @@ export default function PetBadge({ stage, mood, appearance, accessories = [], cl
     const s = 0.42
     ctx.setTransform(2, 0, 0, 2, 0, 0)
     ctx.clearRect(0, 0, 120, 110)
-    ctx.translate(60 - (SCENE_W / 2) * s, 100 - (GROUND_Y + 6) * s)
+    // питомец — по центру бейджа по высоте; +6 — запас на уши и шапки сверху
+    const baseY = (110 + petBodyHeight(stage, appearance.body) * s + 6) / 2 - 1
+    ctx.translate(60 - (SCENE_W / 2) * s, baseY - (GROUND_Y + 6) * s)
     ctx.scale(s, s)
     drawPet(ctx, stage, mood, appearance, createVisualState(), 0, 0, 0, accessories)
     ctx.setTransform(1, 0, 0, 1, 0, 0)

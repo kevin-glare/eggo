@@ -149,6 +149,13 @@ const BODY_SHAPE_SCALE: Record<BodyShape, { rx: number; ry: number; belly: numbe
   tall: { rx: 0.88, ry: 1.12, belly: 0.85 },
 }
 
+/** Высота рисунка питомца от точки опоры до макушки в единицах сцены — чтобы бейдж (PetBadge) мог отцентровать его по вертикали. */
+export function petBodyHeight(stage: Stage, body: BodyShape): number {
+  if (stage === 'egg') return 104
+  const d = stage === 'adult' ? ADULT : BABY
+  return d.ry * 2 * BODY_SHAPE_SCALE[body].ry
+}
+
 function mulberry32(seed: number): () => number {
   let a = seed
   return () => {
