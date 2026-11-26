@@ -527,6 +527,7 @@ body {
 .menu-profile {
   min-width: 0;
   display: flex;
+  flex-wrap: wrap; /* строка чипов характера (width:100%) переносится на свою строку */
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
