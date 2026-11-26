@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_CONFIG, HOUR } from '../src/game/config'
 import { serialize } from '../src/game/storage'
 import { runPushCron } from '../worker/src/pushes'
-import { hatchedPet, MINUTE } from './helpers'
+import { hatchedPet, DAY, MINUTE } from './helpers'
 import { FakeDb } from './worker-fake-db'
 
 const config = DEFAULT_CONFIG
@@ -183,5 +183,55 @@ describe('runPushCron', () => {
     expect(body.text).toContain('подросток')
     expect(body.disable_notification).toBe(false)
     expect(db.sent.has('7:grown:teen')).toBe(true)
+  })
+
+  it('ушедший питомец в базе: крон шлёт прощание вместо беды и ставит отметку', async () => {
+    const db = new FakeDb([
+      {
+        telegram_id: 7,
+        // lastTickAt больше недели назад: catchUp крона досчитает уход,
+        // а голодный ушедший не должен породить «в беде»
+        save_json: serialize(hatchedPet(config, { lastTickAt: Date.now() - 8 * DAY }, { fullness: 10 })),
+        push_enabled: 1,
+        utc_offset: utcOffsetWithLocalHour(14),
+        last_seen_at: Date.now() - 8 * DAY,
+      },
+    ])
+    const fetchMock = botFetch(true)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await runPushCron(db, BOT_TOKEN)
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { text: string }
+    expect(body.text).toContain('ушёл')
+    expect(body.text).not.toContain('голодает')
+    // отметка с идентичностью питомца (createdAt у тестового питомца — 0)
+    expect(db.sent.has('7:ranAway:0')).toBe(true)
+  })
+
+  it('5 дней без визита: крон предупреждает, что питомец уйдёт', async () => {
+    // визит был 5+1 ч назад: и порог предупреждения прошёл, и ключ разлуки стабилен
+    const lastSeen = Date.now() - (config.runaway.warnAfterMs + HOUR)
+    const db = new FakeDb([
+      {
+        telegram_id: 7,
+        // сейв свежий, а визита не было 5 дней: без распада в кадре
+        // проверяем именно предупреждение об уходе
+        save_json: serialize(hatchedPet(config, { lastTickAt: Date.now() - MINUTE })),
+        push_enabled: 1,
+        utc_offset: utcOffsetWithLocalHour(14),
+        last_seen_at: lastSeen,
+      },
+    ])
+    // взросление уже поздравляли: без отметки оно встанет впереди предупреждения
+    db.sent.set('7:grown:baby', 1)
+    const fetchMock = botFetch(true)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await runPushCron(db, BOT_TOKEN)
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { text: string }
+    expect(body.text).toContain('уйдёт')
+    expect(db.sent.has(`7:leaveWarn:${lastSeen}`)).toBe(true)
   })
 })

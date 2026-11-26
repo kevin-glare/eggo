@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_CONFIG, HOUR, MINUTE } from '../src/game/config'
+import { DEFAULT_CONFIG, DAY, HOUR, MINUTE } from '../src/game/config'
 import { isQuietHour, pendingNotifications, userLocalHour, type SentNotifications } from '../src/game/notifications'
 import { hatchedPet, makePet } from './helpers'
 
@@ -317,5 +317,78 @@ describe('тихие часы — не будим игрока (окно 22–9)
     expect(userLocalHour(tenUtc, 180)).toBe(13) // Москва
     expect(userLocalHour(tenUtc, -300)).toBe(5) // Нью-Йорк (UTC−5)
     expect(userLocalHour(23 * HOUR, 180)).toBe(2) // 23:00 UTC + 3 часа
+  })
+})
+
+describe('pendingNotifications — уход после недели без визита', () => {
+  it('ушедшему — только прощание: ни беды, ни сна, ни «скучаем»', () => {
+    const pet = hatchedPet(config, { ranAwayAt: NOW - HOUR }, { fullness: 10, energy: 10 })
+    const kinds = pendingNotifications(pet, NOW, config, NOW - 30 * HOUR, {}, DAY_HOUR).map((n) => n.kind)
+    expect(kinds).toEqual([`ranAway:${pet.createdAt}`])
+  })
+
+  it('прощание отправлено — не повторяется никогда: оно одно на питомца', () => {
+    const pet = hatchedPet(config, { ranAwayAt: NOW - HOUR })
+    const sent: SentNotifications = { ...GROWN_SEEN, [`ranAway:${pet.createdAt}`]: NOW - 2 * HOUR }
+    expect(pendingNotifications(pet, NOW, config, NOW - 30 * HOUR, sent, DAY_HOUR)).toEqual([])
+  })
+
+  it('прощание нового питомца (другой createdAt) не глушится старой отметкой', () => {
+    const pet = hatchedPet(config, { ranAwayAt: NOW - HOUR, createdAt: 5 * DAY })
+    const sent: SentNotifications = { ...GROWN_SEEN, 'ranAway:0': NOW - 2 * HOUR }
+    expect(pendingNotifications(pet, NOW, config, NOW - 30 * HOUR, sent, DAY_HOUR)[0]?.kind).toBe(`ranAway:${pet.createdAt}`)
+  })
+
+  it('прощание подсказывает начать заново', () => {
+    const pet = hatchedPet(config, { ranAwayAt: NOW - HOUR })
+    const text = pendingNotifications(pet, NOW, config, NOW - 30 * HOUR, {}, DAY_HOUR)[0]?.text ?? ''
+    expect(text).toContain('ушёл')
+    expect(text).toContain('яйцо')
+  })
+
+  it('5-й день без визита → первое предупреждение', () => {
+    const pet = hatchedPet(config)
+    const lastSeen = NOW - (config.runaway.warnAfterMs + HOUR)
+    const list = pendingNotifications(pet, NOW, config, lastSeen, GROWN_SEEN, DAY_HOUR)
+    expect(list[0]?.kind).toBe(`leaveWarn:${lastSeen}`)
+    expect(list[0]?.text).toContain('уйдёт')
+  })
+
+  it('6-й день → оба предупреждения и «скучаем» за ними', () => {
+    const pet = hatchedPet(config)
+    const lastSeen = NOW - (config.runaway.finalWarnAfterMs + HOUR)
+    const kinds = pendingNotifications(pet, NOW, config, lastSeen, GROWN_SEEN, DAY_HOUR).map((n) => n.kind)
+    expect(kinds).toEqual([`leaveWarn:${lastSeen}`, `leaveWarnFinal:${lastSeen}`, 'missYou'])
+  })
+
+  it('раньше порога предупреждений нет', () => {
+    const pet = hatchedPet(config)
+    const kinds = pendingNotifications(pet, NOW, config, NOW - (config.runaway.warnAfterMs - HOUR), GROWN_SEEN, DAY_HOUR).map((n) => n.kind)
+    expect(kinds.some((k) => k.startsWith('leave'))).toBe(false)
+  })
+
+  it('отметка предупреждения живёт в ключе разлуки: новый визит перезаводит ключ', () => {
+    const pet = hatchedPet(config)
+    const oldAbsence = NOW - (config.runaway.warnAfterMs + 2 * HOUR)
+    const newAbsence = NOW - (config.runaway.warnAfterMs + HOUR)
+    const sent: SentNotifications = { ...GROWN_SEEN, [`leaveWarn:${oldAbsence}`]: oldAbsence }
+    // та же разлука — предупреждение уже отправляли
+    expect(pendingNotifications(pet, NOW, config, oldAbsence, sent, DAY_HOUR)[0]?.kind).toBe('missYou')
+    // после визита началась новая разлука — предупреждение приходит снова
+    expect(pendingNotifications(pet, NOW, config, newAbsence, sent, DAY_HOUR)[0]?.kind).toBe(`leaveWarn:${newAbsence}`)
+  })
+
+  it('свежая активность игрока глушит предупреждения', () => {
+    const pet = hatchedPet(config)
+    const kinds = pendingNotifications(pet, NOW, config, NOW - 5 * MINUTE, GROWN_SEEN, DAY_HOUR).map((n) => n.kind)
+    expect(kinds.some((k) => k.startsWith('leave'))).toBe(false)
+  })
+
+  it('ночью предупреждение и прощание придерживаются до утра', () => {
+    const lastSeen = NOW - (config.runaway.warnAfterMs + HOUR)
+    const warn = pendingNotifications(hatchedPet(config), NOW, config, lastSeen, GROWN_SEEN, 3)[0]
+    expect(warn?.delivery).toBe('hold')
+    const farewell = pendingNotifications(hatchedPet(config, { ranAwayAt: NOW - HOUR }), NOW, config, NOW - 30 * HOUR, {}, 3)[0]
+    expect(farewell?.delivery).toBe('hold')
   })
 })

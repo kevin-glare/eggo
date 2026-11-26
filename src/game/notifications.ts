@@ -1,4 +1,4 @@
-import type { GameConfig } from './config'
+import { DAY, type GameConfig } from './config'
 import type { PetState, Stage } from './types'
 
 /**
@@ -71,6 +71,24 @@ export function pendingNotifications(
   // беда (critical) кричит всегда
   const active = nowMs - lastSeenAt < config.notifications.activityWindowMs
 
+  // питомец ушёл: обычных новостей больше нет — есть только прощание, и оно
+  // одно на питомца (createdAt в ключе): отметки в D1 вечны, «начать заново»
+  // создаёт питомца с другим createdAt — его прощание будет отдельным
+  if (pet.ranAwayAt !== null) {
+    const kind = `ranAway:${pet.createdAt}`
+    if (sent[kind] === undefined) {
+      result.push({
+        kind,
+        text: withAction(
+          `💔 ${petTitle(pet)} ушёл искать нового хозяина…`,
+          'загляни в Eggo — можно начать заново и взять новое яйцо',
+        ),
+        delivery: quiet ? 'hold' : 'now',
+      })
+    }
+    return result
+  }
+
   // «в беде»: критическая шкала или болезнь — самая срочная новость.
   // «вымотался» во сне бедой не считаем: энергия растёт сама, будить вредно.
   const reasons: string[] = []
@@ -115,6 +133,37 @@ export function pendingNotifications(
     result.push({
       kind: `grown:${pet.stage}`,
       text: withAction(`🎉 ${petTitle(pet)} вырос — теперь он ${STAGE_TITLES[pet.stage]}!`, 'загляни в Eggo — посмотри, каким стал питомец'),
+      delivery: quiet ? 'hold' : 'now',
+    })
+  }
+
+  // «ухожу»: предупреждения за пару дней до ухода — от последнего визита
+  // воркера (lastSeenAt). Ключ с lastSeenAt = одно предупреждение на разлуку:
+  // визит перезаводит счётчик и даёт следующей разлуке новый ключ, а новому
+  // питомцу достанутся свои отметки. Дни в текстах выводятся из config.runaway
+  const warnDay = Math.round(config.runaway.warnAfterMs / DAY)
+  const warnLeft = Math.round((config.runaway.afterMs - config.runaway.warnAfterMs) / DAY)
+  const finalLeft = Math.round((config.runaway.afterMs - config.runaway.finalWarnAfterMs) / DAY)
+  const dayWord = (n: number): string => (n === 1 ? 'день' : 'дн.')
+  if (!active && nowMs - lastSeenAt >= config.runaway.warnAfterMs && sent[`leaveWarn:${lastSeenAt}`] === undefined) {
+    result.push({
+      kind: `leaveWarn:${lastSeenAt}`,
+      text: withAction(
+        `😢 ${petTitle(pet)} ждёт тебя уже ${warnDay}-й день: ещё ${warnLeft} ${dayWord(warnLeft)} без визита — и он уйдёт…`,
+        'загляни в Eggo — один визит, и питомец останется с тобой',
+      ),
+      delivery: quiet ? 'hold' : 'now',
+    })
+  }
+
+  // финальное предупреждение накануне ухода
+  if (!active && nowMs - lastSeenAt >= config.runaway.finalWarnAfterMs && sent[`leaveWarnFinal:${lastSeenAt}`] === undefined) {
+    result.push({
+      kind: `leaveWarnFinal:${lastSeenAt}`,
+      text: withAction(
+        `⚠️ Ещё ${finalLeft} ${dayWord(finalLeft)} — и ${petTitle(pet)} уйдёт, если ты не заглянешь!`,
+        'открой Eggo — один визит, и счёт дней начнётся заново',
+      ),
       delivery: quiet ? 'hold' : 'now',
     })
   }
