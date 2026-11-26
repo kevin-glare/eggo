@@ -527,7 +527,6 @@ body {
 .menu-profile {
   min-width: 0;
   display: flex;
-  flex-wrap: wrap; /* строка чипов характера (width:100%) переносится на свою строку */
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
@@ -538,21 +537,26 @@ body {
   box-shadow: inset 0 1px 0 var(--sheen);
 }
 
-/* мини-арт питомца: статичный кадр движка petArt */
+/* мини-арт питомца: статичный кадр движка petArt; чуть меньше, чтобы дать место имени и чипам */
 .menu-avatar {
-  width: 60px;
-  height: 55px;
+  width: 52px;
+  height: 48px;
   flex: none;
 }
 
+/* левая колонка профиля: имя и под ним чипы характера */
 .menu-profile-text {
+  flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
 }
 
 .menu-profile-name {
   margin: 0;
-  flex: 1;
-  min-width: 0;
+  max-width: 100%;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 18px;
@@ -634,25 +638,23 @@ body {
   white-space: nowrap;
 }
 
-/* черты характера в профиле: ряд чипов под именем и возрастом */
+/* черты характера в профиле: ряд чипов под именем, без рамок */
 .menu-profile-traits {
-  margin: 10px 0 0;
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  width: 100%;
 }
 
 .trait-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  border: 1px solid var(--stroke);
+  padding: 4px 11px;
   border-radius: 999px;
   background: linear-gradient(180deg, var(--card-hi), var(--card));
   box-shadow: inset 0 1px 0 var(--sheen);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }

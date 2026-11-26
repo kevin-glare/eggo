@@ -277,24 +277,26 @@ export default function MenuScreen({
                   ].filter((x): x is string => x !== null)}
                   className="menu-avatar"
                 />
-                <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                <div className="menu-profile-text">
+                  <p className="menu-profile-name">{pet.name ?? str.stage[pet.stage]}</p>
+                  {/* характер: черты с уровнями под именем; ни одной — строка не рисуется */}
+                  {traits.length > 0 && (
+                    <p className="menu-profile-traits" aria-label={str.characterAria}>
+                      {traits.map((t) => (
+                        <span className="trait-chip" key={t.id}>
+                          <span aria-hidden="true">{TRAIT_ICONS[t.id]}</span> {str.traits[t.id]}{' '}
+                          <span className="num">{t.level}</span>
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                </div>
                 <div className="menu-profile-right">
                   <p className="menu-profile-stage">{str.stage[pet.stage]}</p>
                   <p className="menu-profile-age">
                     {str.ageLabel} <span className="num">{str.formatAge(pet.ageMs)}</span>
                   </p>
                 </div>
-                {/* характер: раскрывшиеся черты с уровнями; ни одной — строка не рисуется */}
-                {traits.length > 0 && (
-                  <p className="menu-profile-traits" aria-label={str.characterAria}>
-                    {traits.map((t) => (
-                      <span className="trait-chip" key={t.id}>
-                        <span aria-hidden="true">{TRAIT_ICONS[t.id]}</span> {str.traits[t.id]}{' '}
-                        <span className="num">{t.level}</span>
-                      </span>
-                    ))}
-                  </p>
-                )}
               </div>
               {/* порядок пунктов задан владельцем: магазин → достижения →
                   как играть → позови друга → автор; настройки — внизу */}
